@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Check types
+        run: npm run lint
+        
+      - name: Build application
+        run: npm run build
+        
+      - name: Install wait-on
+        run: npm install -g wait-on
+        
+      - name: Start Application Server
+        run: npm run preview -- --port 3000 &
+        
+      - name: Wait for Server to be Ready
+        run: wait-on http://localhost:3000 --timeout 30000
+        
+      - name: Run Node.js E2E Smoke Tests
+        run: npx tsx scripts/smoke-test.ts
