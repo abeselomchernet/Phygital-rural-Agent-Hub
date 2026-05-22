@@ -28,11 +28,13 @@ jobs:
         run: npm run build
       
       - name: Start Application Server
+        # The '-- --port 3005 --strictPort' forces Vite/Node to bind exactly to 3005
+        # instead of defaulting to 5173 or searching for the next open port.
         run: |
-          npm run dev > server.log 2>&1 &
+          npm run dev -- --port 3005 --strictPort > server.log 2>&1 &
           SERVER_PID=$!
           echo "Server PID: $SERVER_PID"
-          sleep 3
+          sleep 5
           if ! kill -0 $SERVER_PID 2>/dev/null; then
             echo "❌ Server failed to start on localized port config!"
             cat server.log
@@ -43,7 +45,13 @@ jobs:
           PORT: 3005
       
       - name: Wait for Server to be Ready
-        run: npx wait-on http://localhost:3005 --timeout 60000 --interval 500
+        # Increased timeout to 90s. If it fails, it will now print the server log automatically.
+        run: |
+          if ! npx wait-on http://localhost:3005 --timeout 90000 --interval 500; then
+            echo "❌ wait-on timed out! Dumping server output for debugging:"
+            cat server.log
+            exit 1
+          fi
       
       - name: Verify Server Health
         run: curl -f http://localhost:3005/api/health || (echo "Health check failed" && cat server.log && exit 1)
