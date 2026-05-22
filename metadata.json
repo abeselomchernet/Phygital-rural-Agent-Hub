@@ -1,0 +1,9 @@
+{
+  "name": "Remix: Phygital Rural Agent Hub",
+  "description": "NAGA-NODE PULSE v2 Dashboard for Phygital Rural Agent Hub System",
+  "requestFramePermissions": [
+    "geolocation",
+    "camera"
+  ],
+  "majorCapabilities": []
+}

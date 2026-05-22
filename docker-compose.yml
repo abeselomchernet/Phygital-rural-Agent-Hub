@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # The Core API & Portal (Sovereign Switch wrapper)
+  sovereign-node:
+    build: .
+    container_name: sovereign_node_1
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - REDIS_URL=redis://raxio-redis:6379
+      - DB_URL=postgresql://fayda_admin:NexusPass2026@raxio-fayda-db:5432/faydadb
+      - RAILS_MTLS_CERT_PATH=/secrets/dev.pem
+    depends_on:
+      - raxio-redis
+      - raxio-fayda-db
+    networks:
+      - raxio-tier3-grid
+    restart: unless-stopped
+
+  # Mock Memory / Broker for Celery Workers & GhostSync offline sync Buffer
+  raxio-redis:
+    image: redis:7-alpine
+    container_name: raxio_ghostync_redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - raxio-tier3-grid
+
+  # Mock PostgreSQL Database representing the Fayda eKYC Root Registry Replica
+  raxio-fayda-db:
+    image: postgres:15-alpine
+    container_name: raxio_fayda_registry
+    environment:
+      POSTGRES_USER: fayda_admin
+      POSTGRES_PASSWORD: NexusPass2026
+      POSTGRES_DB: faydadb
+    ports:
+      - "5432:5432"
+    volumes:
+      - fayda_db_data:/var/lib/postgresql/data
+    networks:
+      - raxio-tier3-grid
+
+networks:
+  raxio-tier3-grid:
+    driver: bridge
+
+volumes:
+  redis_data:
+  fayda_db_data:

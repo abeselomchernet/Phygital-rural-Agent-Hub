@@ -1,0 +1,199 @@
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Activity, ShieldCheck, Users, Repeat, Network, Coins, Wifi, Zap, Globe, Cpu, RefreshCw, LayoutDashboard } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+
+const data = [
+  { time: '08:00', liquidity: 420000, volume: 12400 },
+  { time: '10:00', liquidity: 510000, volume: 18398 },
+  { time: '12:00', liquidity: 860000, volume: 98000 },
+  { time: '14:00', liquidity: 678000, volume: 39080 },
+  { time: '16:00', liquidity: 789000, volume: 48000 },
+  { time: '18:00', liquidity: 439000, volume: 38000 },
+  { time: '20:00', liquidity: 845200, volume: 63000 },
+];
+
+export default function Dashboard() {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [pulseLine, setPulseLine] = useState(false);
+
+  useEffect(() => {
+    const pulse = setInterval(() => {
+      setPulseLine(p => !p);
+    }, 2000);
+    return () => clearInterval(pulse);
+  }, []);
+
+  const triggerRefresh = () => {
+    setIsRefreshing(true);
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 1500);
+  };
+  return (
+    <div className="space-y-6 pb-12 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex justify-between items-end border-b-2 border-indigo-500 pb-4">
+        <div>
+          <h1 className="text-3xl font-light tracking-tight text-slate-900 flex items-center">
+            <LayoutDashboard className="w-8 h-8 mr-3 text-indigo-600" />
+            Nexus Command Center
+          </h1>
+          <p className="text-slate-500 mt-2 font-medium uppercase tracking-widest text-xs flex items-center bg-indigo-50 w-fit px-3 py-1 rounded-full border border-indigo-100">
+             <Globe className="w-3 h-3 mr-2 text-indigo-500" /> Phygital Rural Agent Hub • Adama-Modjo Corridor
+          </p>
+        </div>
+        <div className="flex space-x-3">
+          <Badge variant="outline" className="border-emerald-500 text-emerald-700 bg-emerald-50 h-10 px-4 flex items-center shadow-sm">
+             <div className="w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse" /> Nodes Synced: 1,402
+          </Badge>
+          <Button onClick={triggerRefresh} disabled={isRefreshing} className="bg-slate-900 hover:bg-slate-800 text-white shadow-md w-32">
+             {isRefreshing ? <RefreshCw className="w-4 h-4 mr-2 animate-spin" /> : <Activity className="w-4 h-4 mr-2" />}
+             Poll Core
+          </Button>
+        </div>
+      </div>
+
+      {/* Primary KPI Metrics */}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="border-t-4 border-t-blue-500 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+          <div className="absolute right-0 top-0 w-16 h-16 bg-blue-500/10 rounded-bl-full -z-10 group-hover:scale-110 transition-transform" />
+          <CardHeader className="flex flex-row items-center justify-between pb-2 z-10">
+            <CardTitle className="text-xs uppercase tracking-widest font-black text-slate-500">Network Agents</CardTitle>
+            <Users className="h-5 w-5 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-black text-slate-800">1,402</div>
+            <p className="text-[10px] uppercase font-bold text-slate-400 mt-1 flex items-center">
+               <span className="text-emerald-500 mr-1">+14</span> Since 00:00 UTC
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-t-4 border-t-emerald-500 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+          <div className="absolute right-0 top-0 w-16 h-16 bg-emerald-500/10 rounded-bl-full -z-10 group-hover:scale-110 transition-transform" />
+          <CardHeader className="flex flex-row items-center justify-between pb-2 z-10">
+            <CardTitle className="text-xs uppercase tracking-widest font-black text-slate-500">Gross Liquidity</CardTitle>
+            <Coins className="h-5 w-5 text-emerald-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-black text-slate-800">845.2<span className="text-lg text-slate-400">k</span></div>
+            <p className="text-[10px] uppercase font-bold text-slate-400 mt-1 flex items-center">
+               <span className="text-emerald-500 mr-1">+12%</span> ETB Pool Delta
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-t-4 border-t-indigo-500 shadow-sm relative overflow-hidden group hover:shadow-md transition-all">
+          <div className="absolute right-0 top-0 w-16 h-16 bg-indigo-500/10 rounded-bl-full -z-10 group-hover:scale-110 transition-transform" />
+          <CardHeader className="flex flex-row items-center justify-between pb-2 z-10">
+            <CardTitle className="text-xs uppercase tracking-widest font-black text-slate-500">Daily Core Swaps</CardTitle>
+            <Repeat className="h-5 w-5 text-indigo-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-black text-slate-800">142</div>
+            <p className="text-[10px] uppercase font-bold text-slate-400 mt-1 flex items-center">
+               EthSwitch 24H Volume
+            </p>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-t-4 border-t-amber-500 shadow-sm relative overflow-hidden group hover:shadow-md transition-all bg-slate-900 border-x-slate-800 border-b-slate-800">
+          <div className="absolute right-0 top-0 w-16 h-16 bg-amber-500/10 rounded-bl-full -z-10 group-hover:scale-110 transition-transform" />
+          <CardHeader className="flex flex-row items-center justify-between pb-2 z-10">
+            <CardTitle className="text-xs uppercase tracking-widest font-black text-slate-400">Carbon tCO₂e Locked</CardTitle>
+            <Cpu className="h-5 w-5 text-amber-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-black text-amber-400">12.4<span className="text-lg text-amber-600">k</span></div>
+            <p className="text-[10px] uppercase font-bold text-slate-500 mt-1 flex items-center">
+               <span className="text-emerald-400 mr-1 flex items-center"><ShieldCheck className="w-3 h-3 mr-1"/> SPV Tokenized</span> G2P Payouts Ready
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Trajectory Chart & Secondary Operations panel */}
+      <div className="grid gap-6 md:grid-cols-3">
+        <Card className="col-span-3 md:col-span-2 shadow-sm border-slate-200">
+          <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 bg-slate-50/50 pb-4">
+            <div>
+               <CardTitle className="text-slate-800">G2P/P2G Transaction Mass & Liquidity</CardTitle>
+               <CardDescription>Corridor aggregation bridging Carbon Payouts, School Feeding, and Core Swaps</CardDescription>
+            </div>
+            <Badge className="bg-indigo-100 text-indigo-700 border-indigo-200">24H Live Trace</Badge>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="h-[320px]">
+              <ResponsiveContainer width="99%" height="100%" minWidth={1} minHeight={1}>
+                <AreaChart data={data} margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
+                  <defs>
+                    <linearGradient id="colorLiquidity" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="colorVolume" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="time" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12, fontWeight: 600}} dy={10} />
+                  <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12, fontWeight: 600}} dx={-10} tickFormatter={(value) => `${(value/1000).toFixed(0)}k`} />
+                  <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12, fontWeight: 600}} dx={10} tickFormatter={(value) => `${(value/1000).toFixed(0)}k`} />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)', fontWeight: 'bold' }}
+                    labelStyle={{ color: '#475569', marginBottom: '4px' }}
+                  />
+                  <Area yAxisId="left" type="monotone" dataKey="liquidity" name="Network Liquidity (ETB)" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorLiquidity)" />
+                  <Area yAxisId="right" type="monotone" dataKey="volume" name="Transaction Mass" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorVolume)" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Action / Orchestration Center */}
+        <Card className="col-span-3 md:col-span-1 shadow-sm border-slate-200">
+           <CardHeader className="border-b border-slate-100 bg-slate-50/50 pb-4">
+              <CardTitle className="text-slate-800 flex items-center text-sm uppercase tracking-widest font-black">
+                 <Network className="w-4 h-4 mr-2 text-indigo-500" /> Subsystem Routing
+              </CardTitle>
+           </CardHeader>
+           <CardContent className="pt-6 space-y-4">
+              <div className="p-4 border border-slate-200 rounded-xl bg-white hover:border-emerald-300 transition-colors cursor-pointer group">
+                 <div className="flex items-center justify-between mb-2">
+                    <p className="font-bold text-slate-800 group-hover:text-emerald-600 transition-colors">School Feeding Procurement (P2G)</p>
+                    <Network className="w-5 h-5 text-emerald-400 group-hover:animate-pulse" />
+                 </div>
+                 <p className="text-xs text-slate-500 leading-relaxed">Aggregated local staple procurement. Routing direct P2G transactions to Super-Agent hubs.</p>
+              </div>
+
+              <div className="p-4 border border-slate-200 rounded-xl bg-white hover:border-amber-300 transition-colors cursor-pointer group">
+                 <div className="flex items-center justify-between mb-2">
+                    <p className="font-bold text-slate-800 group-hover:text-amber-600 transition-colors">Market Stabilization Buffer</p>
+                    <Coins className="w-5 h-5 text-amber-400 group-hover:animate-pulse" />
+                 </div>
+                 <p className="text-xs text-slate-500 leading-relaxed">P2G/G2P Hybrid. Smooth staple crop prices by purchasing from co-ops and issuing top-ups.</p>
+              </div>
+
+              <div className="bg-slate-900 rounded-xl p-4 mt-8 border border-slate-800">
+                 <div className="flex justify-between items-center mb-4">
+                   <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Live Orchestrator</p>
+                   <div className={`w-2 h-2 rounded-full ${pulseLine ? 'bg-emerald-400' : 'bg-emerald-400/20'} transition-colors duration-300`} />
+                 </div>
+                 <div className="space-y-2 font-mono text-[10px] text-emerald-500/80">
+                   <p>{'>'} LCR check passed (EthSwitch)</p>
+                   <p>{'>'} School Order #882 Procured</p>
+                   <p>{'>'} SPV Securitization matched</p>
+                   <p>{'>'} Diaspora Vault: +2,400 ETB <span className="text-emerald-400">OK</span></p>
+                 </div>
+              </div>
+           </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
