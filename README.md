@@ -10,8 +10,6 @@
 ## The Resilience Architecture
 Unlike standard fintech platforms, Sovereign Nexus OS is built on a "Secure Enclave" model:
 
-
-
 * **Zero Trust (mTLS/SPIFFE):** Service-to-service communication is cryptographically bound, eliminating internal network trust.
 * **ISO 20022 Compliance:** Strict schema validation (`pacs.008`) ensures interoperability with global financial gateways.
 * **Observability:** Full distributed tracing via **OpenTelemetry** across the async worker boundary.
@@ -35,3 +33,19 @@ Unlike standard fintech platforms, Sovereign Nexus OS is built on a "Secure Encl
 ```bash
 npm install
 npm run dev
+
+Application runs at http://localhost:3000
+
+Production Deployment (Containerized)
+This deployment simulates the Raxio Tier-3 Data Center environment.
+
+Bash
+docker-compose up --build -d
+Security & Governance
+This system is architected for auditability:
+
+Audit Compliance Module: Centralized logging for reconciliation against external bank settlement files (MT940).
+
+Chaos Engineering Suite: Integrated fault-injection for network partition and SVID revocation testing.
+
+Developed for the Adama-Modjo Last-Mile Pilot. Confidentiality & Security Protocols Apply.
