@@ -50,7 +50,7 @@ jobs:
       - name: Run Node.js E2E Smoke Tests
         run: npx tsx scripts/smoke-test.ts
 
-  Verify-Docker-Grid:
+    Verify-Docker-Grid:
     needs: Verify-Codebase
     runs-on: ubuntu-latest
     steps:
@@ -58,9 +58,10 @@ jobs:
       
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
-      
+        
+      # ---- Insert here ----
       - name: Install Docker Compose
         run: sudo apt-get update && sudo apt-get install -y docker-compose
-      
+
       - name: Test Docker Compose Orchestration
         run: docker-compose build
