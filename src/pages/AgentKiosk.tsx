@@ -30,6 +30,7 @@ import {
   Globe
 } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
+import { addEventToQueue } from '@/lib/ghostsync';
 
 // Translations Dictionary
 const locales = {
@@ -179,17 +180,26 @@ export default function AgentKiosk() {
       
       setCommissionTotal(prev => prev + agentCommission);
 
-      toast.success(`Transaction Successful. Earned ${agentCommission.toFixed(2)} ETB Commission.`, { id: 'tx' });
-      setReceiptData({
+      const payload = {
         type: t.cashIn,
         amount: amountInput,
         fee: serviceCharge.toFixed(2),
-        txId: "TX" + Math.random().toString().substr(2, 8).toUpperCase(),
-        date: new Date().toLocaleString(),
+        txId: "TX" + Math.random().toString().substring(2, 10).toUpperCase(),
+        date: new Date().toISOString(),
         agent: "10045 - Adama Hub"
+      };
+
+      toast.promise(addEventToQueue('transaction', payload), {
+        loading: 'Queuing securely...',
+        success: () => {
+          toast.success(`Transaction Successful. Earned ${agentCommission.toFixed(2)} ETB Commission.`, { id: 'tx' });
+          setReceiptData({ ...payload, date: new Date(payload.date).toLocaleString() });
+          setAmountInput('');
+          setActiveModal('RECEIPT');
+          return 'Safely stored for GhostSync';
+        },
+        error: 'Failed to queue transaction'
       });
-      setAmountInput('');
-      setActiveModal('RECEIPT');
     }, 1500);
   };
 
@@ -208,17 +218,26 @@ export default function AgentKiosk() {
       
       setCommissionTotal(prev => prev + agentCommission);
 
-      toast.success(`Farmer confirmed via mobile. Dispense cash. Earned ${agentCommission.toFixed(2)} ETB Commission.`, { id: 'push', duration: 4000 });
-      setReceiptData({
+      const payload = {
         type: t.cashOut,
         amount: amountInput,
         fee: serviceCharge.toFixed(2),
-        txId: "TX" + Math.random().toString().substr(2, 8).toUpperCase(),
-        date: new Date().toLocaleString(),
+        txId: "TX" + Math.random().toString().substring(2, 10).toUpperCase(),
+        date: new Date().toISOString(),
         agent: "10045 - Adama Hub"
+      };
+
+      toast.promise(addEventToQueue('transaction', payload), {
+        loading: 'Queuing securely...',
+        success: () => {
+          toast.success(`Farmer confirmed via mobile. Dispense cash. Earned ${agentCommission.toFixed(2)} ETB Commission.`, { id: 'push', duration: 4000 });
+          setReceiptData({ ...payload, date: new Date(payload.date).toLocaleString() });
+          setAmountInput('');
+          setActiveModal('RECEIPT');
+          return 'Safely stored for GhostSync';
+        },
+        error: 'Failed to queue transaction'
       });
-      setAmountInput('');
-      setActiveModal('RECEIPT');
     }, 3000);
   };
 

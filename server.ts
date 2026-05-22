@@ -38,7 +38,7 @@ async function startServer() {
     // In production, the edge proxy terminates mTLS and sets this header.
     // For dev/testing, we fallback to accepting local dev requests
     const isMtlsVerified = req.headers['x-mtls-verified'] === 'true' || process.env.NODE_ENV !== 'production';
-    if (!isMtlsVerified && !req.path.startsWith('/api/health')) {
+    if (!isMtlsVerified && !req.originalUrl.startsWith('/api/health')) {
       return res.status(403).json({ error: 'FORBIDDEN: mTLS Client Certificate Missing or Invalid.' });
     }
     next();
@@ -354,7 +354,7 @@ async function startServer() {
   // Vite middleware for development
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { middlewareMode: true, hmr: false },
       appType: 'spa',
     });
     app.use(vite.middlewares);

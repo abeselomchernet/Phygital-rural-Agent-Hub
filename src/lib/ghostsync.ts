@@ -96,6 +96,12 @@ export async function syncEvents() {
           await db.delete('outbox', p.row_key);
         }
       }
+      
+      const timestamp = new Date().toISOString();
+      localStorage.setItem('ghostsync_last_success', timestamp);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('ghostsync:success', { detail: { timestamp } }));
+      }
     } else {
       throw new Error('Sync failed');
     }

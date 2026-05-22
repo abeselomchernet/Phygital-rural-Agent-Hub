@@ -6,8 +6,6 @@ import {
   HardDriveDownload, 
   ShieldCheck,
   Server,
-  Wifi,
-  WifiOff,
   Activity,
   Truck,
   Database,
@@ -24,35 +22,47 @@ import {
   Mic
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { syncEvents, getPendingEvents } from '@/lib/ghostsync';
+import { syncEvents } from '@/lib/ghostsync';
+
+import { GhostSyncWidget } from '@/components/GhostSyncWidget';
+
+export function useSyncStatus() {
+  const [lastSync, setLastSync] = useState<string | null>(
+    localStorage.getItem('ghostsync_last_success')
+  );
+
+  useEffect(() => {
+    const handleSyncSuccess = (e: any) => {
+      setLastSync(e.detail.timestamp);
+    };
+    
+    // Also update periodic so maybe the visual display is fresh, but not strictly needed 
+    // unless we show "relative time" like "2 mins ago". We will just use date string for now.
+    
+    window.addEventListener('ghostsync:success', handleSyncSuccess);
+    return () => {
+      window.removeEventListener('ghostsync:success', handleSyncSuccess);
+    };
+  }, []);
+
+  return lastSync;
+}
 
 export function AppLayout() {
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [pendingCount, setPendingCount] = useState(0);
   const location = useLocation();
 
   useEffect(() => {
     const handleOnline = () => {
-      setIsOnline(true);
       syncEvents();
     };
-    const handleOffline = () => setIsOnline(false);
 
     window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
 
     // Initial sync
     syncEvents();
 
-    const interval = setInterval(async () => {
-      const events = await getPendingEvents();
-      setPendingCount(events.length);
-    }, 2000);
-
     return () => {
       window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-      clearInterval(interval);
     };
   }, []);
 
@@ -162,20 +172,8 @@ export function AppLayout() {
           >
             Super Agent Portal
           </Link>
-          <div className="flex items-center justify-between text-sm mt-4">
-            <span className="flex items-center text-slate-600">
-              {isOnline ? (
-                <><Wifi className="w-4 h-4 mr-2 text-green-500" /> Online</>
-              ) : (
-                <><WifiOff className="w-4 h-4 mr-2 text-red-500" /> Offline</>
-              )}
-            </span>
-            {pendingCount > 0 && (
-              <span className="bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full text-xs font-semibold">
-                {pendingCount} Pending
-              </span>
-            )}
-          </div>
+          
+          <GhostSyncWidget />
         </div>
       </aside>
 
