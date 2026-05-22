@@ -1,0 +1,71 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) { 
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isSignedIn() { return request.auth != null; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['email', 'role']) 
+        && data.email is string 
+        && data.email.size() > 0 && data.email.size() <= 255
+        && data.role is string 
+        && data.role in ['agent', 'farmer', 'admin', 'judge', 'inspector']
+        && (!('name' in data) || (data.name is string && data.name.size() <= 100))
+        && (!('createdAt' in data) || data.createdAt is number);
+    }
+
+    match /users/{userId} {
+      allow get: if isVerified() && isValidId(userId) && request.auth.uid == userId;
+      allow list: if false;
+      allow create: if isVerified() 
+        && isValidId(userId)
+        && request.auth.uid == userId
+        && isValidUser(incoming())
+        && (!('createdAt' in incoming()) || incoming().createdAt == request.time.toMillis());
+      
+      allow update: if isVerified()
+        && isValidId(userId)
+        && request.auth.uid == userId
+        && isValidUser(incoming())
+        && incoming().diff(existing()).affectedKeys().hasOnly(['name']);
+    }
+
+    function isValidTransaction(data) {
+      return data.keys().hasAll(['amount', 'currency', 'status', 'userId', 'createdAt'])
+        && data.amount is number
+        && data.currency is string && data.currency.size() <= 10
+        && data.status is string && data.status in ['pending', 'completed', 'failed']
+        && data.userId is string && data.userId.size() <= 128
+        && data.createdAt is number;
+    }
+
+    match /transactions/{transactionId} {
+      allow get: if isVerified() && isValidId(transactionId) && existing().userId == request.auth.uid;
+      allow list: if isVerified() && resource.data.userId == request.auth.uid;
+      allow create: if isVerified()
+        && isValidId(transactionId)
+        && isValidTransaction(incoming())
+        && incoming().userId == request.auth.uid
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && incoming().createdAt == request.time.toMillis();
+      
+      allow update: if isVerified()
+        && isValidId(transactionId)
+        && existing().userId == request.auth.uid
+        && incoming().userId == existing().userId
+        && isValidTransaction(incoming())
+        && existing().status == 'pending'
+        && incoming().diff(existing()).affectedKeys().hasOnly(['status'])
+        && incoming().createdAt == existing().createdAt;
+    }
+  }
+}

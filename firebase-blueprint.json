@@ -1,0 +1,39 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "System users including farmers, agents, and admins",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "name": { "type": "string" },
+        "role": { "type": "string", "enum": ["agent", "farmer", "admin", "judge", "inspector"] },
+        "createdAt": { "type": "number", "description": "Timestamp" }
+      },
+      "required": ["email", "role"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Financial or system transactions",
+      "type": "object",
+      "properties": {
+        "amount": { "type": "number" },
+        "currency": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "completed", "failed"] },
+        "createdAt": { "type": "number" },
+        "userId": { "type": "string" }
+      },
+      "required": ["amount", "currency", "status", "userId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles"
+    },
+    "transactions/{transactionId}": {
+      "schema": { "$ref": "#/entities/Transaction" },
+      "description": "Ledger transactions"
+    }
+  }
+}

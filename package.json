@@ -9,11 +9,11 @@
     "build": "vite build",
     "preview": "vite preview",
     "clean": "rm -rf dist",
-    "lint": "tsc --noEmit",
-    "test:e2e": "playwright test"
+    "lint": "tsc --noEmit"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.0",
+    "@firebase/eslint-plugin-security-rules": "^0.0.2",
     "@fontsource-variable/geist": "^5.2.8",
     "@google/genai": "^1.29.0",
     "@tailwindcss/vite": "^4.1.14",
@@ -23,6 +23,7 @@
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
+    "firebase": "^12.13.0",
     "idb": "^8.0.3",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
