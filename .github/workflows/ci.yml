@@ -43,18 +43,19 @@ jobs:
         env:
           NODE_ENV: development
           PORT: 3005
+          HOST: 127.0.0.1
       
       - name: Wait for Server to be Ready
         # Increased timeout to 90s. If it fails, it will now print the server log automatically.
         run: |
-          if ! npx wait-on http://localhost:3005 --timeout 90000 --interval 500; then
+          if ! npx wait-on http://127.0.0.1:3005 --timeout 90000 --interval 500; then
             echo "❌ wait-on timed out! Dumping server output for debugging:"
             cat server.log
             exit 1
           fi
       
       - name: Verify Server Health
-        run: curl -f http://localhost:3005/api/health || (echo "Health check failed" && cat server.log && exit 1)
+        run: curl -f http://127.0.0.1:3005/api/health || (echo "Health check failed" && cat server.log && exit 1)
       
       - name: Run Node.js E2E Smoke Tests
         run: npx tsx scripts/smoke-test.ts

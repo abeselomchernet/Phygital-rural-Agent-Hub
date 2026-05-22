@@ -4,16 +4,17 @@ console.log('==============================================');
 console.log('🚀 SOVEREIGN NEXUS: E2E SMOKE TEST SEQUENCE 🚀');
 console.log('==============================================');
 
-console.log('[1/3] Detecting Main Application Server on :3000 ...');
+const port = process.env.TARGET_PORT ? Number(process.env.TARGET_PORT) : 3000;
+console.log(`[1/3] Detecting Main Application Server on :${port} ...`);
 
 const req = http.request({
-  hostname: 'localhost',
-  port: 3000,
-  path: '/',
+  hostname: '127.0.0.1',
+  port: port,
+  path: '/api/health',
   method: 'GET',
 }, (res) => {
   if (res.statusCode === 200 || res.statusCode === 404 || res.statusCode === 304) {
-    console.log('✅ [SUCCESS] Main Application Server detected on :3000');
+    console.log(`✅ [SUCCESS] Main Application Server detected on :${port}`);
     process.exit(0);
   } else {
     console.log(`❌ [FAIL] Server responded with status: ${res.statusCode}`);
