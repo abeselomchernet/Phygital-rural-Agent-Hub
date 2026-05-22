@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 import { addEventToQueue } from '@/lib/ghostsync';
+import { prepareSecureTransaction } from '@/lib/iso20022';
 
 // Translations Dictionary
 const locales = {
@@ -189,8 +190,9 @@ export default function AgentKiosk() {
         agent: "10045 - Adama Hub"
       };
 
-      toast.promise(addEventToQueue('transaction', payload), {
-        loading: 'Queuing securely...',
+      toast.promise(
+        prepareSecureTransaction(payload).then(securePayload => addEventToQueue('transaction', securePayload)), {
+        loading: 'Signing digitally and queueing...',
         success: () => {
           toast.success(`Transaction Successful. Earned ${agentCommission.toFixed(2)} ETB Commission.`, { id: 'tx' });
           setReceiptData({ ...payload, date: new Date(payload.date).toLocaleString() });
@@ -227,8 +229,9 @@ export default function AgentKiosk() {
         agent: "10045 - Adama Hub"
       };
 
-      toast.promise(addEventToQueue('transaction', payload), {
-        loading: 'Queuing securely...',
+      toast.promise(
+        prepareSecureTransaction(payload).then(securePayload => addEventToQueue('transaction', securePayload)), {
+        loading: 'Signing digitally and queueing...',
         success: () => {
           toast.success(`Farmer confirmed via mobile. Dispense cash. Earned ${agentCommission.toFixed(2)} ETB Commission.`, { id: 'push', duration: 4000 });
           setReceiptData({ ...payload, date: new Date(payload.date).toLocaleString() });

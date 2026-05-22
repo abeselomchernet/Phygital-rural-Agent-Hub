@@ -82,6 +82,11 @@ export async function syncEvents() {
   }
 
   try {
+    // Chaos Engineering: Network Partition Simulation
+    if (localStorage.getItem('CHAOS_NETWORK_PARTITION') === 'true') {
+      throw new Error('CHAOS_NETWORK_PARTITION: Synthetic offline mode triggered.');
+    }
+
     const res = await fetch('/api/ghostsync', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

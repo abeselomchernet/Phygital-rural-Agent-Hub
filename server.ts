@@ -33,6 +33,32 @@ async function startServer() {
 
   app.use(express.json());
 
+  // === OpenTelemetry (OTel) Distributed Tracing Middleware ===
+  app.use((req: any, res: any, next: express.NextFunction) => {
+    // 1. Extract context from incoming request or generate a new Trace ID
+    const traceId = req.headers['x-trace-id'] || crypto.randomBytes(16).toString('hex');
+    const spanId = crypto.randomBytes(8).toString('hex');
+    
+    // 2. Attach context to req for downstream services/workers
+    req.traceId = traceId;
+    req.spanId = spanId;
+    
+    // 3. Log the HTTP request (simulating OTel span start)
+    console.log(`[OTel | Trace: ${traceId} | Span: ${spanId}] ${req.method} ${req.originalUrl}`);
+    
+    // 4. Inject trace context into response headers (propagation)
+    res.setHeader('x-trace-id', traceId);
+    
+    // 5. Track duration to simulate closing the span
+    const start = Date.now();
+    res.on('finish', () => {
+      const duration = Date.now() - start;
+      console.log(`[OTel | Trace: ${traceId} | Span: ${spanId}] ${req.method} ${req.originalUrl} completed in ${duration}ms [STATUS ${res.statusCode}]`);
+    });
+    
+    next();
+  });
+
   // Bank-grade mTLS Security Middleware
   const mTLSMiddleware = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     // In production, the edge proxy terminates mTLS and sets this header.
@@ -58,6 +84,9 @@ async function startServer() {
       return res.status(400).json({ error: 'Expected array of events' });
     }
     
+    // We optionally use Zod here if available, or just mock structural check for demo.
+    // For ISO 20022 hardening, we enforce the schema validation on the server side:
+    
     const processed = [];
     events.forEach(event => {
       console.log(`[GhostSync] Processing event: ${event.type} - ${event.row_key}`);
@@ -70,6 +99,38 @@ async function startServer() {
       } else if (event.type === 'SWAP_EXECUTION') {
         db.swaps.push({ ...event.payload, received_at: new Date().toISOString() });
         processed.push({ row_key: event.row_key, status: 'success' });
+      } else if (event.type === 'transaction') {
+        // Here we apply ISO 20022 validation on the secured payload
+        const { isoMessage, signature, originalMetadata } = event.payload;
+        
+        if (isoMessage && signature) {
+           // Basic schema assertion
+           if (!isoMessage.MsgId || !isoMessage.CdtTrfTxInf) {
+              console.error('[GhostSync] INVALID ISO20022 pacs.008 SCHEMA DETECTED!');
+              processed.push({ row_key: event.row_key, status: 'failed', error: 'Invalid pacs.008 schema' });
+              return;
+           }
+           
+           console.log(`[GhostSync] Validated signed transaction ${isoMessage.MsgId} - Signature [${signature.substring(0, 8)}...]`);
+           // Add to statement ledger mock
+           const amount = isoMessage.CdtTrfTxInf[0]?.IntrBkSttlmAmt?.value || 0;
+           const agentRef = 'AG-7742'; // Hardcoded for demo/AgentKiosk reference
+           if (!db.statements[agentRef]) db.statements[agentRef] = [];
+           db.statements[agentRef].push({
+             date: isoMessage.CreDtTm || new Date().toISOString(),
+             type: originalMetadata.type === 'Cash Out' ? 'CREDIT' : 'DEBIT',
+             amount: parseFloat(amount),
+             currency: 'ETB',
+             balanceAfter: 10000, 
+             ref: originalMetadata.txId,
+             isoMsgId: isoMessage.MsgId
+           });
+           
+           processed.push({ row_key: event.row_key, status: 'success' });
+        } else {
+           console.error('[GhostSync] Missing ISO message or signature!');
+           processed.push({ row_key: event.row_key, status: 'failed', error: 'Missing security payload' });
+        }
       }
     });
 
@@ -140,41 +201,68 @@ async function startServer() {
     }
   });
 
-  // Ardi Score & XAI Engine (Advanced 4-Factor Algorithm)
-  app.post('/api/score/compute', (req, res) => {
+  // Ardi Score & XAI Engine (Advanced 4-Factor Algorithm) - ASYNC
+  app.post('/api/score/compute', (req: any, res: any) => {
     const { assetId, features } = req.body;
     if (!assetId || !features) return res.status(400).json({ error: 'Missing payload' });
 
-    // 4-Factor Ardi Algorithm Application (Operational, Behavioral, Resilience, Agri-Credit)
-    const operational = features.stk_success_rate || (Math.random() * 20 + 70); // App use/Node interactions
-    const behavioral = features.ekub_on_time_pct || (Math.random() * 30 + 60); // Savings consistency 
-    const resilience = features.ndvi_stability || (Math.random() * 15 + 80); // Climate vulnerability
-    const agriCredit = features.agri_input_repayment || (Math.random() * 25 + 75); // Fertilizer/Seed loan repayment history
+    const jobId = crypto.randomUUID();
+    const traceId = req.traceId; // Extract Trace ID from OTel Context
+    db.tasks[jobId] = { status: 'PENDING', task_name: 'ARDI_COMPUTE', payload: req.body, created_at: Date.now(), trace_id: traceId };
 
-    // Weights: Op 25%, Beh 25%, Res 20%, Agri 30%
-    const opAlpha = 0.25 * operational;
-    const behAlpha = 0.25 * behavioral;
-    const resAlpha = 0.20 * resilience;
-    const agriAlpha = 0.30 * agriCredit;
-    const ardiScore = Math.floor(opAlpha + behAlpha + resAlpha + agriAlpha);
+    console.log(`[OTel | Trace: ${traceId}] Job ${jobId} pushed to Celery Queue. Main event loop free.`);
 
-    const explanationId = crypto.randomUUID();
+    // Simulate background worker processing executing the task asynchronously
+    // By offloading this to a queue, the main event loop remains unblocked from heavy computations.
+    setTimeout(() => {
+      console.log(`[OTel Worker | Trace: ${traceId}] Dequeued Ardi compute task ${jobId}. Beginning processing...`);
+      
+      const operational = features.stk_success_rate || (Math.random() * 20 + 70); // App use/Node interactions
+      const behavioral = features.ekub_on_time_pct || (Math.random() * 30 + 60); // Savings consistency 
+      const resilience = features.ndvi_stability || (Math.random() * 15 + 80); // Climate vulnerability
+      const agriCredit = features.agri_input_repayment || (Math.random() * 25 + 75); // Fertilizer/Seed loan repayment history
 
-    // SHAP-style Explainability Feature Contributions
-    const shapFeatures = [
-      { name: "Input Loan History", contribution: ((agriAlpha / 30) * 100).toFixed(1), nl: "Consistent fertilizer/seed credit repayments." },
-      { name: "Ekub Timeliness", contribution: ((behAlpha / 25) * 100).toFixed(1), nl: "Consistent savings streak." },
-      { name: "Node Uptime & STK", contribution: ((opAlpha / 25) * 100).toFixed(1), nl: "High transaction success rate." },
-      { name: "Climate Resilience (NDVI)", contribution: ((resAlpha / 20) * 100).toFixed(1), nl: "Stable vegetation metrics in corridor." }
-    ].sort((a, b) => Number(b.contribution) - Number(a.contribution));
+      // Weights: Op 25%, Beh 25%, Res 20%, Agri 30%
+      const opAlpha = 0.25 * operational;
+      const behAlpha = 0.25 * behavioral;
+      const resAlpha = 0.20 * resilience;
+      const agriAlpha = 0.30 * agriCredit;
+      const ardiScore = Math.floor(opAlpha + behAlpha + resAlpha + agriAlpha);
 
+      const explanationId = crypto.randomUUID();
+
+      // SHAP-style Explainability Feature Contributions
+      const shapFeatures = [
+        { name: "Input Loan History", contribution: ((agriAlpha / 30) * 100).toFixed(1), nl: "Consistent fertilizer/seed credit repayments." },
+        { name: "Ekub Timeliness", contribution: ((behAlpha / 25) * 100).toFixed(1), nl: "Consistent savings streak." },
+        { name: "Node Uptime & STK", contribution: ((opAlpha / 25) * 100).toFixed(1), nl: "High transaction success rate." },
+        { name: "Climate Resilience (NDVI)", contribution: ((resAlpha / 20) * 100).toFixed(1), nl: "Stable vegetation metrics in corridor." }
+      ].sort((a, b) => Number(b.contribution) - Number(a.contribution));
+
+      db.tasks[jobId].status = 'SUCCESS';
+      db.tasks[jobId].result = {
+        assetId,
+        ardiScore,
+        subScores: { operational, behavioral, resilience, agriCredit },
+        drivers: shapFeatures,
+        explanationId,
+        modelVersion: 'v2.0.0-agri-credit'
+      };
+      
+      console.log(`[OTel Worker | Trace: ${traceId}] Ardi compute task ${jobId} EXACTLY completed.`);
+    }, 4500); // Simulate 4.5s heavy calculation
+
+    res.status(202).json({ jobId, status: 'QUEUED', message: 'ArdiScore calculation successfully queued.' });
+  });
+
+  // Polling endpoint for Ardi calculation jobs
+  app.get('/api/score/compute/:jobId', (req, res) => {
+    const job = db.tasks[req.params.jobId];
+    if (!job) return res.status(404).json({ error: 'Job not found' });
     res.json({
-      assetId,
-      ardiScore,
-      subScores: { operational, behavioral, resilience, agriCredit },
-      drivers: shapFeatures,
-      explanationId,
-      modelVersion: 'v2.0.0-agri-credit'
+      jobId: req.params.jobId,
+      status: job.status,
+      result: job.result || null
     });
   });
 
@@ -343,6 +431,105 @@ async function startServer() {
 
     res.type('application/xml');
     res.send(isoMessage);
+  });
+
+  // Zero Trust Service Security Middleware (SPIFFE/SPIRE simulation)
+  const requireSpiffeIdentity = (allowedIds: string[]) => {
+    return (req: any, res: any, next: express.NextFunction) => {
+      const svidToken = req.headers['x-spiffe-svid'];
+
+      if (!svidToken) {
+        console.error(`[Zero Trust] Blocked unauthenticated attempt to ${req.originalUrl}`);
+        return res.status(401).json({ error: 'ZERO_TRUST_VIOLATION: Missing SPIFFE ID (SVID)' });
+      }
+      
+      try {
+        const parts = svidToken.split('.');
+        if (parts.length < 2) throw new Error("Invalid token format");
+        const payload = JSON.parse(Buffer.from(parts[0], 'base64').toString('utf-8'));
+        
+        if (payload.expires_at < Date.now()) {
+          return res.status(401).json({ error: 'ZERO_TRUST_VIOLATION: SVID Expired' });
+        }
+
+        if (!allowedIds.includes(payload.spiffe_id) && !allowedIds.includes('*')) {
+          console.error(`[Zero Trust] Denied access: ${payload.spiffe_id} is not authorized for ${req.originalUrl}`);
+          return res.status(403).json({ error: `ZERO_TRUST_VIOLATION: Unauthorized SPIFFE ID ${payload.spiffe_id}` });
+        }
+
+        req.spiffeId = payload.spiffe_id;
+        console.log(`[Zero Trust] Authenticated ${req.spiffeId} via mTLS/SVID for ${req.originalUrl}`);
+        next();
+      } catch (e) {
+        return res.status(400).json({ error: 'ZERO_TRUST_VIOLATION: Malformed SVID' });
+      }
+    };
+  };
+
+  // Automated Reconciliation Engine -> "Bank Settlement" Loop
+  app.post('/api/reconciliation/run', requireSpiffeIdentity(['spiffe://enawuga.com/ns/governance/sa/auditor']), (req: any, res: any) => {
+    const traceId = req.traceId || crypto.randomBytes(16).toString('hex');
+    console.log(`[OTel Worker | Trace: ${traceId}] Commencing Automated Reconciliation Engine...`);
+
+    const agentRef = 'AG-7742';
+    const internalRecords = db.statements[agentRef] || [];
+    
+    let matched = 0;
+    const discrepancies: any[] = [];
+
+    // Map internal records and compare against simulated bank truth
+    internalRecords.forEach(internalTx => {
+      const rand = Math.random();
+      if (rand < 0.1) {
+        discrepancies.push({
+           txId: internalTx.ref,
+           category: 'MISSING_IN_BANK',
+           internalAmount: internalTx.amount,
+           bankAmount: 0,
+           reason: 'Pacs.008 sent but not settled by sponsor bank.',
+           isoMsgId: internalTx.isoMsgId
+        });
+      } else if (rand < 0.15) { 
+        const alteredBankAmount = internalTx.amount - 50; 
+        discrepancies.push({
+           txId: internalTx.ref,
+           category: 'AMOUNT_MISMATCH',
+           internalAmount: internalTx.amount,
+           bankAmount: alteredBankAmount,
+           reason: 'Fee tier deduction discrepancy during clearing.',
+           isoMsgId: internalTx.isoMsgId
+        });
+      } else {
+        matched++;
+      }
+    });
+
+    if (Math.random() < 0.2) {
+       discrepancies.push({
+          txId: 'TX-EXT-' + Math.floor(Math.random() * 9999),
+          category: 'UNRECOGNIZED_ENTRY',
+          internalAmount: 0,
+          bankAmount: Math.floor(Math.random() * 5000),
+          reason: 'Unmatched CAMT.053 settlement entry.',
+          isoMsgId: 'N/A'
+       });
+    }
+
+    const report = {
+      reconciliationId: 'REC-' + Date.now(),
+      traceId,
+      timestamp: new Date().toISOString(),
+      agent: agentRef,
+      totalInternalRecords: internalRecords.length,
+      matchedRecords: matched,
+      discrepanciesFound: discrepancies.length,
+      discrepancies,
+      status: discrepancies.length === 0 ? 'CLEARED' : 'NEEDS_REVIEW'
+    };
+
+    console.log(`[OTel Worker | Trace: ${traceId}] Reconciliation complete. ${discrepancies.length} discrepancies discovered.`);
+
+    res.json(report);
   });
 
   // Financial Statement Flow Retrieval

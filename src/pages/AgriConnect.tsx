@@ -42,14 +42,41 @@ export default function AgriConnect() {
     })
     .then(res => res.json())
     .then(data => {
-      setArdiScore(data.ardiScore);
-      toast.success(`Ardi Score computed: ${data.ardiScore}. Partner Banks notified for bidding.`, { id: 'ardi' });
+      if (data.status === 'QUEUED') {
+        const jobId = data.jobId;
+        const poll = setInterval(() => {
+          fetch(`/api/score/compute/${jobId}`)
+            .then(r => r.json())
+            .then(jobData => {
+               if (jobData.status === 'SUCCESS') {
+                  clearInterval(poll);
+                  setArdiScore(jobData.result.ardiScore);
+                  toast.success(`Ardi Score computed: ${jobData.result.ardiScore}. Partner Banks notified for bidding.`, { id: 'ardi' });
+                  setIsScoring(false);
+               } else if (jobData.status === 'FAILED') {
+                  clearInterval(poll);
+                  toast.error("Ardi Score computation failed.", { id: 'ardi' });
+                  setIsScoring(false);
+               }
+               // else status is 'PENDING', keep polling
+            })
+            .catch(() => {
+                clearInterval(poll);
+                setIsScoring(false);
+            });
+        }, 1000);
+      } else {
+        // Fallback for immediate response (legacy)
+        setArdiScore(data.ardiScore);
+        toast.success(`Ardi Score computed: ${data.ardiScore}. Partner Banks notified for bidding.`, { id: 'ardi' });
+        setIsScoring(false);
+      }
     })
     .catch(() => {
       setArdiScore(740); // fallback
       toast.success("Ardi Score loaded: 740. Partner Banks notified for bidding.", { id: 'ardi' });
-    })
-    .finally(() => setIsScoring(false));
+      setIsScoring(false);
+    });
   };
 
   const handlePurchase = (bankName?: string) => {
