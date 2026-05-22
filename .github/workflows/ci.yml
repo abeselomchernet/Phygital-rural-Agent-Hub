@@ -1,4 +1,4 @@
-name: Sovereign Nexus CI/CD PIPELINE
+name: Enawuga Phygital Nexus CI/CD Pipeline
 
 on:
   push:
@@ -34,23 +34,26 @@ jobs:
           echo "Server PID: $SERVER_PID"
           sleep 3
           if ! kill -0 $SERVER_PID 2>/dev/null; then
-            echo "❌ Server failed to start!"
+            echo "❌ Server failed to start on localized port config!"
             cat server.log
             exit 1
           fi
         env:
           NODE_ENV: development
+          PORT: 3005
       
       - name: Wait for Server to be Ready
-        run: npx wait-on http://localhost:3000 --timeout 60000 --interval 500
+        run: npx wait-on http://localhost:3005 --timeout 60000 --interval 500
       
       - name: Verify Server Health
-        run: curl -f http://localhost:3000/api/health || (echo "Health check failed" && cat server.log && exit 1)
+        run: curl -f http://localhost:3005/api/health || (echo "Health check failed" && cat server.log && exit 1)
       
       - name: Run Node.js E2E Smoke Tests
         run: npx tsx scripts/smoke-test.ts
+        env:
+          TARGET_PORT: 3005
 
-    Verify-Docker-Grid:
+  Verify-Docker-Grid:
     needs: Verify-Codebase
     runs-on: ubuntu-latest
     steps:
@@ -59,9 +62,10 @@ jobs:
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
         
-      # ---- Insert here ----
       - name: Install Docker Compose
         run: sudo apt-get update && sudo apt-get install -y docker-compose
 
       - name: Test Docker Compose Orchestration
         run: docker-compose build
+        env:
+          APP_PORT: 3005
