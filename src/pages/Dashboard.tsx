@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Activity, ShieldCheck, Users, Repeat, Network, Coins, Wifi, Zap, Globe, Cpu, RefreshCw, LayoutDashboard, ExternalLink, Store, ShieldAlert } from "lucide-react";
+import { Activity, ShieldCheck, Users, Repeat, Network, Coins, Wifi, Zap, Globe, Cpu, RefreshCw, LayoutDashboard, ExternalLink, Store, ShieldAlert, AlertTriangle, PlayCircle, Server } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { getPendingEvents, retryEvent, clearEvent } from '@/lib/ghostsync';
+import { toast } from 'sonner';
 
 const data = [
   { time: '08:00', liquidity: 420000, volume: 12400 },
@@ -18,6 +20,43 @@ const data = [
 export default function Dashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pulseLine, setPulseLine] = useState(false);
+  const [failedEvents, setFailedEvents] = useState<any[]>([]);
+
+  const loadFailedEvents = async () => {
+    try {
+      const allEvents = await getPendingEvents();
+      const failed = allEvents.filter(e => e.status === 'failed');
+      setFailedEvents(failed);
+    } catch (err) {
+      console.error("Failed to load events in dashboard:", err);
+    }
+  };
+
+  useEffect(() => {
+    loadFailedEvents();
+    const interval = setInterval(loadFailedEvents, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleRetrySingle = async (row_key: string) => {
+    try {
+      await retryEvent(row_key);
+      toast.success('Retrying transaction queue injection...');
+      loadFailedEvents();
+    } catch (e) {
+      toast.error('Failed to trigger retry');
+    }
+  };
+
+  const handleClearSingle = async (row_key: string) => {
+    try {
+      await clearEvent(row_key);
+      toast.success('Transaction removed from local outbox');
+      loadFailedEvents();
+    } catch (e) {
+      toast.error('Failed to clear transaction');
+    }
+  };
 
   useEffect(() => {
     const pulse = setInterval(() => {
@@ -28,6 +67,7 @@ export default function Dashboard() {
 
   const triggerRefresh = () => {
     setIsRefreshing(true);
+    loadFailedEvents();
     setTimeout(() => {
       setIsRefreshing(false);
     }, 1500);
@@ -55,6 +95,74 @@ export default function Dashboard() {
           </Button>
         </div>
       </div>
+
+      {/* GhostSync Failure Warnings */}
+      {failedEvents.length > 0 && (
+        <Card className="border-l-4 border-l-red-500 bg-red-50/70 border-rose-100 shadow-sm animate-fade-in">
+          <CardHeader className="pb-3">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+              <div className="flex items-center text-red-800 space-x-2">
+                <AlertTriangle className="w-5 h-5 text-red-600 animate-pulse" />
+                <CardTitle className="text-sm font-black uppercase tracking-wider">
+                  GhostSync Buffer Alert: {failedEvents.length} Connection Failure(s) Detected
+                </CardTitle>
+              </div>
+              <Badge variant="destructive" className="font-mono text-xs px-2.5 py-0.5">
+                Stalled Outbox Queue
+              </Badge>
+            </div>
+            <CardDescription className="text-red-700/80">
+              Transactions buffered locally due to simulated or actual telemetry offline gaps. Resolve or retry items to synchronize.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0 pb-4">
+            <div className="border border-red-200/60 rounded-lg overflow-hidden bg-white/95 divide-y divide-red-100 max-h-[350px] overflow-y-auto">
+              {failedEvents.map((evt) => (
+                <div key={evt.row_key} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 gap-3 hover:bg-slate-50 transition-colors">
+                  <div className="space-y-1 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-slate-850 font-mono">
+                        {evt.type}
+                      </span>
+                      <Badge variant="outline" className="text-[10px] text-rose-600 border-rose-200 bg-rose-50/50 font-bold">
+                        Failed Retry Limit (Attempts: {evt.retry_count})
+                      </Badge>
+                    </div>
+                    <p className="text-[11px] text-slate-400 font-mono">
+                      Queued: {new Date(evt.created_at).toLocaleString()} • ID: {evt.row_key.substring(0, 8)}...
+                    </p>
+                    {evt.payload && (
+                      <div className="bg-slate-50 border border-slate-100 rounded p-1.5 text-[10px] font-mono text-slate-650 max-w-full overflow-x-auto select-all">
+                        {JSON.stringify(evt.payload).substring(0, 160)}
+                        {JSON.stringify(evt.payload).length > 160 ? '...' : ''}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      onClick={() => handleRetrySingle(evt.row_key)}
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-xs border-indigo-200 text-indigo-700 hover:bg-indigo-50 font-bold"
+                    >
+                      <RefreshCw className="w-3 h-3 mr-1 animate-spin-hover" /> Retry Event
+                    </Button>
+                    <Button
+                      onClick={() => handleClearSingle(evt.row_key)}
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 font-bold"
+                      title="Clear from Queue"
+                    >
+                      Dismiss
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Primary KPI Metrics */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">

@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 
 export default function GhostSyncQueue() {
   const [events, setEvents] = useState<any[]>([]);
+  const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
 
   const loadEvents = async () => {
     const evts = await getPendingEvents();
@@ -33,6 +34,7 @@ export default function GhostSyncQueue() {
 
   const handleClear = async (key: string) => {
     await clearEvent(key);
+    setSelectedKeys(prev => prev.filter(k => k !== key));
     loadEvents();
     toast.success('Event cleared from queue');
   };
@@ -46,8 +48,37 @@ export default function GhostSyncQueue() {
     for (const e of failedEvents) {
       await clearEvent(e.row_key);
     }
+    setSelectedKeys(prev => prev.filter(k => !failedEvents.some(fe => fe.row_key === k)));
     loadEvents();
     toast.success(`Cleared ${failedEvents.length} failed events`);
+  };
+
+  const toggleSelect = (key: string) => {
+    setSelectedKeys(prev => 
+      prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedKeys.length === events.length) {
+      setSelectedKeys([]);
+    } else {
+      setSelectedKeys(events.map(e => e.row_key));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedKeys.length === 0) return;
+    try {
+      for (const key of selectedKeys) {
+        await clearEvent(key);
+      }
+      toast.success(`Successfully deleted ${selectedKeys.length} event(s) from the queue`);
+      setSelectedKeys([]);
+      loadEvents();
+    } catch (error) {
+      toast.error('Failed to perform bulk deletion');
+    }
   };
 
   return (
@@ -59,13 +90,42 @@ export default function GhostSyncQueue() {
         </div>
         <div className="flex space-x-2">
           <Button onClick={handleClearFailed} variant="outline" className="text-red-500 border-red-200 hover:bg-red-50">
-            <Trash2 className="w-4 h-4 mr-2" /> Clear Failed
+            <Trash2 className="w-4 h-4 mr-2" /> Clear All Failed
           </Button>
           <Button onClick={handleForceSync} variant="outline">
             <RefreshCcw className="w-4 h-4 mr-2" /> Force Sync
           </Button>
         </div>
       </div>
+
+      {selectedKeys.length > 0 && (
+        <div className="bg-rose-50 border border-rose-100 rounded-xl p-4 flex items-center justify-between shadow-sm animate-fade-in">
+          <div className="flex items-center gap-2">
+            <span className="flex h-2.5 w-2.5 rounded-full bg-rose-500 animate-pulse" />
+            <span className="text-sm font-semibold text-rose-950">
+              Bulk Actions: {selectedKeys.length} of {events.length} event(s) selected
+            </span>
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleBulkDelete} 
+              variant="destructive" 
+              size="sm"
+              className="bg-rose-600 hover:bg-rose-700 font-bold px-4"
+            >
+              <Trash2 className="w-4 h-4 mr-1.5" /> Bulk Delete Selected
+            </Button>
+            <Button 
+              onClick={() => setSelectedKeys([])} 
+              variant="outline" 
+              size="sm"
+              className="bg-white hover:bg-slate-50 text-slate-700 border-slate-200"
+            >
+              Deselect All
+            </Button>
+          </div>
+        </div>
+      )}
 
       <Card>
         <CardHeader>
@@ -85,6 +145,14 @@ export default function GhostSyncQueue() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[50px]">
+                    <input 
+                      type="checkbox" 
+                      className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4 cursor-pointer"
+                      checked={events.length > 0 && selectedKeys.length === events.length}
+                      onChange={toggleSelectAll}
+                    />
+                  </TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Queued At</TableHead>
                   <TableHead>Retry Count</TableHead>
@@ -94,7 +162,18 @@ export default function GhostSyncQueue() {
               </TableHeader>
               <TableBody>
                 {events.map((e) => (
-                  <TableRow key={e.row_key}>
+                  <TableRow 
+                    key={e.row_key} 
+                    className={`transition-colors duration-150 ${selectedKeys.includes(e.row_key) ? 'bg-indigo-50/50 hover:bg-indigo-100/40' : 'hover:bg-slate-50/80'}`}
+                  >
+                    <TableCell>
+                      <input 
+                        type="checkbox" 
+                        className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4 cursor-pointer"
+                        checked={selectedKeys.includes(e.row_key)}
+                        onChange={() => toggleSelect(e.row_key)}
+                      />
+                    </TableCell>
                     <TableCell className="font-medium text-slate-900">{e.type}</TableCell>
                     <TableCell className="text-slate-500 font-mono text-sm">
                       {new Date(e.created_at).toLocaleTimeString()}

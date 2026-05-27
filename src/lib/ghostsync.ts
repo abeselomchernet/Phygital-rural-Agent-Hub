@@ -63,6 +63,18 @@ export async function clearEvent(row_key: string) {
   await db.delete('outbox', row_key);
 }
 
+export async function retryEvent(row_key: string) {
+  const db = await getDb();
+  const event = await db.get('outbox', row_key);
+  if (event) {
+    event.status = 'pending';
+    event.retry_count = 0;
+    await db.put('outbox', event);
+    // Trigger sync immediately in background
+    syncEvents();
+  }
+}
+
 export async function syncEvents() {
   if (!navigator.onLine) return;
 
