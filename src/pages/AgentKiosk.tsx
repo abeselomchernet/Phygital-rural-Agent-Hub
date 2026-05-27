@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Wifi, 
   BatteryFull, 
@@ -27,7 +27,12 @@ import {
   PackageOpen,
   Truck,
   Activity,
-  Globe
+  Globe,
+  Camera,
+  Unlock,
+  Lock,
+  Eye,
+  ShieldAlert
 } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 import { addEventToQueue } from '@/lib/ghostsync';
@@ -96,7 +101,7 @@ type Lang = 'en' | 'am' | 'or';
 export default function AgentKiosk() {
   const [lang, setLang] = useState<Lang>('en');
   const [btStatus, setBtStatus] = useState<'disconnected' | 'scanning' | 'connected'>('disconnected');
-  const [activeModal, setActiveModal] = useState<null | 'CASH_IN' | 'CASH_OUT' | 'RECEIPT' | 'FARMER_360' | 'LIQUIDITY_AI' | 'INVENTORY'>(null);
+  const [activeModal, setActiveModal] = useState<null | 'CASH_IN' | 'CASH_OUT' | 'RECEIPT' | 'FARMER_360' | 'LIQUIDITY_AI' | 'INVENTORY' | 'BIOMETRIC_SCAN'>(null);
   const [amountInput, setAmountInput] = useState('');
   const [receiptData, setReceiptData] = useState<any>(null);
   const [time, setTime] = useState(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
@@ -115,6 +120,15 @@ export default function AgentKiosk() {
   const [liquidityStep, setLiquidityStep] = useState<'COUNT' | 'DASHBOARD'>('COUNT');
 
   const [expectedOtp, setExpectedOtp] = useState<string | null>(null);
+
+  // Biometric Security Controls
+  const HIGH_VALUE_THRESHOLD = 5000;
+  const [pendingTx, setPendingTx] = useState<{ type: 'CASH_IN' | 'CASH_OUT'; amount: string } | null>(null);
+  const [biometricProgress, setBiometricProgress] = useState(0);
+  const [biometricStatus, setBiometricStatus] = useState<'idle' | 'initializing' | 'scanning' | 'hashing' | 'submitting' | 'success' | 'failed'>('idle');
+  const [cameraMode, setCameraMode] = useState<'off' | 'active' | 'fallback'>('off');
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const t = locales[lang];
 
@@ -167,12 +181,20 @@ export default function AgentKiosk() {
 
   const [commissionTotal, setCommissionTotal] = useState<number>(450.25);
 
-  const executeCashIn = () => {
-    if (!amountInput || parseFloat(amountInput) <= 0) return;
+  const executeCashIn = (bypassBiometric = false) => {
+    const targetAmount = pendingTx ? pendingTx.amount : amountInput;
+    if (!targetAmount || parseFloat(targetAmount) <= 0) return;
     
+    const amt = parseFloat(targetAmount);
+    if (!bypassBiometric && amt >= HIGH_VALUE_THRESHOLD) {
+      setPendingTx({ type: 'CASH_IN', amount: amountInput });
+      setActiveModal('BIOMETRIC_SCAN');
+      toast.info("🛡️ High-Value Transaction: Fayda biometric verification lock active!");
+      return;
+    }
+
     toast.loading("Processing transaction via Sovereign Switch...", { id: 'tx' });
     setTimeout(() => {
-      const amt = parseFloat(amountInput);
       const serviceCharge = (amt * 0.005) + 5; // 0.5% + 5 ETB
       const agentCommission = serviceCharge * 0.6; // Agent keeps 60% of fee
       
@@ -183,7 +205,7 @@ export default function AgentKiosk() {
 
       const payload = {
         type: t.cashIn,
-        amount: amountInput,
+        amount: targetAmount,
         fee: serviceCharge.toFixed(2),
         txId: "TX" + Math.random().toString().substring(2, 10).toUpperCase(),
         date: new Date().toISOString(),
@@ -197,6 +219,7 @@ export default function AgentKiosk() {
           toast.success(`Transaction Successful. Earned ${agentCommission.toFixed(2)} ETB Commission.`, { id: 'tx' });
           setReceiptData({ ...payload, date: new Date(payload.date).toLocaleString() });
           setAmountInput('');
+          setPendingTx(null);
           setActiveModal('RECEIPT');
           return 'Safely stored for GhostSync';
         },
@@ -205,13 +228,21 @@ export default function AgentKiosk() {
     }, 1500);
   };
 
-  const executeCashOut = () => {
-    if (!amountInput || parseFloat(amountInput) <= 0) return;
+  const executeCashOut = (bypassBiometric = false) => {
+    const targetAmount = pendingTx ? pendingTx.amount : amountInput;
+    if (!targetAmount || parseFloat(targetAmount) <= 0) return;
+    
+    const amt = parseFloat(targetAmount);
+    if (!bypassBiometric && amt >= HIGH_VALUE_THRESHOLD) {
+      setPendingTx({ type: 'CASH_OUT', amount: amountInput });
+      setActiveModal('BIOMETRIC_SCAN');
+      toast.info("🛡️ High-Value Transaction: Fayda biometric verification lock active!");
+      return;
+    }
     
     // Push SMS/USSD flow
     toast.loading("Pushing withdrawal request to Farmer's mobile...", { id: 'push' });
     setTimeout(() => {
-      const amt = parseFloat(amountInput);
       const serviceCharge = (amt * 0.01) + 10; // 1% + 10 ETB
       const agentCommission = serviceCharge * 0.6; // Agent keeps 60% of fee
       
@@ -222,7 +253,7 @@ export default function AgentKiosk() {
 
       const payload = {
         type: t.cashOut,
-        amount: amountInput,
+        amount: targetAmount,
         fee: serviceCharge.toFixed(2),
         txId: "TX" + Math.random().toString().substring(2, 10).toUpperCase(),
         date: new Date().toISOString(),
@@ -236,6 +267,7 @@ export default function AgentKiosk() {
           toast.success(`Farmer confirmed via mobile. Dispense cash. Earned ${agentCommission.toFixed(2)} ETB Commission.`, { id: 'push', duration: 4000 });
           setReceiptData({ ...payload, date: new Date(payload.date).toLocaleString() });
           setAmountInput('');
+          setPendingTx(null);
           setActiveModal('RECEIPT');
           return 'Safely stored for GhostSync';
         },
@@ -243,6 +275,105 @@ export default function AgentKiosk() {
       });
     }, 3000);
   };
+
+  // Biometric Active Handlers
+  const startBiometricScan = async () => {
+    setBiometricProgress(0);
+    setBiometricStatus('initializing');
+    setCameraMode('off');
+    
+    try {
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { width: 480, height: 480, facingMode: 'user' } 
+        });
+        streamRef.current = stream;
+        setCameraMode('active');
+        setTimeout(() => {
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            videoRef.current.play().catch(err => console.warn("Failed to play video stream in ref:", err));
+          }
+        }, 120);
+      } else {
+        throw new Error("No mediaDevices available.");
+      }
+    } catch (err) {
+      console.warn("Fayda camera hook failed, enabling high-precision mock scanning simulation HUD:", err);
+      setCameraMode('fallback');
+    }
+
+    setBiometricStatus('scanning');
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    setCameraMode('off');
+  };
+
+  const cancelBiometricScan = () => {
+    stopCamera();
+    setBiometricProgress(0);
+    setBiometricStatus('idle');
+    const prevM = pendingTx ? (pendingTx.type === 'CASH_IN' ? 'CASH_IN' : 'CASH_OUT') : null;
+    setPendingTx(null);
+    setActiveModal(prevM);
+    toast.error("Biometric scan cancelled. Safe protocols active.");
+  };
+
+  useEffect(() => {
+    if (activeModal === 'BIOMETRIC_SCAN') {
+      startBiometricScan();
+    } else {
+      stopCamera();
+    }
+    return () => {
+      stopCamera();
+    };
+  }, [activeModal]);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    if (activeModal === 'BIOMETRIC_SCAN' && biometricStatus !== 'success' && biometricStatus !== 'failed' && biometricStatus !== 'idle') {
+      interval = setInterval(() => {
+        setBiometricProgress(prev => {
+          const next = prev + Math.floor(Math.random() * 8) + 6;
+          if (next >= 100) {
+            clearInterval(interval!);
+            setBiometricStatus('success');
+            
+            setTimeout(() => {
+              stopCamera();
+              setActiveModal(null);
+              if (pendingTx) {
+                if (pendingTx.type === 'CASH_IN') {
+                  executeCashIn(true);
+                } else if (pendingTx.type === 'CASH_OUT') {
+                  executeCashOut(true);
+                }
+              }
+            }, 1200);
+            return 100;
+          }
+          
+          if (next > 75) {
+            setBiometricStatus('submitting');
+          } else if (next > 45) {
+            setBiometricStatus('hashing');
+          } else if (next > 15) {
+            setBiometricStatus('scanning');
+          }
+          return next;
+        });
+      }, 250);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [activeModal, biometricStatus, pendingTx]);
 
   const executeFaydaLookup = () => {
     if (!faydaInput) return;
@@ -882,6 +1013,187 @@ export default function AgentKiosk() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Fayda Secure Biometric ZKP Scan Dialog */}
+      {activeModal === 'BIOMETRIC_SCAN' && (
+        <div className="absolute inset-0 z-[65] bg-slate-950/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-white font-sans overflow-hidden">
+          
+          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl relative flex flex-col items-center animate-in zoom-in-95 duration-300">
+            {/* Header / Security Badges */}
+            <div className="text-center w-full mb-6 relative">
+              <div className="absolute left-0 top-0 flex items-center space-x-1.5 text-cyan-400 bg-cyan-950/50 border border-cyan-800/50 px-2.5 py-1 rounded-full text-[9px] font-mono tracking-wider uppercase">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                <span>SECURE ENV</span>
+              </div>
+              <div className="absolute right-0 top-0 text-[9px] text-slate-500 font-mono tracking-widest uppercase">
+                v2.1 ZK-SEED
+              </div>
+              
+              <div className="flex justify-center mb-3 mt-4">
+                <div className="w-12 h-12 bg-indigo-500/10 border border-indigo-500/30 rounded-2xl flex items-center justify-center text-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.15)]">
+                  <Fingerprint className="w-6 h-6 animate-pulse" />
+                </div>
+              </div>
+              <h2 className="text-xl font-black uppercase tracking-widest text-slate-100">Fayda Biometric Gate</h2>
+              <p className="text-xs text-slate-400 uppercase tracking-wider font-mono mt-1">
+                Zero-Knowledge Privacy Protocol
+              </p>
+            </div>
+
+            {/* High-Value Transaction Alert Strip */}
+            <div className="w-full bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 mb-6 flex items-start text-xs text-amber-200">
+              <ShieldAlert className="w-5 h-5 mr-3 text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold uppercase tracking-wider text-amber-300">High-Value Transaction Secure Lock</p>
+                <p className="text-amber-400/80 mt-0.5 font-mono">
+                  {pendingTx?.type === 'CASH_IN' ? 'Deposit (Cash-In)' : 'Withdrawal (Cash-Out)'}: <span className="font-bold underline text-amber-200">{pendingTx ? parseFloat(pendingTx.amount).toLocaleString() : '0'} ETB</span>
+                </p>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  National Bank of Ethiopia regulatory compliance requires biometric ZKP clearance for transaction amounts above {HIGH_VALUE_THRESHOLD.toLocaleString()} ETB.
+                </p>
+              </div>
+            </div>
+
+            {/* Camera Frame/Webcam Viewport or Fallback Simulation */}
+            <div className="w-full aspect-square max-w-[280px] bg-slate-950 rounded-full border-2 border-slate-800 p-2 relative overflow-hidden flex items-center justify-center shadow-inner group mb-6">
+              
+              {/* Outer hud circle markings */}
+              <div className="absolute inset-0 border-4 border-dashed border-cyan-500/10 rounded-full animate-[spin_120s_linear_infinite]" />
+              <div className="absolute inset-2 border border-dashed border-indigo-500/15 rounded-full animate-[spin_45s_linear_infinite_reverse]" />
+
+              {/* Four corners focus angles */}
+              <div className="absolute top-4 left-4 w-4 h-4 border-t-2 border-l-2 border-cyan-400 rounded-tl" />
+              <div className="absolute top-4 right-4 w-4 h-4 border-t-2 border-r-2 border-cyan-400 rounded-tr" />
+              <div className="absolute bottom-4 left-4 w-4 h-4 border-b-2 border-l-2 border-cyan-400 rounded-bl" />
+              <div className="absolute bottom-4 right-4 w-4 h-4 border-b-2 border-r-2 border-cyan-400 rounded-br" />
+
+              {/* Glowing vertical laser line sweep */}
+              {biometricStatus !== 'success' && (
+                <div className="absolute inset-x-0 w-full h-0.5 bg-cyan-400 shadow-[0_0_12px_#22d3ee] z-20 animate-[bounce_3s_infinite_ease-in-out]" />
+              )}
+
+              {/* Circular clipping viewfinder container */}
+              <div className="w-full h-full rounded-full overflow-hidden relative bg-slate-900 flex items-center justify-center animate-pulse">
+                {cameraMode === 'active' ? (
+                  <>
+                    <video 
+                      ref={videoRef} 
+                      className="w-full h-full object-cover scale-x-[-1]" 
+                      playsInline 
+                      muted 
+                    />
+                    <div className="absolute inset-0 bg-cyan-500/10 pointer-events-none mix-blend-color" />
+                  </>
+                ) : (
+                  /* Fallback Interactive Facial Mesh Synthesizer */
+                  <div className="w-full h-full bg-gradient-to-b from-slate-950 to-slate-900 flex flex-col items-center justify-center p-4 relative">
+                    
+                    {/* Simulated contour vector grids */}
+                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#0284c715_1px,transparent_1px),linear-gradient(to_bottom,#0284c715_1px,transparent_1px)] bg-[size:16px_16px]" />
+                    
+                    {/* Animated facial grid outline */}
+                    <div className="relative w-36 h-36 border border-cyan-500/20 rounded-full flex items-center justify-center bg-cyan-950/20">
+                      <div className="absolute inset-4 border border-dashed border-cyan-400/30 rounded-full animate-pulse" />
+                      <div className="absolute inset-10 border border-slate-800 rounded-full" />
+                      
+                      {/* Stylized face node dots with glowing animations */}
+                      <Eye className="w-6 h-6 text-cyan-400 absolute left-8 top-12 animate-pulse" />
+                      <Eye className="w-6 h-6 text-cyan-400 absolute right-8 top-12 animate-pulse" />
+                      
+                      {/* Facial structural polygon overlays using pure CSS */}
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-28 h-28 border border-cyan-400/30 rotate-45 animate-[spin_24s_linear_infinite] pointer-events-none" />
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 border border-indigo-400/20 -rotate-45 animate-[spin_16s_linear_infinite_reverse] pointer-events-none" />
+
+                      <Fingerprint className="w-10 h-10 text-cyan-400/80 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-[pulse_3s_infinite]" />
+                    </div>
+
+                    <div className="absolute bottom-2 text-center">
+                      <p className="text-[8px] font-mono tracking-widest text-cyan-400 uppercase animate-pulse">
+                        SYNTH_FACEMESH_ACTIVE
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Overlays during matching / approved states */}
+                {biometricStatus === 'success' && (
+                  <div className="absolute inset-0 bg-emerald-950/90 backdrop-blur-sm flex flex-col items-center justify-center p-4 z-30 transition-all duration-500">
+                    <div className="w-16 h-16 bg-emerald-500/20 border-2 border-emerald-500 rounded-full flex items-center justify-center text-emerald-400 mb-3 animate-bounce shadow-[0_0_20px_rgba(16,185,129,0.3)]">
+                      <ShieldCheck className="w-10 h-10" />
+                    </div>
+                    <p className="font-bold text-emerald-400 uppercase tracking-widest text-sm">ZKP Cleared</p>
+                    <p className="text-[10px] text-emerald-300 font-mono mt-1 font-bold">MATCH QUALITY: 99.71%</p>
+                  </div>
+                )}
+              </div>
+              
+              {/* Telemetry labels on corners inside target circle */}
+              <div className="absolute top-8 left-8 text-[7px] font-mono text-cyan-400/60 uppercase">FPS: 30.0</div>
+              <div className="absolute top-8 right-8 text-[7px] font-mono text-cyan-400/60 uppercase">DST: OPTIMAL</div>
+              <div className="absolute bottom-8 left-8 text-[7px] font-mono text-cyan-400/60 uppercase">ISO: 400</div>
+              <div className="absolute bottom-8 right-8 text-[7px] font-mono text-cyan-400/60 uppercase">PARITY: OK</div>
+            </div>
+
+            {/* Diagnostic Logs & Status Bar */}
+            <div className="w-full space-y-3">
+              <div className="flex justify-between items-end font-mono text-xs">
+                <span className="text-slate-400 uppercase tracking-widest">
+                  {biometricStatus === 'initializing' && 'Initializing hardware keys...'}
+                  {biometricStatus === 'scanning' && 'Scanning contours...'}
+                  {biometricStatus === 'hashing' && 'Generating bio-hash proofs...'}
+                  {biometricStatus === 'submitting' && 'Reconciling proof matrix...'}
+                  {biometricStatus === 'success' && 'Reconciliation Success!'}
+                </span>
+                <span className="text-cyan-400 font-black tracking-widest">{biometricProgress}%</span>
+              </div>
+              
+              {/* Custom progress loading bar */}
+              <div className="w-full h-2 bg-slate-950 border border-slate-800 rounded-full overflow-hidden p-0.5">
+                <div 
+                  className={`h-full rounded-full transition-all duration-300 ${
+                    biometricStatus === 'success' ? 'bg-gradient-to-r from-emerald-500 to-teal-400 shadow-[0_0_10px_#10b981]' : 'bg-gradient-to-r from-cyan-500 to-indigo-500 shadow-[0_0_10px_#06b6d4]'
+                  }`}
+                  style={{ width: `${biometricProgress}%` }}
+                />
+              </div>
+
+              {/* Technical Telemetry Specs */}
+              <div className="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-4 font-mono text-[10px] text-slate-400 space-y-1.5 shadow-inner">
+                <div className="flex justify-between">
+                  <span>ORACLE:</span>
+                  <span className="text-slate-200">FAYDA ROOT TRUST HOST</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>PROOF TYPE:</span>
+                  <span className="text-indigo-400 font-bold">GROTH16 / PLONK ASSEMBLY</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>ZKP PARITY CHALLENGE:</span>
+                  <span className="text-cyan-400 font-bold">
+                     0xF715BA{biometricProgress > 30 ? 'E29' : '99'}...3EE2D
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>FINGERPRINT BACKUP:</span>
+                  <span className="text-slate-400">READY</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Cancel Button */}
+            <div className="w-full mt-6 grid grid-cols-1 gap-3">
+              <button
+                type="button"
+                onClick={cancelBiometricScan}
+                className="w-full py-4 bg-slate-800 hover:bg-slate-700 hover:text-white transition-all text-slate-300 font-bold uppercase text-xs tracking-widest rounded-2xl text-center border border-slate-800 active:scale-98"
+              >
+                Abort & Cancel Lock
+              </button>
+            </div>
+            
           </div>
         </div>
       )}

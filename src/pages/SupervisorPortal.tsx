@@ -17,6 +17,7 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
+import DataMuleGraph from '../components/DataMuleGraph';
 
 export default function SupervisorPortal() {
   const [time, setTime] = useState(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
@@ -282,87 +283,70 @@ export default function SupervisorPortal() {
 
         {/* === MESH SYNC (DATA MULE) VIEW === */}
         {activeView === 'MESH_SYNC' && (
-          <div className="p-6 h-full flex flex-col max-w-2xl mx-auto">
-            <div className="text-center mb-8">
+          <div className="p-6 h-full flex flex-col max-w-6xl mx-auto pb-24">
+            <div className="text-center mb-6">
               <h2 className="text-2xl font-black text-white uppercase tracking-widest">GhostSync Hub</h2>
-              <p className="text-slate-400 mt-2">Activate local Hotspot/BLE mesh to harvest cryptographic ledgers from offline rural agents.</p>
+              <p className="text-slate-400 mt-2 text-sm">Activate local Hotspot/BLE mesh to harvest cryptographic ledgers from offline rural agents.</p>
+            </div>
+            
+            {/* Real-time D3 Mesh Sync proximity link graph */}
+            <div className="bg-slate-900/50 p-2 border border-slate-800 rounded-3xl mb-6">
+              <DataMuleGraph />
             </div>
 
-            <div className="flex-1 flex flex-col items-center justify-center relative">
-               {/* Radar Animation Rings */}
-               {meshState !== 'idle' && (
-                  <>
-                     <div className="absolute inset-0 flex items-center justify-center z-0">
-                        <div className="w-64 h-64 border border-indigo-500/30 rounded-full animate-ping absolute" style={{ animationDuration: '3s' }}></div>
-                        <div className="w-96 h-96 border border-indigo-500/10 rounded-full animate-ping absolute" style={{ animationDuration: '4s' }}></div>
-                        <div className="w-48 h-48 bg-indigo-500/5 rounded-full absolute"></div>
-                     </div>
-                  </>
-               )}
-
-              <button 
-                onClick={meshState === 'idle' ? triggerMeshSync : undefined}
-                className={`relative z-10 w-48 h-48 rounded-full flex flex-col items-center justify-center transition-all ${
-                  meshState === 'idle' 
-                    ? 'bg-indigo-600 hover:bg-indigo-500 active:scale-95 shadow-[0_0_50px_rgba(79,70,229,0.3)]' 
-                    : meshState === 'broadcasting' ? 'bg-indigo-500 shadow-[0_0_80px_rgba(79,70,229,0.6)]'
-                    : meshState === 'syncing' ? 'bg-blue-500 shadow-[0_0_80px_rgba(59,130,246,0.6)]'
-                    : 'bg-emerald-600 shadow-[0_0_80px_rgba(16,185,129,0.6)]'
-                }`}
-              >
-                <Radar className={`w-16 h-16 text-white mb-2 ${meshState === 'broadcasting' || meshState === 'syncing' ? 'animate-spin' : ''}`} style={{ animationDuration: '3s' }} />
-                <span className="text-white font-black uppercase tracking-widest text-sm">
-                  {meshState === 'idle' && 'Initiate Mesh'}
-                  {meshState === 'broadcasting' && 'Broadcasting...'}
-                  {meshState === 'syncing' && 'Harvesting...'}
-                  {meshState === 'complete' && 'Sync Complete'}
-                </span>
-              </button>
-
-               {/* Connected Agents List */}
-              <div className="w-full mt-12 space-y-3 z-10 h-64 overflow-y-auto">
-                 {syncedAgents.map((agent, i) => (
-                    <div key={i} className="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex flex-col items-stretch animate-in slide-in-from-bottom-4">
-                       <div className="flex items-center justify-between">
-                         <div className="flex items-center">
-                            <div className="bg-emerald-500/20 p-2 rounded-full mr-3 border border-emerald-500/30">
-                               <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                            </div>
-                            <div>
-                               <p className="text-white font-bold">{agent.name} <span className="text-slate-500 text-xs font-mono ml-2">{agent.id}</span></p>
-                               <p className="text-xs text-emerald-400 font-bold mt-1">Ledger Verified • {agent.bytes}</p>
-                            </div>
-                         </div>
-                         <div className="text-right">
-                            <p className="text-xl font-black text-white">{agent.tx}</p>
-                            <p className="text-[10px] uppercase tracking-widest text-slate-500">Txns</p>
-                         </div>
-                       </div>
-                       
-                       {/* Priority 3 Liquidity Recovery Injection */}
-                       {i === 0 && meshState === 'complete' && (
-                          <div className="mt-4 bg-orange-500/10 border border-orange-500/30 rounded-xl p-3 flex items-start">
-                             <AlertTriangle className="w-4 h-4 text-orange-400 mr-2 shrink-0 mt-0.5" />
-                             <div>
-                                <p className="text-xs text-orange-400 font-bold uppercase tracking-widest mb-1">Priority 3 Liquidity Recovery Alert</p>
-                                <p className="text-xs text-slate-400 mb-2">Critical Deficit detected parsed from offline ledger. FMCG Virtual ATM Swap recommended.</p>
-                                <button 
-                                  onClick={() => { setActiveView('DASHBOARD'); toast.info("Opening Logistics Dashboard to dispatch truck..."); }}
-                                  className="text-[10px] bg-orange-500 hover:bg-orange-400 text-white px-3 py-1 rounded font-bold uppercase tracking-widest transition-colors scale-100 active:scale-95"
-                                >
-                                  Route FMCG Swap
-                                </button>
-                             </div>
-                          </div>
-                       )}
-                    </div>
-                 ))}
-                 
-                 {meshState === 'complete' && (
-                    <button onClick={() => { setMeshState('idle'); setSyncedAgents([]); setActiveView('DASHBOARD'); }} className="w-full py-4 mt-4 bg-slate-800 text-white font-bold uppercase tracking-widest rounded-xl hover:bg-slate-700">
-                       Close Terminal
+            {/* GhostSync hardware triggers and state trackers */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
+              <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl">
+                <h3 className="text-sm font-black text-[#6366f1] uppercase tracking-widest mb-3">Sovereign Bluetooth Broadcast</h3>
+                <p className="text-slate-400 text-xs leading-relaxed mb-4">
+                  Activating BLE and Wi-Fi Direct beacons sends localized heartbeat signals to nearby data mules and offline merchants, allowing automated background reconciliation hooks.
+                </p>
+                
+                <div className="flex items-center space-x-4">
+                  <button 
+                    onClick={meshState === 'idle' ? triggerMeshSync : undefined}
+                    disabled={meshState !== 'idle'}
+                    className={`flex-1 py-4 border rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                      meshState === 'idle' 
+                        ? 'bg-indigo-600 border-indigo-500 hover:bg-indigo-500 text-white active:scale-95 cursor-pointer' 
+                        : 'bg-slate-950 border-slate-800 text-slate-500 cursor-not-allowed'
+                    }`}
+                  >
+                    {meshState === 'idle' ? 'Initiate Broadcaster' : 'Broadcaster Active'}
+                  </button>
+                  
+                  {meshState !== 'idle' && (
+                    <button 
+                      onClick={() => { setMeshState('idle'); setSyncedAgents([]); }}
+                      className="px-6 py-4 bg-red-600 hover:bg-red-500 text-white border border-red-500 text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all active:scale-95 cursor-pointer"
+                    >
+                      Kill Hotspot
                     </button>
-                 )}
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl flex flex-col justify-between">
+                <div>
+                  <h3 className="text-sm font-black text-emerald-400 uppercase tracking-widest mb-3">Sync Event Feed</h3>
+                  {syncedAgents.length === 0 ? (
+                    <p className="text-slate-500 text-xs font-mono">Listening on local 2.4GHz socket...</p>
+                  ) : (
+                    <div className="space-y-2 max-h-32 overflow-y-auto pr-2">
+                      {syncedAgents.map((agent, i) => (
+                        <div key={i} className="flex justify-between items-center bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs font-mono">
+                          <span className="text-slate-300 font-sans font-bold">{agent.name}</span>
+                          <span className="text-emerald-400 font-bold">+{agent.tx} TX ({agent.bytes})</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-slate-800/80 flex justify-between items-center">
+                  <span className="text-xs font-mono text-slate-500">GHOSTSYNC STATUS: {meshState.toUpperCase()}</span>
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                </div>
               </div>
             </div>
           </div>
