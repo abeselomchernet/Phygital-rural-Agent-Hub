@@ -545,6 +545,23 @@ async function startServer() {
       appType: 'spa',
     });
     app.use(vite.middlewares);
+
+    // Serve index.html for all non-API and non-file requests (SPA Fallback in dev)
+    app.get('*', async (req, res, next) => {
+      const url = req.originalUrl;
+      if (url.startsWith('/api/') || url.includes('.')) {
+        return next();
+      }
+      try {
+        const fs = await import('fs');
+        const templatePath = path.resolve(process.cwd(), 'index.html');
+        let html = fs.readFileSync(templatePath, 'utf8');
+        html = await vite.transformIndexHtml(url, html);
+        res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
+      } catch (e) {
+        next(e);
+      }
+    });
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));

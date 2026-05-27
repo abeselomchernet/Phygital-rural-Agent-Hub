@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Search, ShieldCheck, Activity, ArrowRight, FileText, 
   AlertTriangle, Building, Smartphone, Send, Wallet, Globe,
   Scan, Sprout, CloudLightning, Leaf, PiggyBank, QrCode, Zap, CheckCircle2,
-  LockKeyhole
+  LockKeyhole, Camera, X, RefreshCw, UserCheck, Cpu
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -200,6 +200,93 @@ export default function Farmer360() {
   const [carbonStatus, setCarbonStatus] = useState<'NONE' | 'ACTIVE'>('NONE');
   const [diasporaStatus, setDiasporaStatus] = useState<'NONE' | 'ACTIVE'>('NONE');
 
+  // Success Feedback States (Beep & Highlights)
+  const [faydaFlashing, setFaydaFlashing] = useState(false);
+
+  // Simulated Camera Scanner State
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [scanProgress, setScanProgress] = useState(0);
+  const [scanMessage, setScanMessage] = useState('');
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
+
+  // Secure Cryptographic success audio speaker notification hook
+  const playSuccessBeep = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      
+      const playTone = (freq: number, start: number, duration: number) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + start);
+        
+        gain.gain.setValueAtTime(0, ctx.currentTime + start);
+        gain.gain.linearRampToValueAtTime(0.08, ctx.currentTime + start + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + start + duration);
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        
+        osc.start(ctx.currentTime + start);
+        osc.stop(ctx.currentTime + start + duration);
+      };
+
+      // Play double confirmation beep (harmonic notification)
+      playTone(880, 0, 0.08);
+      playTone(1046.5, 0.09, 0.12);
+    } catch (e) {
+      console.warn("Audio Context audio feedback blocked or unsupported:", e);
+    }
+  };
+
+  const handleStartScan = () => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    setScannerOpen(true);
+    setScanProgress(0);
+    setScanMessage('Initializing secure hardware camera feed...');
+    
+    let currentProgress = 0;
+    intervalRef.current = setInterval(() => {
+      currentProgress += 5;
+      if (currentProgress > 100) {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        const randId = `${Math.floor(100 + Math.random() * 899)}-${Math.floor(100 + Math.random() * 899)}-${Math.floor(100 + Math.random() * 899)}`;
+        setSearchQuery(randId);
+        toast.success(`OCR Scan Complete: Extracted Fayda ${randId}`);
+        playSuccessBeep();
+        setFaydaFlashing(true);
+        setTimeout(() => setFaydaFlashing(false), 2000);
+        setScannerOpen(false);
+      } else {
+        setScanProgress(currentProgress);
+        if (currentProgress < 25) {
+          setScanMessage('Calibrating optical lenses & SVID keys...');
+        } else if (currentProgress < 55) {
+          setScanMessage('Scanning Fayda biometric QR code card...');
+        } else if (currentProgress < 80) {
+          setScanMessage('Performing Zero-Knowledge integrity checks...');
+        } else {
+          setScanMessage('Binding parameters to regional ledger matrix...');
+        }
+      }
+    }, 120);
+  };
+
+  const handleCancelScan = () => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    setScannerOpen(false);
+    toast.error('Scanning session terminated by agent.');
+  };
+
   // Dialog States
   const [showBankDialog, setShowBankDialog] = useState(false);
   const [showWithdrawDialog, setShowWithdrawDialog] = useState(false);
@@ -280,16 +367,42 @@ export default function Farmer360() {
       <Card className="bg-slate-900 border-slate-800 shadow-2xl p-2 relative overflow-hidden backdrop-blur-xl">
         <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
         <form onSubmit={handleSearch} className="flex flex-col sm:flex-row items-center gap-3 p-4">
-          <div className="relative flex-1 w-full">
+          <div className={`relative flex-1 w-full rounded-xl transition-all duration-300 ${faydaFlashing ? 'ring-4 ring-emerald-500 bg-emerald-500/10 border-emerald-500' : ''}`}>
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-500" />
             <input 
+              id="faydaInput"
               type="text" 
               placeholder={t.searchPlaceholder} 
-              className="w-full bg-slate-950 border border-slate-800 text-slate-100 pl-14 pr-4 py-5 rounded-xl focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 outline-none placeholder:text-slate-600 font-mono text-xl transition-all"
+              className={`w-full bg-slate-950 border border-slate-800 text-slate-100 pl-14 pr-12 py-5 rounded-xl outline-none placeholder:text-slate-600 font-mono text-xl transition-all ${faydaFlashing ? 'bg-emerald-950/20 border-emerald-500 text-emerald-400 font-bold' : 'focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500'}`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               disabled={isProcessing}
             />
+            <button 
+              type="button"
+              onClick={handleStartScan}
+              className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-md text-indigo-400 hover:text-indigo-200 hover:bg-slate-800 transition-all"
+              title="Simulate Camera Scanner"
+            >
+              <Camera className="w-5 h-5 animate-pulse" />
+            </button>
+
+            {/* Viewfinder overlay on top of input element during scan state */}
+            {scannerOpen && (
+              <div className="absolute inset-0 bg-slate-950/95 flex items-center justify-between px-4 text-xs font-mono text-indigo-400 z-10 rounded-xl border border-indigo-500 animate-pulse">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-indigo-500 animate-ping" />
+                  <span className="text-[10px] tracking-wider uppercase font-bold text-indigo-300">Scanner active</span>
+                </div>
+                
+                {/* Simulated local sweep scan line overlay */}
+                <div className="absolute inset-y-0 left-1/3 right-1/3 border-x border-indigo-500/20 overflow-hidden">
+                  <div className="w-full h-1 bg-gradient-to-r from-transparent via-indigo-400 to-transparent shadow-[0_0_8px_#6366f1] animate-bounce" />
+                </div>
+
+                <span className="text-[9px] text-slate-400">OCR Read...</span>
+              </div>
+            )}
           </div>
           <Button 
             type="submit"
@@ -673,6 +786,103 @@ export default function Farmer360() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Immersive Camera Scanner Simulation Modal */}
+      {scannerOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md">
+          <Card className="w-full max-w-lg border-2 border-indigo-500/30 bg-slate-900 text-white shadow-2xl relative overflow-hidden">
+            {/* Cyber Grid Background */}
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:24px_24px] opacity-10" />
+            
+            <div className="relative p-6 flex flex-col items-center">
+              <div className="flex justify-between items-center w-full pb-4 border-b border-slate-800">
+                <span className="text-xs font-mono font-bold tracking-widest text-indigo-400 flex items-center gap-1.5 uppercase">
+                  <span className="w-2 h-2 rounded-full bg-indigo-500 animate-ping" />
+                  Secured SVID Camera Node Link
+                </span>
+                <button 
+                  onClick={handleCancelScan} 
+                  className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Holographic Target Viewfinder */}
+              <div className="w-full aspect-video rounded-xl bg-slate-950/90 border border-slate-800 relative overflow-hidden flex flex-col items-center justify-center my-6">
+                
+                {/* Scanner Laser Sweep Line */}
+                <div 
+                  className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-indigo-500 to-transparent shadow-[0_0_15px_#6366f1] animate-bounce w-full"
+                />
+
+                {/* Cyber Corner Targets */}
+                <div className="absolute top-4 left-4 w-6 h-6 border-t-2 border-l-2 border-indigo-500" />
+                <div className="absolute top-4 right-4 w-6 h-6 border-t-2 border-r-2 border-indigo-500" />
+                <div className="absolute bottom-4 left-4 w-6 h-6 border-b-2 border-l-2 border-indigo-500" />
+                <div className="absolute bottom-4 right-4 w-6 h-6 border-b-2 border-r-2 border-indigo-500" />
+
+                {/* Real-time Telemetry Data Box (Decrypted Stream) */}
+                <div className="absolute inset-x-6 top-6 bottom-6 flex flex-col justify-between border border-white/5 bg-black/30 p-4 rounded-lg font-mono text-[10px] text-slate-400 pointer-events-none">
+                  <div className="flex justify-between">
+                    <span>GRID: MODJO_GEO_FENCE_2</span>
+                    <span>FPS: 60.00</span>
+                  </div>
+
+                  <div className="flex flex-col items-center justify-center py-6">
+                    <UserCheck className="w-12 h-12 text-indigo-400/40 animate-pulse mb-2" />
+                    <span className="text-white text-xs text-center font-bold font-sans uppercase">
+                      Place Fayda QR Card
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between text-[9px] text-slate-500">
+                    <span>SVID: verified_trust</span>
+                    <span>WRE_NEXUS: active</span>
+                  </div>
+                </div>
+
+                {/* Animated Scanner Progress Ring/Overlay */}
+                <div className="absolute inset-0 bg-black/10 flex items-center justify-center backdrop-blur-[1px] pointer-events-none">
+                  <div className="text-center">
+                    <div className="font-mono text-4xl font-extrabold tracking-widest text-white/90">
+                      {scanProgress}%
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Progress and status message */}
+              <div className="w-full space-y-3">
+                <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                  <div 
+                    className="h-full bg-indigo-500 transition-all duration-100"
+                    style={{ width: `${scanProgress}%` }}
+                  />
+                </div>
+
+                <div className="bg-slate-950 border border-slate-800 p-3 rounded-lg flex items-center gap-3">
+                  <RefreshCw className="w-4 h-4 text-indigo-400 animate-spin flex-shrink-0" />
+                  <p className="font-mono text-xs text-slate-300 leading-relaxed truncate">
+                    {scanMessage}
+                  </p>
+                </div>
+              </div>
+
+              <div className="w-full flex justify-end mt-6 gap-2 border-t border-slate-800 pt-4">
+                <Button 
+                  type="button"
+                  variant="outline" 
+                  onClick={handleCancelScan}
+                  className="bg-transparent hover:bg-slate-800 border-slate-700 text-slate-300 font-semibold"
+                >
+                  Cancel Scan
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
 
     </div>
   );
