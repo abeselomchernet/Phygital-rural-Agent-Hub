@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Activity, ShieldCheck, Users, Repeat, Network, Coins, Wifi, Zap, Globe, Cpu, RefreshCw, LayoutDashboard } from "lucide-react";
+import { Activity, ShieldCheck, Users, Repeat, Network, Coins, Wifi, Zap, Globe, Cpu, RefreshCw, LayoutDashboard, ExternalLink, Store, ShieldAlert } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const data = [
@@ -112,6 +112,63 @@ export default function Dashboard() {
                <span className="text-emerald-400 mr-1 flex items-center"><ShieldCheck className="w-3 h-3 mr-1"/> SPV Tokenized</span> G2P Payouts Ready
             </p>
           </CardContent>
+        </Card>
+      </div>
+
+      {/* Cinematic Portals Launcher */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card className="border border-indigo-100 overflow-hidden relative bg-gradient-to-br from-indigo-50/50 to-white shadow-sm hover:shadow-md hover:border-indigo-300 transition-all">
+          <div className="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <div className="p-3 rounded-xl bg-indigo-500/10 text-indigo-600">
+                <Store className="w-8 h-8" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold text-slate-800 text-lg">Agent POS Kiosk</h3>
+                  <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 border-none">Offline Ready</Badge>
+                </div>
+                <p className="text-slate-500 text-sm mt-1 max-w-md">
+                  Launch the decoupled edge POS interface used by offline rural merchant agents to stage transactions, collect crop payments, and load digital wallets without immediate network connections.
+                </p>
+              </div>
+            </div>
+            <a 
+              href="/kiosk" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-semibold whitespace-nowrap transition-all outline-none select-none bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm h-9 gap-1.5 px-3.5"
+            >
+              Launch Kiosk <ExternalLink className="w-4 h-4 ml-2" />
+            </a>
+          </div>
+        </Card>
+
+        <Card className="border border-blue-100 overflow-hidden relative bg-gradient-to-br from-blue-50/50 to-white shadow-sm hover:shadow-md hover:border-blue-300 transition-all">
+          <div className="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <div className="p-3 rounded-xl bg-blue-500/10 text-blue-600">
+                <Users className="w-8 h-8" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold text-slate-800 text-lg">Super Agent Portal</h3>
+                  <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 border-none">Sync Supervisor</Badge>
+                </div>
+                <p className="text-slate-500 text-sm mt-1 max-w-md">
+                  Launch the supervisory platform for managing decentralized route mapping, validating local bulk ledger synchronizations, and physical float distribution logs.
+                </p>
+              </div>
+            </div>
+            <a 
+              href="/supervisor" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-semibold whitespace-nowrap transition-all outline-none select-none bg-blue-600 hover:bg-blue-700 text-white shadow-sm h-9 gap-1.5 px-3.5"
+            >
+              Launch Portal <ExternalLink className="w-4 h-4 ml-2" />
+            </a>
+          </div>
         </Card>
       </div>
 
