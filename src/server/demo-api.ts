@@ -19,6 +19,13 @@ export function registerDemoApi(app: Express) {
   const customer = customers.create(demoPhones[0]);
   identity.start(customer.customerId);
   identity.confirm(customer.customerId);
+  // These are distinct synthetic setup steps: identity verification does not
+  // prove phone possession or create a regulated PartnerFI relationship.
+  customers.recordMockPhoneVerification(customer.customerId);
+  customers.linkPartnerCustomer(
+    customer.customerId,
+    partner.lookupPartnerCustomer(customer.customerId),
+  );
   const fixtureId = customer.customerId;
   app.use("/api/demo", (req, res, next) => {
     if (req.method !== "GET" && !req.is("application/json"))
@@ -62,7 +69,9 @@ export function registerDemoApi(app: Express) {
   app.post("/api/demo/reverify/confirm", (req, res) =>
     respond(res, () => {
       z.object({}).strict().parse(req.body);
-      return identity.confirm(fixtureId);
+      identity.confirm(fixtureId);
+      // Separate synthetic phone-channel confirmation for presentation only.
+      return customers.recordMockPhoneVerification(fixtureId);
     }),
   );
   app.get("/api/demo/account", (_req, res) =>
