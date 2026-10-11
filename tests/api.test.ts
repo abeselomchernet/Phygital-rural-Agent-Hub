@@ -53,7 +53,10 @@ function post(
 }
 
 test("synthetic customer API requires session, CSRF, role and object authorization", async () => {
-  const server = createApp().listen(0, "127.0.0.1");
+  const server = createApp({ allowPrivilegedSyntheticRoles: true }).listen(
+    0,
+    "127.0.0.1",
+  );
   await new Promise<void>((resolve) => server.once("listening", resolve));
   const base = `http://127.0.0.1:${(server.address() as any).port}`;
   try {
@@ -224,6 +227,34 @@ test("synthetic customer API requires session, CSRF, role and object authorizati
       403,
     );
     assert.equal((await fetch(base + "/api/not-a-route")).status, 404);
+  } finally {
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve())),
+    );
+  }
+});
+
+test("default synthetic runtime refuses client-selected privileged roles", async () => {
+  const server = createApp().listen(0, "127.0.0.1");
+  await new Promise<void>((resolve) => server.once("listening", resolve));
+  const base = `http://127.0.0.1:${(server.address() as any).port}`;
+  try {
+    for (const role of ["SUPERVISOR", "PARTNER_ADMIN"])
+      assert.equal(
+        (
+          await fetch(base + "/api/demo/session/start", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ role }),
+          })
+        ).status,
+        403,
+      );
+    const agent = await startSession(base, "AGENT");
+    assert.equal(
+      (await authedFetch(base, agent, "/api/demo/customer")).status,
+      200,
+    );
   } finally {
     await new Promise<void>((resolve, reject) =>
       server.close((error) => (error ? reject(error) : resolve())),
