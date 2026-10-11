@@ -169,7 +169,7 @@ export default function OnboardAgent() {
     setTimeout(() => {
       if (formData.nationalId.startsWith('FAY')) {
         setFaydaVerified(true);
-        toast.success('Fayda Cryptographic Identity Verified');
+        toast.info('Demo format check passed. Identity was not verified.');
         setCurrentStep(2);
       } else {
         toast.error('Invalid Fayda ID format. Try FAY-123456');
@@ -187,7 +187,7 @@ export default function OnboardAgent() {
     setTimeout(() => {
       if (formData.tinNumber.length >= 8) {
         setTinVerified(true);
-        toast.success('NBE / Ministry of Revenue TIN Verified');
+        toast.info('Demo format check passed. TIN was not verified.');
         setCurrentStep(3);
       } else {
         toast.error('TIN must be at least 8 digits');
@@ -205,7 +205,7 @@ export default function OnboardAgent() {
     setTimeout(() => {
       if (formData.posSerial.startsWith('POS-')) {
         setPosAssigned(true);
-        toast.success('Hardware Cryptographically Bound to Agent Profile');
+        toast.info('Demo format check passed. Hardware was not provisioned.');
         setCurrentStep(4);
       } else {
          toast.error('Invalid Hardware Node ID. Use POS-XXXX formatting.');
@@ -219,10 +219,10 @@ export default function OnboardAgent() {
     try {
       await addEventToQueue('ONBOARD_AGENT', { 
         ...formData, 
-        status: 'ACADEMY_ENROLLED',
+        status: 'DEMO_LOCAL_ONLY',
         timestamp: new Date().toISOString() 
       });
-      toast.success('Agent Provisioned & Admitted to Academy HQ');
+      toast.info('Saved in this browser only. No identity was verified and no agent was onboarded.');
       
       // Reset
       setTimeout(() => {
@@ -247,6 +247,7 @@ export default function OnboardAgent() {
       <div>
         <h1 className="text-3xl font-light tracking-tight text-slate-900 border-b border-indigo-200 pb-3">Agent Provisioning Gateway</h1>
         <p className="text-slate-500 mt-3 font-medium uppercase tracking-widest text-[10px]">Tier 1 Physical Edge Node Onboarding</p>
+        <p className="mt-3 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">Synthetic demo only. Do not enter real identity, phone, tax, or business details. The checks below are local format simulations; submitting saves a record in this browser only.</p>
       </div>
 
       {/* Progress Wizard */}
@@ -457,22 +458,22 @@ export default function OnboardAgent() {
                 <div className="w-16 h-16 bg-indigo-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border border-indigo-400">
                    <GraduationCap className="w-8 h-8 text-indigo-400" />
                 </div>
-                <CardTitle className="text-2xl font-light text-slate-100">Ready for Agent Academy</CardTitle>
-                <CardDescription className="text-slate-400">All constraints met. Profile is securely staged.</CardDescription>
+                <CardTitle className="text-2xl font-light text-slate-100">Ready to save demo record</CardTitle>
+                <CardDescription className="text-slate-400">Local format checks passed. No external verification or onboarding occurred.</CardDescription>
               </CardHeader>
               <CardContent className="pt-6 relative">
                  <div className="bg-black/40 rounded-lg p-6 border border-slate-800 space-y-3 font-mono text-xs">
                     <div className="flex items-center justify-between">
                        <span className="text-slate-500">Fayda ZK Anchor:</span>
-                       <span className="text-emerald-400 flex items-center"><CheckCircle2 className="w-3 h-3 mr-1"/> Verified ({formData.nationalId})</span>
+                       <span className="text-emerald-400 flex items-center"><CheckCircle2 className="w-3 h-3 mr-1"/> Demo format checked</span>
                     </div>
                     <div className="flex items-center justify-between">
                        <span className="text-slate-500">Commercial Authority:</span>
-                       <span className="text-emerald-400 flex items-center"><CheckCircle2 className="w-3 h-3 mr-1"/> Cleared (TIN: {formData.tinNumber})</span>
+                       <span className="text-emerald-400 flex items-center"><CheckCircle2 className="w-3 h-3 mr-1"/> Demo format checked</span>
                     </div>
                     <div className="flex items-center justify-between">
                        <span className="text-slate-500">Hardware Bound:</span>
-                       <span className="text-emerald-400 flex items-center"><CheckCircle2 className="w-3 h-3 mr-1"/> Linked ({formData.posSerial})</span>
+                       <span className="text-emerald-400 flex items-center"><CheckCircle2 className="w-3 h-3 mr-1"/> Demo format checked ({formData.posSerial})</span>
                     </div>
                     <div className="flex items-center justify-between border-t border-slate-800 pt-3 mt-3">
                        <span className="text-slate-500">Geo-Fence Active:</span>
@@ -482,7 +483,7 @@ export default function OnboardAgent() {
               </CardContent>
               <CardFooter className="pt-4 pb-8 flex flex-col items-center space-y-4">
                  <Button onClick={handleFinalSubmit} disabled={loading} size="lg" className="w-full max-w-sm bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg text-lg font-bold">
-                    {loading ? 'Queuing Event...' : 'Transmit to GhostSync Grid'}
+                    {loading ? 'Saving locally...' : 'Save demo record in this browser'}
                  </Button>
                  <Button variant="ghost" onClick={() => setCurrentStep(3)} className="text-slate-400 hover:text-white">Review Constraints</Button>
               </CardFooter>

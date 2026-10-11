@@ -17,6 +17,10 @@ interface GhostSyncDB extends DBSchema {
 
 let dbPromise: Promise<IDBPDatabase<GhostSyncDB>> | null = null;
 
+// Do not enable remote delivery with a public build flag. A later change must
+// provide an authenticated, durable receiver before this value can change.
+export const remoteSyncEnabled = false;
+
 function getDb(): Promise<IDBPDatabase<GhostSyncDB>> {
   if (!dbPromise && typeof window !== 'undefined') {
     dbPromise = openDB<GhostSyncDB>('GhostSyncDB', 1, {
@@ -48,8 +52,7 @@ export async function addEventToQueue(type: string, payload: any) {
     retry_count: 0
   });
 
-  // Try to sync immediately
-  syncEvents();
+  if (remoteSyncEnabled) void syncEvents();
   return row_key;
 }
 
@@ -70,12 +73,12 @@ export async function retryEvent(row_key: string) {
     event.status = 'pending';
     event.retry_count = 0;
     await db.put('outbox', event);
-    // Trigger sync immediately in background
-    syncEvents();
+    if (remoteSyncEnabled) void syncEvents();
   }
 }
 
 export async function syncEvents() {
+  if (!remoteSyncEnabled) return;
   if (!navigator.onLine) return;
 
   const db = await getDb();
@@ -105,8 +108,9 @@ export async function syncEvents() {
       body: JSON.stringify({ events: toSync })
     });
     
-    if (res.ok) {
+    if (res.ok && res.headers.get('content-type')?.includes('application/json')) {
       const { processed } = await res.json();
+      if (!Array.isArray(processed)) throw new Error('Invalid GhostSync acknowledgement');
       // Remove successfully processed
       for (const p of processed) {
         if (p.status === 'success') {
@@ -114,9 +118,9 @@ export async function syncEvents() {
         }
       }
       
-      const timestamp = new Date().toISOString();
-      localStorage.setItem('ghostsync_last_success', timestamp);
-      if (typeof window !== 'undefined') {
+      if (processed.some(p => p.status === 'success')) {
+        const timestamp = new Date().toISOString();
+        localStorage.setItem('ghostsync_last_success', timestamp);
         window.dispatchEvent(new CustomEvent('ghostsync:success', { detail: { timestamp } }));
       }
     } else {

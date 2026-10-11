@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Activity, ShieldCheck, Users, Repeat, Network, Coins, Wifi, Zap, Globe, Cpu, RefreshCw, LayoutDashboard, ExternalLink, Store, ShieldAlert, AlertTriangle, PlayCircle, Server } from "lucide-react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { getPendingEvents, retryEvent, clearEvent } from '@/lib/ghostsync';
+import { getPendingEvents, retryEvent, clearEvent, remoteSyncEnabled } from '@/lib/ghostsync';
 import { toast } from 'sonner';
 
 const data = [
@@ -104,7 +104,7 @@ export default function Dashboard() {
               <div className="flex items-center text-red-800 space-x-2">
                 <AlertTriangle className="w-5 h-5 text-red-600 animate-pulse" />
                 <CardTitle className="text-sm font-black uppercase tracking-wider">
-                  GhostSync Buffer Alert: {failedEvents.length} Connection Failure(s) Detected
+                  GhostSync Local Outbox: {failedEvents.length} Unsent Item(s)
                 </CardTitle>
               </div>
               <Badge variant="destructive" className="font-mono text-xs px-2.5 py-0.5">
@@ -112,7 +112,9 @@ export default function Dashboard() {
               </Badge>
             </div>
             <CardDescription className="text-red-700/80">
-              Transactions buffered locally due to simulated or actual telemetry offline gaps. Resolve or retry items to synchronize.
+              {remoteSyncEnabled
+                ? 'Delivery failed. The items remain in this browser until a receiving service acknowledges them.'
+                : 'Remote delivery is disabled. These items remain in this browser and have not been onboarded or synchronized.'}
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-0 pb-4">
@@ -125,22 +127,18 @@ export default function Dashboard() {
                         {evt.type}
                       </span>
                       <Badge variant="outline" className="text-[10px] text-rose-600 border-rose-200 bg-rose-50/50 font-bold">
-                        Failed Retry Limit (Attempts: {evt.retry_count})
+                        Unsent (previous attempts: {evt.retry_count})
                       </Badge>
                     </div>
                     <p className="text-[11px] text-slate-400 font-mono">
                       Queued: {new Date(evt.created_at).toLocaleString()} • ID: {evt.row_key.substring(0, 8)}...
                     </p>
-                    {evt.payload && (
-                      <div className="bg-slate-50 border border-slate-100 rounded p-1.5 text-[10px] font-mono text-slate-650 max-w-full overflow-x-auto select-all">
-                        {JSON.stringify(evt.payload).substring(0, 160)}
-                        {JSON.stringify(evt.payload).length > 160 ? '...' : ''}
-                      </div>
-                    )}
+                    <p className="text-[10px] text-slate-500">Payload hidden because it may contain personal information.</p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <Button
                       onClick={() => handleRetrySingle(evt.row_key)}
+                      disabled={!remoteSyncEnabled}
                       variant="outline"
                       size="sm"
                       className="h-8 text-xs border-indigo-200 text-indigo-700 hover:bg-indigo-50 font-bold"

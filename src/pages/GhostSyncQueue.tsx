@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { getPendingEvents, syncEvents, clearEvent } from '@/lib/ghostsync';
+import { getPendingEvents, syncEvents, clearEvent, remoteSyncEnabled } from '@/lib/ghostsync';
 import { Button } from '@/components/ui/button';
 import { 
   HardDriveDownload, AlertCircle, RefreshCcw, Trash2, 
@@ -160,6 +160,10 @@ export default function GhostSyncQueue() {
   }, [selectedConflict]);
 
   const handleForceSync = async () => {
+    if (!remoteSyncEnabled) {
+      toast.info('Remote delivery is disabled. Items remain in this browser.');
+      return;
+    }
     if (!navigator.onLine) {
       toast.error('You are currently offline.');
       return;
@@ -400,7 +404,7 @@ export default function GhostSyncQueue() {
               <Button onClick={handleClearFailed} variant="outline" className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 bg-white">
                 <Trash2 className="w-4 h-4 mr-2" /> Clear All Failed
               </Button>
-              <Button onClick={handleForceSync} variant="outline" className="bg-white hover:bg-slate-100">
+              <Button onClick={handleForceSync} disabled={!remoteSyncEnabled} variant="outline" className="bg-white hover:bg-slate-100">
                 <RefreshCcw className="w-4 h-4 mr-2" /> Force Sync
               </Button>
             </div>
@@ -441,7 +445,7 @@ export default function GhostSyncQueue() {
                 <HardDriveDownload className="w-5 h-5 text-indigo-500" />
                 <div>
                   <CardTitle className="text-lg">Local Outbox Outpost Queue</CardTitle>
-                  <CardDescription className="text-xs">Transactions buffered locally inside the device browser stage. Sync triggers automatically on network recovery.</CardDescription>
+                  <CardDescription className="text-xs">{remoteSyncEnabled ? 'Items remain local until the receiver acknowledges them.' : 'Demo mode: items stay in this browser. Remote delivery and onboarding are disabled.'}</CardDescription>
                 </div>
               </div>
             </CardHeader>
@@ -452,7 +456,7 @@ export default function GhostSyncQueue() {
                     <FileCheck className="w-6 h-6" />
                   </div>
                   <p className="font-semibold text-slate-800">Queue is empty</p>
-                  <p className="text-xs text-slate-400 mt-1 max-w-xs">All local transactions are successfully sequenced & verified upstream with high-fidelity hashes.</p>
+                  <p className="text-xs text-slate-400 mt-1 max-w-xs">There are no items stored in this browser outbox.</p>
                 </div>
               ) : (
                 <Table>
@@ -498,11 +502,11 @@ export default function GhostSyncQueue() {
                         </TableCell>
                         <TableCell className="font-mono text-xs text-slate-500">{e.retry_count} / 5</TableCell>
                         <TableCell>
-                          {e.status === 'pending' && <Badge variant="secondary" className="bg-slate-100 text-slate-700 rounded-lg">Pending</Badge>}
+                          {e.status === 'pending' && <Badge variant="secondary" className="bg-slate-100 text-slate-700 rounded-lg">Local only</Badge>}
                           {e.status === 'syncing' && <Badge className="bg-blue-100 text-blue-700 rounded-lg animate-pulse border border-blue-200">Harvesting</Badge>}
                           {e.status === 'failed' && (
                             <Badge variant="destructive" className="flex w-fit items-center rounded-lg">
-                              <AlertCircle className="w-3 h-3 mr-1" /> Failed Retry
+                              <AlertCircle className="w-3 h-3 mr-1" /> Unsent
                             </Badge>
                           )}
                         </TableCell>
