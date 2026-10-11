@@ -16,10 +16,14 @@ export const demoPhones = [
   "+251900000003",
 ] as const;
 
+export interface DemoApiOptions {
+  allowPrivilegedSyntheticRoles?: boolean;
+}
+
 const roleSchema = z.enum(["AGENT", "SUPERVISOR", "PARTNER_ADMIN"]);
 const mutationMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
-export function registerDemoApi(app: Express) {
+export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
   const customers = new CustomerStore(),
     identity = new KycService(customers, new MockFaydaAdapter());
   const partner = new MockPartnerFI(),
@@ -60,6 +64,8 @@ export function registerDemoApi(app: Express) {
         .object({ role: roleSchema.default("AGENT") })
         .strict()
         .parse(req.body);
+      if (role !== "AGENT" && !options.allowPrivilegedSyntheticRoles)
+        throw new SyntheticAuthError("PRIVILEGED_SYNTHETIC_ROLE_DISABLED", 403);
       const allowedCustomerIds = [fixtureId];
       const session = auth.createSession(role as SyntheticRole, allowedCustomerIds);
       auth.setSessionCookie(req, res, session);
