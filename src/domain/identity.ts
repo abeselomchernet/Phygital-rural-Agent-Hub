@@ -26,23 +26,25 @@ export class MockFaydaAdapter implements IdentityVerificationProvider {
   verifyOfflineCredential() { return {status:'UNSUPPORTED' as const}; }
 }
 export class KycService {
-  private pending = new Map<string, { id: string; reason: Reason }>();
+  private pending = new Map<string, { id: string; reason: Reason; phone?: string }>();
   constructor(private customers: CustomerStore, private provider: IdentityVerificationProvider) {}
   start(id: string, reason: Reason = 'MANUAL_REVIEW') {
     const customer = this.customers.get(id);
     if (customer.kycStatus === 'UNVERIFIED') this.customers.transition(id, 'PENDING', reason);
     else if (customer.kycStatus !== 'PENDING') throw new Error('INVALID_KYC_TRANSITION');
-    const request = this.provider.startVerification(id); this.pending.set(id,{id:request,reason}); return request;
+    const request = this.provider.startVerification(id); this.pending.set(id,{id:request,reason,phone:this.customers.get(id).primaryPhone}); return request;
   }
   requestReverification(id: string, reason: Reason) {
     const customer = this.customers.get(id);
     if (customer.kycStatus === 'VERIFIED') this.customers.transition(id,'REVERIFICATION_REQUIRED',reason);
     else if (customer.kycStatus !== 'REVERIFICATION_REQUIRED') throw new Error('INVALID_KYC_TRANSITION');
-    const request=this.provider.requestReverification(id); this.pending.set(id,{id:request,reason}); return request;
+    const request=this.provider.requestReverification(id); this.pending.set(id,{id:request,reason,phone:this.customers.get(id).primaryPhone}); return request;
   }
   confirm(id: string) {
     const request=this.pending.get(id); if (!request) throw new Error('VERIFICATION_NOT_STARTED');
-    const status=this.customers.get(id).kycStatus;
+    const customer=this.customers.get(id);
+    if (customer.primaryPhone !== request.phone) throw new Error('VERIFICATION_ALIAS_CHANGED');
+    const status=customer.kycStatus;
     if (status !== 'PENDING' && status !== 'REVERIFICATION_REQUIRED') throw new Error('INVALID_KYC_TRANSITION');
     const reference=this.provider.confirmVerification(request.id);
     this.customers.transition(id,'VERIFIED',request.reason,'MOCK_PROVIDER');

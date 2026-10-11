@@ -27,7 +27,8 @@ import BankRacing from './pages/BankRacing';
 import SettlementSandbox from './pages/SettlementSandbox';
 import ArdiEngine from './pages/ArdiEngine';
 import LiveTranscription from './pages/LiveTranscription';
-import DemoPresenter from './components/DemoPresenter';
+import type { ReactNode } from 'react';
+function LegacyIllustration({children}:{children:ReactNode}) { return <><p className="p-3 bg-amber-950 text-amber-100">Legacy synthetic illustration. Financial actions are disabled pending migration to customer/KYC and PartnerFI boundaries.</p><fieldset disabled>{children}</fieldset></>; }
 import { Toaster } from './components/ui/sonner';
 
 export default function App() {
@@ -37,30 +38,30 @@ export default function App() {
 
   return (
     <>
-      <DemoPresenter />
+      <div role="note" className="p-3 bg-amber-950 text-amber-100 text-center">Prototype / Synthetic Demo — Wishland: technology provider. PartnerFI: future regulated principal. All financial and identity integrations are simulated; no production or pilot authorization.</div>
       <Routes>
         <Route path="/" element={<AppLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="onboard" element={<OnboardAgent />} />
           <Route path="academy" element={<AgentLms />} />
           <Route path="farmer-360" element={<Farmer360 />} />
-          <Route path="swaps" element={<SwapsLiquidity />} />
+          <Route path="swaps" element={<LegacyIllustration><SwapsLiquidity /></LegacyIllustration>} />
           <Route path="inventory" element={<InventoryManagement />} />
           <Route path="queue" element={<GhostSyncQueue />} />
-          <Route path="audit" element={<AuditCompliance />} />
+          <Route path="audit" element={<LegacyIllustration><AuditCompliance /></LegacyIllustration>} />
           <Route path="node-status" element={<SovereignNodeStatus />} />
-          <Route path="fmcg-liquidity" element={<FmcgLiquidity />} />
-          <Route path="data-mule" element={<DataMule />} />
-          <Route path="kentiq-payg" element={<KentiqPayg />} />
-          <Route path="smartcycle" element={<SmartCycleEqub />} />
-          <Route path="bank-racing" element={<BankRacing />} />
-          <Route path="psnp-plus" element={<PsnpPlus />} />
-          <Route path="securitization" element={<Securitization />} />
-          <Route path="agri-connect" element={<AgriConnect />} />
-          <Route path="agritrust" element={<AgriTrustInsurance />} />
-          <Route path="governance" element={<GovernanceCouncil />} />
+          <Route path="fmcg-liquidity" element={<LegacyIllustration><FmcgLiquidity /></LegacyIllustration>} />
+          <Route path="data-mule" element={<LegacyIllustration><DataMule /></LegacyIllustration>} />
+          <Route path="kentiq-payg" element={<LegacyIllustration><KentiqPayg /></LegacyIllustration>} />
+          <Route path="smartcycle" element={<LegacyIllustration><SmartCycleEqub /></LegacyIllustration>} />
+          <Route path="bank-racing" element={<LegacyIllustration><BankRacing /></LegacyIllustration>} />
+          <Route path="psnp-plus" element={<LegacyIllustration><PsnpPlus /></LegacyIllustration>} />
+          <Route path="securitization" element={<LegacyIllustration><Securitization /></LegacyIllustration>} />
+          <Route path="agri-connect" element={<LegacyIllustration><AgriConnect /></LegacyIllustration>} />
+          <Route path="agritrust" element={<LegacyIllustration><AgriTrustInsurance /></LegacyIllustration>} />
+          <Route path="governance" element={<LegacyIllustration><GovernanceCouncil /></LegacyIllustration>} />
           <Route path="ardi-engine" element={<ArdiEngine />} />
-          <Route path="sandbox" element={<SettlementSandbox />} />
+          <Route path="sandbox" element={<LegacyIllustration><SettlementSandbox /></LegacyIllustration>} />
           <Route path="transcription" element={<LiveTranscription />} />
         </Route>
         {/* Cinematic Dashboards outside of AppLayout */}

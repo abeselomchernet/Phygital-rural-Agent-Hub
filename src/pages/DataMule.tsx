@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Database, WifiOff, RefreshCcw, ShieldCheck, Bluetooth } from 'lucide-react';
 
 export default function DataMule() {
-  const [meshStatus, setMeshStatus] = useState<'ISOLATED' | 'PEER_DISCOVERY' | 'SECURE_TUNNEL' | 'LEDGER_SETTLED'>('ISOLATED');
+  const [meshStatus, setMeshStatus] = useState<'ISOLATED' | 'PEER_DISCOVERY' | 'SECURE_TUNNEL' | 'SYNCED_TO_SUPERVISOR'>('ISOLATED');
   const [offlineTxns, setOfflineTxns] = useState(142);
   const [mulePayload, setMulePayload] = useState(0);
   
@@ -31,8 +31,8 @@ export default function DataMule() {
   const handleCoreSync = () => {
      toast.loading("Mule reached Cellular Grid. Offloading to Sovereign Core...");
      setTimeout(() => {
-        setMeshStatus('LEDGER_SETTLED');
-        toast.success(`Settlement Complete: ${mulePayload} Transferred safely.`);
+        setMeshStatus('SYNCED_TO_SUPERVISOR');
+        toast.success(`Simulated transport complete: ${mulePayload} No financial settlement.`);
         setMulePayload(0);
      }, 3000);
   }
@@ -110,7 +110,7 @@ export default function DataMule() {
           <CardContent className="space-y-6 flex flex-col justify-end">
             <div className="p-6 border border-dashed border-emerald-200 rounded-xl text-center mb-auto">
                <p className="text-sm text-slate-500 mb-2">Awaiting Mule Arrival</p>
-               {meshStatus === 'LEDGER_SETTLED' && <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200">State: Synchronized</Badge>}
+               {meshStatus === 'SYNCED_TO_SUPERVISOR' && <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-200">State: Synchronized</Badge>}
             </div>
             <Button 
               className="w-full bg-emerald-600 hover:bg-emerald-700" 
@@ -118,7 +118,7 @@ export default function DataMule() {
               disabled={mulePayload === 0}
             >
               <RefreshCcw className="w-4 h-4 mr-2" />
-              Settle to Core Ledger
+              Simulate transport to supervisor
             </Button>
           </CardContent>
         </Card>

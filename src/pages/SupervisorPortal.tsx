@@ -27,10 +27,6 @@ export default function SupervisorPortal() {
   const [meshState, setMeshState] = useState<'idle' | 'broadcasting' | 'syncing' | 'complete'>('idle');
   const [syncedAgents, setSyncedAgents] = useState<any[]>([]);
 
-  // Onboarding State
-  const [onboardStep, setOnboardStep] = useState(1);
-  const [onboardData, setOnboardData] = useState({ fayda: '', tin: '', posSerial: '' });
-
   // Terminal Lock State
   const [lockedAgents, setLockedAgents] = useState<Record<string, boolean>>({});
   
@@ -101,19 +97,9 @@ export default function SupervisorPortal() {
       
       setTimeout(() => {
         setMeshState('complete');
-        toast.success("Mesh Sync Complete. 67 Offline ledgers securely buffered.", { id: 'mesh' });
+        toast.success("Simulated supervisor transport receipt. No real delivery or settlement.", { id: 'mesh' });
       }, 7000);
     }, 2000);
-  };
-
-  const handleOnboardSubmit = () => {
-    toast.loading("Completing synthetic onboarding demonstration...", { id: 'onboard' });
-    setTimeout(() => {
-      toast.info("Demo complete. No identity or TIN was verified, and no agent was approved or provisioned.", { id: 'onboard' });
-      setOnboardStep(1);
-      setOnboardData({ fayda: '', tin: '', posSerial: '' });
-      setActiveView('DASHBOARD');
-    }, 3000);
   };
 
   return (
@@ -142,7 +128,7 @@ export default function SupervisorPortal() {
           <p className="text-xs text-slate-400 font-bold tracking-widest mt-1">Modjo Command / Node 04</p>
         </div>
         <div className="bg-slate-950 px-4 py-2 rounded-xl border border-slate-800 text-right">
-          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-none mb-1">Master Float</p>
+          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-none mb-1">Mock Partner Float</p>
           <p className="text-xl font-black text-white leading-none">250,000 <span className="text-xs text-slate-400">ETB</span></p>
         </div>
       </header>
@@ -177,7 +163,7 @@ export default function SupervisorPortal() {
                 <CardContent className="p-6 flex flex-col items-center justify-center text-center">
                   <Coins className="w-8 h-8 mb-2 text-indigo-400" />
                   <p className="text-3xl font-black text-indigo-300">14.2<span className="text-sm">k</span></p>
-                  <p className="text-[10px] text-indigo-500 uppercase font-bold tracking-widest">Network Commissions</p>
+                  <p className="text-[10px] text-indigo-500 uppercase font-bold tracking-widest">Simulated Commissions</p>
                   <p className="text-[9px] text-slate-500 font-mono mt-1">+125 ETB (30 mins)</p>
                 </CardContent>
               </Card>
@@ -352,137 +338,13 @@ export default function SupervisorPortal() {
           </div>
         )}
 
-        {/* === ONBOARD AGENT VIEW === */}
-        {activeView === 'ONBOARD' && (
-          <div className="p-6 max-w-2xl mx-auto pb-24">
-            <h2 className="text-2xl font-black text-white uppercase tracking-widest mb-6 border-b border-slate-800 pb-4">Agent Provisioning</h2>
-            <p className="mb-6 rounded-xl border border-amber-600/40 bg-amber-950/30 p-4 text-sm text-amber-200">Synthetic demo only. This screen does not authenticate a supervisor, verify identity or tax records, or approve an agent. Use synthetic inputs only.</p>
-
-            {/* Stepper */}
-            <div className="flex items-center justify-between mb-8 relative">
-               <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-slate-800 z-0">
-                  <div className="h-full bg-indigo-500 transition-all duration-500" style={{ width: `${((onboardStep - 1) / 3) * 100}%` }} />
-               </div>
-               {[1, 2, 3, 4].map(step => (
-                  <div key={step} className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center font-black text-sm transition-colors ${
-                     onboardStep >= step ? 'bg-indigo-500 text-white shadow-[0_0_15px_rgba(79,70,229,0.5)]' : 'bg-slate-900 text-slate-500 border border-slate-800'
-                  }`}>
-                     {step}
-                  </div>
-               ))}
-            </div>
-
-            <Card className="bg-slate-900 border-slate-800 w-full mb-6 relative overflow-hidden">
-               <CardContent className="p-6 space-y-6 relative z-10">
-                  
-                  {/* Step 1: Fayda Identity */}
-                  {onboardStep === 1 && (
-                     <div className="animate-in fade-in slide-in-from-right-4">
-                        <div className="flex items-center mb-6">
-                           <div className="bg-indigo-500/20 p-3 rounded-xl mr-4"><Fingerprint className="w-6 h-6 text-indigo-400" /></div>
-                           <div>
-                              <h3 className="text-lg font-black text-white">Trust Root Identity</h3>
-                              <p className="text-xs text-slate-400 uppercase tracking-widest font-bold">Fayda Zero-Knowledge Probe</p>
-                           </div>
-                        </div>
-                        <input type="text" placeholder="Enter Fayda ID or Scan Thumbprint" value={onboardData.fayda} onChange={e => setOnboardData({...onboardData, fayda: e.target.value})} className="w-full bg-slate-950 border border-slate-800 py-4 px-4 rounded-xl text-white font-mono text-lg focus:outline-none focus:border-indigo-500 transition-colors" />
-                     </div>
-                  )}
-
-                  {/* Step 2: Commercial TIN */}
-                  {onboardStep === 2 && (
-                     <div className="animate-in fade-in slide-in-from-right-4">
-                        <div className="flex items-center mb-6">
-                           <div className="bg-blue-500/20 p-3 rounded-xl mr-4"><FileText className="w-6 h-6 text-blue-400" /></div>
-                           <div>
-                              <h3 className="text-lg font-black text-white">Business Compliance</h3>
-                              <p className="text-xs text-slate-400 uppercase tracking-widest font-bold">TIN & Trade License Capture</p>
-                           </div>
-                        </div>
-                        <input type="text" placeholder="Tax Identification Number (TIN)" value={onboardData.tin} onChange={e => setOnboardData({...onboardData, tin: e.target.value})} className="w-full bg-slate-950 border border-slate-800 py-4 px-4 rounded-xl text-white font-mono text-lg focus:outline-none focus:border-blue-500 transition-colors mb-4" />
-                        <button className="w-full py-6 border-2 border-dashed border-slate-700 rounded-xl text-slate-400 hover:text-white hover:border-slate-500 flex flex-col items-center justify-center transition-colors bg-slate-950/50">
-                           <Smartphone className="w-8 h-8 mb-2 opacity-50" />
-                           <span className="font-bold text-sm">Scan Trade License Document</span>
-                        </button>
-                     </div>
-                  )}
-
-                  {/* Step 3: Hardware Assignment */}
-                  {onboardStep === 3 && (
-                     <div className="animate-in fade-in slide-in-from-right-4">
-                        <div className="flex items-center mb-6">
-                           <div className="bg-orange-500/20 p-3 rounded-xl mr-4"><Box className="w-6 h-6 text-orange-400" /></div>
-                           <div>
-                              <h3 className="text-lg font-black text-white">Hardware Assignment</h3>
-                              <p className="text-xs text-slate-400 uppercase tracking-widest font-bold">POS Terminal & Printer Mating</p>
-                           </div>
-                        </div>
-                        <input type="text" placeholder="Scan Terminal Serial Barcode" value={onboardData.posSerial} onChange={e => setOnboardData({...onboardData, posSerial: e.target.value})} className="w-full bg-slate-950 border border-slate-800 py-4 px-4 rounded-xl text-white font-mono text-lg mb-4 focus:outline-none focus:border-orange-500" />
-                        <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
-                           <div>
-                              <p className="text-white font-bold">Thermal Printer (MPT-II)</p>
-                              <p className="text-xs text-slate-500 font-mono">MAC: Pending Bind</p>
-                           </div>
-                           <button className="px-4 py-2 bg-slate-800 text-xs font-bold text-white rounded-lg uppercase">Bind BLE</button>
-                        </div>
-                     </div>
-                  )}
-
-                  {/* Step 4: Training & Finalize */}
-                  {onboardStep === 4 && (
-                     <div className="animate-in fade-in slide-in-from-right-4">
-                        <div className="flex items-center mb-6">
-                           <div className="bg-emerald-500/20 p-3 rounded-xl mr-4"><GraduationCap className="w-6 h-6 text-emerald-400" /></div>
-                           <div>
-                              <h3 className="text-lg font-black text-white">Academy Sign-off</h3>
-                              <p className="text-xs text-slate-400 uppercase tracking-widest font-bold">Confirm LMS Completion</p>
-                           </div>
-                        </div>
-                        
-                        <div className="space-y-3 mb-6">
-                           <div className="flex items-center bg-slate-950 p-3 border border-slate-800 rounded-lg">
-                              <CheckCircle2 className="w-5 h-5 text-emerald-500 mr-3" />
-                              <span className="text-sm font-bold text-slate-300">GhostSync Operations Configured</span>
-                           </div>
-                           <div className="flex items-center bg-slate-950 p-3 border border-slate-800 rounded-lg">
-                              <CheckCircle2 className="w-5 h-5 text-emerald-500 mr-3" />
-                              <span className="text-sm font-bold text-slate-300">SmartCycle Equb Matrix Initialized</span>
-                           </div>
-                           <div className="flex items-center bg-slate-950 p-3 border border-emerald-900 rounded-lg">
-                              <AlertTriangle className="w-5 h-5 text-yellow-500 mr-3" />
-                              <span className="text-sm font-bold text-emerald-400">Agent Handover Ready</span>
-                           </div>
-                        </div>
-
-                        <div className="bg-indigo-900/20 border border-indigo-500/30 p-4 rounded-xl text-center">
-                           <p className="text-xs text-indigo-300 font-bold uppercase tracking-widest mb-1">Cryptographic Binding</p>
-                           <p className="text-[10px] text-slate-400">Minting Sub-Agent keys on Sovereign Registry...</p>
-                        </div>
-                     </div>
-                  )}
-               </CardContent>
-            </Card>
-
-            <div className="flex justify-between">
-               {onboardStep > 1 ? (
-                  <button onClick={() => setOnboardStep(p => p - 1)} className="px-6 py-4 bg-slate-800 text-white font-bold uppercase tracking-widest rounded-xl hover:bg-slate-700 transition-colors">Back</button>
-               ) : <div></div>}
-               
-               {onboardStep < 4 ? (
-                  <button onClick={() => setOnboardStep(p => p + 1)} className="px-8 py-4 bg-indigo-600 text-white font-black uppercase tracking-widest rounded-xl hover:bg-indigo-500 transition-colors flex items-center">Next <ArrowRight className="w-5 h-5 ml-2" /></button>
-               ) : (
-                  <button onClick={handleOnboardSubmit} className="px-8 py-4 bg-emerald-600 text-white font-black uppercase tracking-widest rounded-xl hover:bg-emerald-500 transition-colors flex items-center shadow-[0_0_30px_rgba(16,185,129,0.3)]">Complete Demo</button>
-               )}
-            </div>
-          </div>
-        )}
-
+        {activeView === 'ONBOARD' && <div className="p-6">Agent admission is disabled. No supervisor authentication or partner approval exists. Use the mock customer verification workflow for synthetic demonstrations only.</div>}
         {/* === FLEET MANAGEMENT VIEW === */}
         {activeView === 'FLEET' && (
           <div className="p-6 max-w-6xl mx-auto pb-24">
             <div className="mb-6">
               <h2 className="text-2xl font-black text-white uppercase tracking-widest">Fleet Management</h2>
-              <p className="text-slate-400 mt-2 text-sm">Agent profiles, metrics, and remote supervision.</p>
+              <p className="text-slate-400 mt-2 text-sm">Synthetic agent profiles and metrics. Remote controls are local UI simulations only.</p>
             </div>
             
             {/* MAP VIEW */}
@@ -594,7 +456,7 @@ export default function SupervisorPortal() {
                       <TableHead className="text-slate-400 font-bold uppercase text-xs tracking-wider text-right">Status</TableHead>
                       <TableHead className="text-slate-400 font-bold uppercase text-xs tracking-wider text-right">Txns</TableHead>
                       <TableHead className="text-slate-400 font-bold uppercase text-xs tracking-wider text-right">Volume (ETB)</TableHead>
-                      <TableHead className="text-slate-400 font-bold uppercase text-xs tracking-wider text-right">Current Float</TableHead>
+                      <TableHead className="text-slate-400 font-bold uppercase text-xs tracking-wider text-right">Simulated Partner Float</TableHead>
                       <TableHead className="text-slate-400 font-bold uppercase text-xs tracking-wider text-right">Ardi Score</TableHead>
                       <TableHead className="text-slate-400 font-bold uppercase text-xs tracking-wider text-right">Remote Actions</TableHead>
                     </TableRow>
