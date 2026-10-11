@@ -107,9 +107,9 @@ export default function SupervisorPortal() {
   };
 
   const handleOnboardSubmit = () => {
-    toast.loading("Provisioning Sub-Agent Credentials on Sovereign Switch...", { id: 'onboard' });
+    toast.loading("Completing synthetic onboarding demonstration...", { id: 'onboard' });
     setTimeout(() => {
-      toast.success("Agent Provisioned Successfully! Fayda, TIN, and POS locked to Root Identity.", { id: 'onboard' });
+      toast.info("Demo complete. No identity or TIN was verified, and no agent was approved or provisioned.", { id: 'onboard' });
       setOnboardStep(1);
       setOnboardData({ fayda: '', tin: '', posSerial: '' });
       setActiveView('DASHBOARD');
@@ -356,6 +356,7 @@ export default function SupervisorPortal() {
         {activeView === 'ONBOARD' && (
           <div className="p-6 max-w-2xl mx-auto pb-24">
             <h2 className="text-2xl font-black text-white uppercase tracking-widest mb-6 border-b border-slate-800 pb-4">Agent Provisioning</h2>
+            <p className="mb-6 rounded-xl border border-amber-600/40 bg-amber-950/30 p-4 text-sm text-amber-200">Synthetic demo only. This screen does not authenticate a supervisor, verify identity or tax records, or approve an agent. Use synthetic inputs only.</p>
 
             {/* Stepper */}
             <div className="flex items-center justify-between mb-8 relative">
@@ -470,7 +471,7 @@ export default function SupervisorPortal() {
                {onboardStep < 4 ? (
                   <button onClick={() => setOnboardStep(p => p + 1)} className="px-8 py-4 bg-indigo-600 text-white font-black uppercase tracking-widest rounded-xl hover:bg-indigo-500 transition-colors flex items-center">Next <ArrowRight className="w-5 h-5 ml-2" /></button>
                ) : (
-                  <button onClick={handleOnboardSubmit} className="px-8 py-4 bg-emerald-600 text-white font-black uppercase tracking-widest rounded-xl hover:bg-emerald-500 transition-colors flex items-center shadow-[0_0_30px_rgba(16,185,129,0.3)]">Activate Agent</button>
+                  <button onClick={handleOnboardSubmit} className="px-8 py-4 bg-emerald-600 text-white font-black uppercase tracking-widest rounded-xl hover:bg-emerald-500 transition-colors flex items-center shadow-[0_0_30px_rgba(16,185,129,0.3)]">Complete Demo</button>
                )}
             </div>
           </div>

@@ -8,6 +8,8 @@ Remote GhostSync delivery is disabled in the frontend. Existing browser outbox r
 
 ## Receiver contract to implement before activation
 
+The product owner has proposed **supervisor approval** for agents. Treat this as the intended approval role, not an implemented permission. The submitter role and the actual identity and TIN provider contracts are still unconfirmed. Labels in `/onboard` and `/supervisor` do not establish provider authorization or verification.
+
 1. Provide a versioned `POST /api/ghostsync` on an authenticated backend. Require a server-verified session and an authorized submitter role. Do not trust role, identity, or verification flags from a request body.
 2. Accept a bounded, schema-validated event envelope: `event_id` (UUID), `event_type`, `schema_version`, `created_at`, and a type-specific payload. Reject unknown fields, unsupported event types, oversized bodies, and malformed content with explicit JSON errors. Do not log payloads or identifiers.
 3. For `ONBOARD_AGENT`, write a **submission** record, not an approved agent. A separate review action may change it to approved after external checks and recorded authorization. Identity and TIN provider integrations need their own verified contracts and credentials.
