@@ -50,6 +50,8 @@ export class KycService {
     private provider: IdentityVerificationProvider,
   ) {}
   start(id: string, reason: Reason = "MANUAL_REVIEW") {
+    const existing = this.pending.get(id);
+    if (existing) return existing.id;
     const customer = this.customers.get(id);
     if (customer.kycStatus === "UNVERIFIED")
       this.customers.transition(id, "PENDING", reason);
@@ -64,6 +66,8 @@ export class KycService {
     return request;
   }
   requestReverification(id: string, reason: Reason) {
+    const existing = this.pending.get(id);
+    if (existing) return existing.id;
     const customer = this.customers.get(id);
     if (customer.kycStatus === "VERIFIED")
       this.customers.transition(id, "REVERIFICATION_REQUIRED", reason);
@@ -89,6 +93,6 @@ export class KycService {
     const reference = this.provider.confirmVerification(request.id);
     this.customers.transition(id, "VERIFIED", request.reason, "MOCK_PROVIDER");
     this.pending.delete(id);
-    return this.customers.recordMockVerification(id, reference);
+    return this.customers.recordIdentityVerification(id, reference);
   }
 }
