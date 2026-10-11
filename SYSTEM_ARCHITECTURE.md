@@ -1,106 +1,43 @@
-# Enawuga Phygital Nexus — System Architecture
+# Enawuga prototype architecture
 
-This document outlines the enterprise-grade architecture of the **Enawuga Phygital Nexus** platform. It visually represents the interaction of our resilience triad: **Observability (OpenTelemetry)**, **Scalability (Async Workers & GhostSync)**, and **Integrity (Zero Trust SPIFFE/SVID identity propagation)**.
-
----
-
-## 1. System Architecture Diagram (Mermaid.js)
+Wishland is the software/orchestration provider. Future licensed PartnerFI is the financial principal. All adapters below are mocks and do not establish approved integration or regulatory compliance.
 
 ```mermaid
-flowchart TB
-    %% Styling Definitions
-    classDef clientStyle fill:#e0f2fe,stroke:#0284c7,stroke-width:2px;
-    classDef edgeServerStyle fill:#fef3c7,stroke:#d97706,stroke-width:2px;
-    classDef storageStyle fill:#f1f5f9,stroke:#475569,stroke-width:2px;
-    classDef backendWorkerStyle fill:#f5f3ff,stroke:#7c3aed,stroke-width:2px;
-    classDef securityGate fill:#fef2f2,stroke:#dc2626,stroke-width:2px;
-
-    %% Client / Edge Kiosk Cluster
-    subgraph ClientEdge [Edge Kiosk Boundary]
-        direction LR
-        kiosk[AgentKiosk / React Client UI]:::clientStyle
-        dbEdge[(Local IndexedDB / Outbox Queue)]:::storageStyle
-        scriptOffline[GhostSync Synchronization Loop]:::clientStyle
-        
-        kiosk -->|1. Stage Transactions| dbEdge
-        dbEdge <-->|2. Queue & Failover| scriptOffline
-    end
-
-    %% Network / Ingress Gate
-    subgraph IngressGateway [mTLS Network Ingress]
-        direction TB
-        otelMiddleware[OTel Tracing Middleware\n- Extracts/Generates Trace ID\n- Injects OTel Context into Headers]:::edgeServerStyle
-        spiffeGate[Zero Trust Security Gateway\n- requireSpiffeIdentity Middleware\n- Cryptographic SVID Validator]:::securityGate
-    end
-
-    %% Core Services Ecosystem
-    subgraph CoreServices [Hardened Cloud Core Services]
-        direction TB
-        apiServer[Express App Server\nserver.ts Engine]:::edgeServerStyle
-        dbCore[(In-Memory State Store\nTask Registry / Ledger Statements)]:::storageStyle
-        
-        reconEngine[Automated Reconciliation Engine\n- Verifies pacs.008 vs MT940\n- Needs SPIFFE Auditor SVID]:::backendWorkerStyle
-        asyncEngine[Ardi Score & XAI Engine\n- Async Worker Queue\n- Simulates Heavy Workload]:::backendWorkerStyle
-    end
-
-    %% Connectivity & Event Flow
-    scriptOffline ===>|3. Sync Event Payload\n- HTTP POST /api/ghostsync\n- Preserves Trace Context| otelMiddleware
-    
-    otelMiddleware -->|4. HTTP Context Propagated| spiffeGate
-    spiffeGate -->|5. SVID Validated\n- spiffe://enawuga.com/...| apiServer
-    
-    apiServer -->|6a. Trigger Async Job\n- Returns 202 Accepted| asyncEngine
-    apiServer -->|6b. Trigger Reconciliation\n- Needs Auditor SVID| reconEngine
-    
-    asyncEngine <-->|Task State DB Registry| dbCore
-    reconEngine <-->|Compare Local Ledgers| dbCore
-
-    %% Tracing Thread of Truth Indicators
-    subgraph ObservabilityThread [OpenTelemetry Thread of Truth Trace Propagation]
-        direction LR
-        traceInfo[Trace ID Node Connection\ntrace_id = x-trace-id]
-    end
-    
-    kiosk -.->|Injects Trace| traceInfo
-    otelMiddleware -.->|Extracts Context| traceInfo
-    asyncEngine -.->|Preserves Context in Celery Queue| traceInfo
-    reconEngine -.->|Traces Audit Report Findings| traceInfo
-
-    class kiosk,scriptOffline clientStyle;
-    class otelMiddleware,apiServer edgeServerStyle;
-    class dbEdge,dbCore storageStyle;
-    class asyncEngine,reconEngine backendWorkerStyle;
-    class spiffeGate securityGate;
+flowchart LR
+  UI[Synthetic customer UI] --> Alias[Phone alias lookup]
+  Alias --> Customer[Immutable customerId]
+  Customer --> KYC[KYC state service]
+  KYC --> Identity[Mock identity adapter]
+  UI --> Queue[IndexedDB synthetic outbox]
+  Queue -. remote delivery disabled .-> Receiver[Future authenticated durable receiver]
+  UI --> Requests[Explicit mock transaction request]
+  Requests --> Eligibility[KYC and risk check]
+  Eligibility --> Partner[Mock PartnerFI authorization and posting]
+  Partner --> Account[Partner-owned simulated account]
 ```
 
----
+## Identity
 
-## 2. Key Pillars of the Architecture
+`src/domain/customer.ts` owns canonical customers and normalized unique phone aliases. Callers receive copies; phone changes retain the UUID. `src/domain/identity.ts` owns pending verification requests and opaque mock identity references. No plaintext FIN/FAN, biometrics or identity credentials enter these APIs.
 
-### A. OpenTelemetry Distributed Tracing Flow
-The **OpenTelemetry (OTel)** environment weaves a continuous thread of truth from the client's action down to asynchronous background job execution:
-1. **Context Extraction/Creation:** Every request is captured by the OTel distributed tracing middleware in `server.ts`. Incoming headers are inspected for an existing trace context (`x-trace-id`). If none exists, a fresh 16-byte cryptographically-secure `traceId` and an 8-byte `spanId` are generated.
-2. **Propagation:** Downstream activities (e.g., job registrations, database transactions) store the trace ID directly. Even async processes queued to the mock Celery worker pool bind their database execution records (`db.tasks[jobId]`) to their active `trace_id`.
-3. **Closing the Span:** Once a background process completes or an HTTP request finishes, logs are printed using unified formats (`[OTel Worker | Trace: <id>] ...`), establishing visible spans which help trace network discrepancies and failures.
+Transitions: UNVERIFIED → PENDING → VERIFIED; VERIFIED → REVERIFICATION_REQUIRED → VERIFIED; VERIFIED or REVERIFICATION_REQUIRED → SUSPENDED; SUSPENDED → VERIFIED requires explicit partner-admin domain authority. This authority parameter is a mock-domain control, not authentication. No HTTP administrative recovery endpoint is exposed. Production capability checks require authenticated partner roles.
 
-### B. SPIFFE/SPIRE Identity Boundaries (Zero Trust)
-To secure the communications from endpoints inside our network, the system uses implicit verification instead of assuming network-location security:
-1. **SPIFFE SVID Token Format:** Identity is encapsulated in a JWT-like **SVID (SPIFFE Verifiable Identity Document)** token passed inside the header: `x-spiffe-svid`.
-2. **Cryptographic Filtering:** The `requireSpiffeIdentity` middleware decodes this SVID token, verifies its signature integrity, compares transaction expiration (`expires_at`), and checks the subject identity (e.g. `spiffe://enawuga.com/ns/governance/sa/auditor`).
-3. **Fail-Closed Principle:** Unauthorized SVID entries or signature mismatches trigger immediate `401 ZERO_TRUST_VIOLATION` or `403 ZERO_TRUST_VIOLATION` failures, keeping the inner processing pipelines cleanly insulated.
+Reasons include PHONE_CHANGE, SIM_CHANGE, ACCOUNT_RECOVERY, KYC_REFRESH_DUE, PARTNER_POLICY, HIGH_RISK_TRANSACTION, SUSPICIOUS_ACTIVITY, IDENTITY_MISMATCH and MANUAL_REVIEW. Transactions require VERIFIED KYC, NORMAL risk, and no blocked/re-verification phone state.
 
-### C. GhostSync Offline-First Decoupling Strategy
-The **GhostSync** sync bridge ensures that transactions can withstand complete network partition events:
-1. **Localized Buffers:** Transactions initiated during offline states are captured inside local queues (e.g., LocalStorage/IndexedDB) rather than erroring out the user interface.
-2. **Synthetic Partition Triggering:** The UI allows triggering chaos simulations (`CHAOS_NETWORK_PARTITION`), verifying that the system successfully registers offline transactions and delays synchronizations gracefully.
-3. **Trace-Preserved Reconnect:** When normal communication routes are restored, buffered transactions are uploaded dynamically to our Express Ingress, mapping their origin points back into the central distributed traces on the server.
+## Financial boundary
 
----
+`TransactionService` accepts strict UUID-referenced requests with integer minor units, currency, direction and idempotency key. It checks KYC without calling an identity provider. `FinancialInstitutionAdapter` separates customer lookup, authorization, posting, status, account summary and reconciliation. The only implementation is in-memory `MockPartnerFI`; simulated balances belong to PartnerFI, never Wishland. Identical retries return the recorded result; changed idempotency payloads and transaction replay under new keys are rejected.
 
-## 3. Resilience Triad Validation Scenarios
+## Transport boundary
 
-| Testing Scenario | Fault Injected | Expected Behaviour | Observability Output |
-| :--- | :--- | :--- | :--- |
-| **SVID Expiration (Chaos)** | SVID Token with `expires_at` in the past | **Fail-Closed:** Ingress rejects the payload before passing it to the Bank Reconciliation Engine. | Middleware logs `401 ZERO_TRUST_VIOLATION`, tracing the invalid context in OTel but blocking execution. |
-| **Network Partition (Chaos)** | `CHAOS_NETWORK_PARTITION` flag active | **State Buffering:** UI switches gracefully into off-grid states; transactions queue locally; no system crash. | App status switches to Offline. Sync requests block internally, maintaining local consistency. |
-| **High Load Saturation** | Torrent of mock credit requests | **Asynchronous Decoupling:** Main event loop remains unblocked by returning `202 QUEUED` to the client instantly. | Worker logs dequeue signals asynchronously (`[OTel Worker]`), tracking each task's lifetime. |
+Transport states: LOCAL_PENDING, QUEUED_FOR_SYNC, SYNCED_TO_SUPERVISOR, RECEIVED_BY_PLATFORM. Financial states: PARTNER_AUTH_PENDING, PARTNER_ACCEPTED, PARTNER_REJECTED, RECONCILIATION_REQUIRED. There is no SETTLED state.
+
+`EnawugaSyntheticOutbox` stores strict versioned envelopes. Retry retains event identity and financial-pending status; reconnect does not upload. Legacy GhostSyncDB is untouched. `MockTransportReceiver` is a test-only in-memory receiver demonstrating bounded replay windows, sequence ordering, duplicate receipts and partner outcomes. It is not exposed over HTTP. These checks are not durable across restarts and do not solve multi-device sequencing or exactly-once delivery in production.
+
+## Runtime and security
+
+Express exposes fixture-only `/api/demo/*` operations with strict bodies, same-origin mutation checks and no wildcard CORS. Customer/phone input is limited to declared synthetic fixtures. There is no user authentication and no claim these controls secure a production deployment. Legacy mutation routes return 403. Other mock read/scoring endpoints remain illustrative.
+
+The old SVID decoder did not validate signatures; it has been removed with its mutation route. Console tracing was not OpenTelemetry instrumentation. Request bodies, OTPs, identifiers and untrusted URLs are not logged. Firebase execution and Firestore access are disabled; no frontend Gemini key is injected. Speech capture is disabled. Regulated mode is unavailable regardless of hostname or declared region.
+
+See [classification policy](docs/DATA_RESIDENCY_AND_CLASSIFICATION.md) and [P0 backlog](docs/P0_BACKLOG.md).
