@@ -1,54 +1,32 @@
-# 🚨 Sovereign Nexus Runbook & Operations Guide
+# Synthetic prototype runbook
 
-This runbook outlines standard operating procedures (SOPs) for DevOps engineers and SysAdmins maintaining the Sovereign Nexus staging/production nodes.
+Use only synthetic fixtures. Wishland supplies software; future licensed partners are responsible for regulated activity. No production/pilot approval is implied.
 
-## 🏗 Architecture Topology
-- **Edge Node (Sovereign Switch)**: Express v4 container proxying static Vite assets and mock API routes.
-- **Cache Node (GhostSync)**: Redis 7 Alpine. Buffers offline Data Mule ledgers before upstream syncing.
-- **Database Node (Fayda ZKP)**: PostgreSQL 15. The replica registry for eKYC verifications.
+## Start and validate
 
----
+```sh
+npm ci
+DATA_MODE=synthetic ALLOW_EXTERNAL_TELEMETRY=false npm run dev
+# In another shell:
+npm run lint
+npm test
+npm run build
+TARGET_PORT=3000 npx tsx scripts/smoke-test.ts
+PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npm run test:e2e
+```
 
-## 🔧 SOP 1: Docker Grid Provisioning & Reset
-If the GhostSync memory buffer becomes corrupted or the staging environments go out of sync.
+Use bundled Playwright Chromium by omitting the executable variable if installed. Browser tests start an isolated process on 3010 and use fresh browser contexts; API tests start ephemeral loopback listeners. No cloud services are contacted. `npm test` includes unit and API integration tests.
 
-**Full Grid Restart:**
-\`\`\`bash
-docker-compose down -v  # Destroys volumes (Redis caches and PG databases)
-docker-compose up --build -d
-\`\`\`
+`NODE_ENV=production npm start` serves a previously built static frontend with the same synthetic API. The name production here is only the asset-serving mode; it is not permission to use regulated data. `DATA_MODE=regulated` must exit with a fatal validation error. Build-time validation also fails closed.
 
-**Checking Telemetry:**
-\`\`\`bash
-# View aggregated Sovereign Switch logs
-docker logs -f sovereign_node_1
-\`\`\`
+The synthetic server must restart after backend edits; Vite provides frontend transforms. In-memory customer IDs, aliases and mock partner postings reset on restart. Browser outbox entries remain, so stale customer references require deliberate review; never remap them silently to a new customer.
 
----
+## Storage and troubleshooting
 
-## 🔧 SOP 2: Troubleshooting Agent Hardware (Kiosk)
+No Redis/PostgreSQL dependencies exist in the active mock workflow. Docker Compose runs only the synthetic Node service. Vercel's SPA-only deployment cannot supply the Express demo API; use the Node workflow for functional testing.
 
-**Issue:** Application Bluetooth Scanner stuck on "Scanning..." or Thermal Printer not firing \`RECEIPT_PRINTED\` event.
-**Mitigation:** 
-1. Ensure the tablet device has location services and BLE granted in the Android permissions wrapper.
-2. If operating in the \`/kiosk\` web view, verify that the simulated \`btStatus\` state isn't locked by pending GhostSync events. 
-3. Network connection is explicitly decoupled from this action. The printer operates in dark environments.
+Remote GhostSync remains disabled. Offline insertion and retry do not authorize payments or settle funds. Keep legacy GhostSyncDB untouched; do not upload old entries. No browser-storage reset is necessary for normal development. Any deletion of historical user-entered data requires explicit authorization.
 
----
+A blocked KYC request requires the mock re-verification flow, not direct state editing or a biometric bypass. A phone change retains the customer UUID. Administrative suspended-account recovery has no HTTP endpoint.
 
-## 🔧 SOP 3: Resolving GhostSync (Data Mule) Packet Loss
-**Issue:** Super Agent Hotspot activates via Dashboard, but agents fail to sync standard \`1.2MB\` payload sizes.
-**Investigation:**
-1. Check the Redis data buffer for packet bottlenecks:
-\`\`\`bash
-docker exec -it raxio_ghostync_redis redis-cli ping
-\`\`\`
-2. Verify that the Super Agent is physically within 15 meters of the offline nodes to sustain the Wi-Fi Direct Mesh handshake.
-
----
-
-## 🔧 SOP 4: CI/CD Pipeline Mitigation
-The pipeline runs `.github/workflows/ci.yml`.
-If the pipeline fails on \`Verify-Codebase\`, check the \`test:e2e\` exit codes. The Express port might be colliding with GitHub Actions runners if \`3000\` is already bound.
-In \`scripts/smoke-test.ts\`, we query the \`localhost:3000\` binding. 
-Always run \`npm run test:e2e\` locally before merging.
+See [P0 backlog](docs/P0_BACKLOG.md) before designing a real receiver, deployment or external connector.

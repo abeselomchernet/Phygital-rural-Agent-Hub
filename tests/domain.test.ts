@@ -1,0 +1,360 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { CustomerStore } from "../src/domain/customer";
+import { KycService, MockFaydaAdapter } from "../src/domain/identity";
+import {
+  MockPartnerFI,
+  TransactionService,
+  TransactionSchema,
+} from "../src/domain/financial";
+import { MockTransportReceiver, type Envelope } from "../src/domain/transport";
+import { validateDataConfig } from "../src/domain/residency";
+function fixture(outcome: "accept" | "reject" | "reconcile" = "accept") {
+  const store = new CustomerStore(),
+    provider = new MockFaydaAdapter(),
+    kyc = new KycService(store, provider);
+  const customer = store.create("+251900000001");
+  kyc.start(customer.customerId);
+  kyc.confirm(customer.customerId);
+  store.recordMockPhoneVerification(customer.customerId);
+  const partner = new MockPartnerFI(outcome);
+  store.linkPartnerCustomer(
+    customer.customerId,
+    partner.lookupPartnerCustomer(customer.customerId),
+  );
+  const service = new TransactionService(store, partner);
+  const request = {
+    transactionId: crypto.randomUUID(),
+    customerId: customer.customerId,
+    idempotencyKey: crypto.randomUUID(),
+    amountMinor: 1000,
+    direction: "CASH_IN" as const,
+    currency: "ETB" as const,
+  };
+  const envelope: Envelope = {
+    eventId: crypto.randomUUID(),
+    schemaVersion: 1,
+    sequence: 1,
+    createdAt: new Date().toISOString(),
+    payload: request,
+  };
+  return {
+    store,
+    provider,
+    kyc,
+    customer,
+    partner,
+    service,
+    request,
+    envelope,
+  };
+}
+test("phone aliases normalize and resolve immutable customer ID", () => {
+  const f = fixture();
+  assert.equal(f.store.resolve("0900000001").customerId, f.customer.customerId);
+  const copy = f.store.get(f.customer.customerId);
+  (copy as any).customerId = "tampered";
+  assert.equal(f.store.resolve("0900000001").customerId, f.customer.customerId);
+});
+test("phone change preserves identity, removes old alias, requires re-verification", () => {
+  const f = fixture();
+  const changed = f.store.changePhone(f.customer.customerId, "0900000002");
+  assert.equal(changed.customerId, f.customer.customerId);
+  assert.equal(changed.kycStatus, "REVERIFICATION_REQUIRED");
+  assert.equal(changed.phoneStatus, "REVERIFICATION_REQUIRED");
+  assert.throws(() => f.store.resolve("0900000001"));
+  assert.equal(f.store.resolve("0900000002").customerId, f.customer.customerId);
+});
+test("duplicate phone collision is rejected atomically", () => {
+  const f = fixture();
+  assert.throws(() => f.store.create("0900000001"), /DUPLICATE_PHONE/);
+  const other = f.store.create("0900000002");
+  assert.throws(
+    () => f.store.changePhone(other.customerId, "0900000001"),
+    /DUPLICATE_PHONE/,
+  );
+  assert.equal(f.store.resolve("0900000002").customerId, other.customerId);
+});
+test("transaction accepts UUID reference and rejects phone/FIN/extra fields", () => {
+  const f = fixture();
+  assert.equal(f.service.submit(f.request).customerId, f.customer.customerId);
+  assert.throws(() =>
+    TransactionSchema.parse({ ...f.request, customerId: "0900000001" }),
+  );
+  assert.throws(() => TransactionSchema.parse({ ...f.request, FIN: "123456" }));
+});
+for (const state of [
+  "UNVERIFIED",
+  "PENDING",
+  "REVERIFICATION_REQUIRED",
+  "SUSPENDED",
+] as const)
+  test(`transactions blocked for ${state}`, () => {
+    const f = fixture();
+    let id = f.customer.customerId;
+    if (state === "UNVERIFIED" || state === "PENDING") {
+      id = f.store.create().customerId;
+      if (state === "PENDING") f.kyc.start(id);
+    } else f.store.transition(id, state, "MANUAL_REVIEW");
+    assert.throws(
+      () => f.service.submit({ ...f.request, customerId: id }),
+      /KYC_OR_RISK_BLOCKED/,
+    );
+  });
+test("normal transaction never invokes identity adapter", () => {
+  const f = fixture();
+  f.provider.startVerification = () => {
+    throw new Error("UNEXPECTED_IDENTITY_CALL");
+  };
+  f.provider.confirmVerification = () => {
+    throw new Error("UNEXPECTED_IDENTITY_CALL");
+  };
+  f.provider.requestReverification = () => {
+    throw new Error("UNEXPECTED_IDENTITY_CALL");
+  };
+  assert.equal(f.service.submit(f.request).state, "PARTNER_ACCEPTED");
+});
+test("identity verification does not prove phone possession or create PartnerFI linkage", () => {
+  const store = new CustomerStore(),
+    provider = new MockFaydaAdapter(),
+    kyc = new KycService(store, provider),
+    customer = store.create("+251900000001");
+  kyc.start(customer.customerId);
+  const verified = kyc.confirm(customer.customerId);
+  assert.equal(verified.kycStatus, "VERIFIED");
+  assert.equal(verified.phoneStatus, "UNVERIFIED");
+  assert.equal(verified.partnerCustomerId, undefined);
+  assert.match(verified.identityReference ?? "", /^mock-identity:/);
+});
+test("verification challenges are idempotent while one is pending", () => {
+  const store = new CustomerStore(),
+    provider = new MockFaydaAdapter(),
+    kyc = new KycService(store, provider),
+    customer = store.create("+251900000001");
+  const first = kyc.start(customer.customerId),
+    retry = kyc.start(customer.customerId);
+  assert.equal(retry, first);
+  kyc.confirm(customer.customerId);
+  const reverifyFirst = kyc.requestReverification(
+      customer.customerId,
+      "KYC_REFRESH_DUE",
+    ),
+    reverifyRetry = kyc.requestReverification(
+      customer.customerId,
+      "KYC_REFRESH_DUE",
+    );
+  assert.equal(reverifyRetry, reverifyFirst);
+});
+test("re-verification keeps identity and phone-channel verification distinct", () => {
+  const f = fixture();
+  let calls = 0;
+  const original = f.provider.requestReverification.bind(f.provider);
+  f.provider.requestReverification = (id) => {
+    calls++;
+    return original(id);
+  };
+  f.store.changePhone(f.customer.customerId, "0900000002");
+  f.kyc.requestReverification(f.customer.customerId, "PHONE_CHANGE");
+  assert.equal(calls, 1);
+  assert.equal(f.kyc.confirm(f.customer.customerId).kycStatus, "VERIFIED");
+  assert.equal(
+    f.store.get(f.customer.customerId).phoneStatus,
+    "REVERIFICATION_REQUIRED",
+  );
+  assert.equal(
+    f.store.recordMockPhoneVerification(f.customer.customerId).phoneStatus,
+    "VERIFIED",
+  );
+  assert.throws(() => f.kyc.confirm(f.customer.customerId));
+});
+test("KYC transitions require authority; suspended recovery is partner-admin only", () => {
+  const f = fixture();
+  f.store.transition(f.customer.customerId, "SUSPENDED", "SUSPICIOUS_ACTIVITY");
+  assert.throws(() =>
+    f.store.transition(f.customer.customerId, "VERIFIED", "ACCOUNT_RECOVERY"),
+  );
+  assert.throws(() =>
+    f.store.transition(
+      f.customer.customerId,
+      "VERIFIED",
+      "ACCOUNT_RECOVERY",
+      "MOCK_PROVIDER",
+    ),
+  );
+  assert.equal(
+    f.store.transition(
+      f.customer.customerId,
+      "VERIFIED",
+      "ACCOUNT_RECOVERY",
+      "PARTNER_ADMIN",
+    ).kycStatus,
+    "VERIFIED",
+  );
+  assert.throws(() =>
+    f.store.transition(f.customer.customerId, "PENDING", "MANUAL_REVIEW"),
+  );
+});
+test("re-verification can suspend and ordinary verification cannot recover it", () => {
+  const f = fixture();
+  f.kyc.requestReverification(f.customer.customerId, "IDENTITY_MISMATCH");
+  f.store.transition(f.customer.customerId, "SUSPENDED", "MANUAL_REVIEW");
+  assert.throws(() => f.kyc.confirm(f.customer.customerId));
+});
+test("mock account belongs to PartnerFI, never Wishland", () => {
+  const f = fixture();
+  assert.deepEqual(f.partner.getAccountSummary(f.customer.customerId), {
+    accountOwner: "PartnerFI",
+    simulated: true,
+    balanceMinor: 100000,
+    currency: "ETB",
+  });
+  assert.equal(
+    f.store.get(f.customer.customerId).partnerCustomerId,
+    f.partner.lookupPartnerCustomer(f.customer.customerId),
+  );
+});
+test("offline credential verification is explicitly unsupported", () =>
+  assert.deepEqual(new MockFaydaAdapter().verifyOfflineCredential(), {
+    status: "UNSUPPORTED",
+  }));
+test("synthetic config default; regulated mode fails closed for all targets", () => {
+  assert.equal(validateDataConfig({}).dataMode, "synthetic");
+  for (const target of ["https://aws.example", "https://ethiopia.example"])
+    assert.throws(
+      () =>
+        validateDataConfig({
+          DATA_MODE: "regulated",
+          REGULATED_DATA_RESIDENCY: "ET",
+          DB_URL: target,
+        }),
+      /REGULATED_MODE_UNSUPPORTED/,
+    );
+  assert.throws(
+    () => validateDataConfig({ DATA_MODE: "regulated" }),
+    /MUST_BE_ET/,
+  );
+  assert.throws(() => validateDataConfig({ DATA_MODE: "invalid" }));
+  assert.throws(() => validateDataConfig({ ALLOW_EXTERNAL_TELEMETRY: "true" }));
+});
+test("duplicate sync applies once and acknowledges transport without settlement", () => {
+  const f = fixture(),
+    receiver = new MockTransportReceiver(f.service);
+  const a = receiver.receive(f.envelope),
+    b = receiver.receive(f.envelope);
+  assert.deepEqual(a, b);
+  assert.equal(a.transportState, "RECEIVED_BY_PLATFORM");
+  assert.equal(a.financialState, "PARTNER_ACCEPTED");
+  assert.equal(
+    f.partner.getAccountSummary(f.customer.customerId).balanceMinor,
+    101000,
+  );
+  assert.equal(JSON.stringify(a).includes("SETTLED"), false);
+});
+test("different event cannot replay same transaction and changed payload conflicts", () => {
+  const f = fixture(),
+    receiver = new MockTransportReceiver(f.service);
+  receiver.receive(f.envelope);
+  assert.throws(
+    () =>
+      receiver.receive({
+        ...f.envelope,
+        payload: { ...f.request, amountMinor: 2000 },
+      }),
+    /EVENT_REPLAY_CONFLICT/,
+  );
+  assert.throws(
+    () =>
+      f.service.submit({ ...f.request, idempotencyKey: crypto.randomUUID() }),
+    /TRANSACTION_REPLAY/,
+  );
+  assert.throws(
+    () => f.service.submit({ ...f.request, amountMinor: 2000 }),
+    /IDEMPOTENCY_CONFLICT/,
+  );
+});
+test("out-of-order delivery can retry after missing sequence", () => {
+  const f = fixture(),
+    receiver = new MockTransportReceiver(f.service);
+  const second = {
+    ...f.envelope,
+    eventId: crypto.randomUUID(),
+    sequence: 2,
+    payload: {
+      ...f.request,
+      transactionId: crypto.randomUUID(),
+      idempotencyKey: crypto.randomUUID(),
+    },
+  };
+  assert.throws(() => receiver.receive(second), /OUT_OF_ORDER/);
+  receiver.receive(f.envelope);
+  assert.equal(receiver.receive(second).financialState, "PARTNER_ACCEPTED");
+});
+test("failed KYC leaves delivery retryable after controlled verification", () => {
+  const f = fixture(),
+    receiver = new MockTransportReceiver(f.service);
+  f.kyc.requestReverification(f.customer.customerId, "KYC_REFRESH_DUE");
+  assert.throws(() => receiver.receive(f.envelope), /KYC_OR_RISK_BLOCKED/);
+  f.kyc.confirm(f.customer.customerId);
+  assert.equal(receiver.receive(f.envelope).financialState, "PARTNER_ACCEPTED");
+});
+for (const [outcome, state] of [
+  ["reject", "PARTNER_REJECTED"],
+  ["reconcile", "RECONCILIATION_REQUIRED"],
+] as const)
+  test(`partner ${outcome} never changes simulated balance`, () => {
+    const f = fixture(outcome),
+      receiver = new MockTransportReceiver(f.service);
+    assert.equal(receiver.receive(f.envelope).financialState, state);
+    assert.equal(
+      f.partner.getAccountSummary(f.customer.customerId).balanceMinor,
+      100000,
+    );
+  });
+test("insufficient funds rejected by partner authorization", () => {
+  const f = fixture();
+  assert.equal(
+    f.service.submit({
+      ...f.request,
+      direction: "CASH_OUT",
+      amountMinor: 200000,
+    }).state,
+    "PARTNER_REJECTED",
+  );
+});
+test("expired and future deliveries rejected before posting", () => {
+  const f = fixture(),
+    receiver = new MockTransportReceiver(f.service);
+  for (const offset of [-8 * 86400000, 120000])
+    assert.throws(
+      () =>
+        receiver.receive({
+          ...f.envelope,
+          createdAt: new Date(Date.now() + offset).toISOString(),
+        }),
+      /EVENT_EXPIRED_OR_FUTURE/,
+    );
+});
+test("verification started for old alias cannot verify a replacement alias", () => {
+  const f = fixture();
+  f.kyc.requestReverification(f.customer.customerId, "PHONE_CHANGE");
+  f.store.changePhone(f.customer.customerId, "0900000002");
+  assert.throws(
+    () => f.kyc.confirm(f.customer.customerId),
+    /VERIFICATION_ALIAS_CHANGED/,
+  );
+});
+test("runtime startup refuses regulated mode even with ET configured", async () => {
+  const { spawnSync } = await import("node:child_process");
+  const result = spawnSync(process.execPath, ["--import", "tsx", "server.ts"], {
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      DATA_MODE: "regulated",
+      REGULATED_DATA_RESIDENCY: "ET",
+      ALLOW_EXTERNAL_TELEMETRY: "false",
+    },
+    timeout: 20000,
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /REGULATED_MODE_UNSUPPORTED/);
+});

@@ -1,3 +1,4 @@
+// Historical presentation only; active route uses the proposed service portfolio.
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -85,8 +86,8 @@ export default function SmartCycleEqub() {
                   return (
                   <TableRow key={m.id} className={winner?.id === m.id ? "bg-emerald-50/50" : ""}>
                     <TableCell className="font-medium">
-                      {m.name} {m.previousWins > 0 && winner?.id !== m.id && <Trophy className="w-3 h-3 inline ml-2 text-slate-300" title="Previous Winner" />}
-                      {winner?.id === m.id && <Trophy className="w-4 h-4 inline ml-2 text-yellow-500 animate-pulse" title="Current Winner" />}
+                      {m.name} {m.previousWins > 0 && winner?.id !== m.id && <Trophy className="w-3 h-3 inline ml-2 text-slate-300" aria-label="Previous Winner" />}
+                      {winner?.id === m.id && <Trophy className="w-4 h-4 inline ml-2 text-yellow-500 animate-pulse" aria-label="Current Winner" />}
                     </TableCell>
                     <TableCell className="font-mono text-xs text-slate-500 flex items-center">
                       <Fingerprint className="w-3 h-3 mr-1 opacity-50" />

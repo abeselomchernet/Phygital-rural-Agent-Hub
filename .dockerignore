@@ -1,7 +1,7 @@
 node_modules
-dist
 .git
-.env
-.npm
+dist
+test-results
+playwright-report
+.env*
 *.log
-.DS_Store

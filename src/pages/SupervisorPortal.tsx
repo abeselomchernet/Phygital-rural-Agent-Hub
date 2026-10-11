@@ -1,3 +1,5 @@
+import { CapabilityBadge, OnboardingWalkthrough, TransportDemo } from "../components/ProductPresentation";
+import { demoAgents } from "../demo/fixtures";
 import React, { useState, useEffect } from 'react';
 import { 
   Wifi, BatteryFull, Signal, Radar, Users, UserPlus, FileText, 
@@ -17,23 +19,13 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
-import DataMuleGraph from '../components/DataMuleGraph';
+
 
 export default function SupervisorPortal() {
   const [time, setTime] = useState(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
   const [activeView, setActiveView] = useState<'DASHBOARD' | 'ONBOARD' | 'MESH_SYNC' | 'FLEET' | 'INVENTORY'>('DASHBOARD');
   
-  // Mesh Sync State
-  const [meshState, setMeshState] = useState<'idle' | 'broadcasting' | 'syncing' | 'complete'>('idle');
-  const [syncedAgents, setSyncedAgents] = useState<any[]>([]);
-
-  // Onboarding State
-  const [onboardStep, setOnboardStep] = useState(1);
-  const [onboardData, setOnboardData] = useState({ fayda: '', tin: '', posSerial: '' });
-
-  // Terminal Lock State
-  const [lockedAgents, setLockedAgents] = useState<Record<string, boolean>>({});
-  
+  const lockedAgents: Record<string,boolean> = {};
   // Detailed Agent Profile State
   const [selectedAgent, setSelectedAgent] = useState<any | null>(null);
   
@@ -42,37 +34,7 @@ export default function SupervisorPortal() {
   const itemsPerPage = 3;
 
   // Fleet State
-  const [agentsList, setAgentsList] = useState<any[]>([
-    // Fallbacks just in case API is slow
-    { id: 'AGT-842', name: 'Zinash K.', phone: '+251 911 234567', location: 'Adama Hub', transactions: 142, volume: '45,000', float: '12,500', ardiScore: 92, lastSync: '2m ago', syncStatus: 'ONLINE', lat: 8.5414, lng: 39.2689 },
-    { id: 'AGT-109', name: 'Bekele T.', phone: '+251 922 345678', location: 'Modjo Rural', transactions: 89, volume: '28,300', float: '5,000', ardiScore: 78, lastSync: '14h ago', syncStatus: 'OFFLINE_PENDING', lat: 8.5885, lng: 39.1216 },
-    { id: 'AGT-993', name: 'Alemu M.', phone: '+251 933 456789', location: 'Bishoftu Market', transactions: 210, volume: '88,000', float: '32,000', ardiScore: 95, lastSync: 'Just now', syncStatus: 'SYNCING', lat: 8.7516, lng: 38.9774 },
-    { id: 'AGT-445', name: 'Chala D.', phone: '+251 944 567890', location: 'Dukem East', transactions: 34, volume: '9,200', float: '1,500', ardiScore: 65, lastSync: '2d ago', syncStatus: 'FAILED', lat: 8.8037, lng: 38.9044 },
-    { id: 'AGT-772', name: 'Hirut A.', phone: '+251 955 678901', location: 'Meki South', transactions: 67, volume: '18,400', float: '4,200', ardiScore: 81, lastSync: '5m ago', syncStatus: 'ONLINE', lat: 8.1500, lng: 38.8167 },
-  ]);
-
-  useEffect(() => {
-    fetch('/api/agents')
-      .then(res => res.json())
-      .then(data => {
-        if (data && Array.isArray(data) && data.length > 0) {
-          setAgentsList(data);
-        }
-      })
-      .catch(err => console.error("Could not fetch agents", err));
-  }, []);
-
-  const handleLockToggle = (agentId: string) => {
-    setLockedAgents(prev => {
-      const isLocked = !prev[agentId];
-      if (isLocked) {
-        toast.error(`Terminal LOCKED for ${agentId}. Supervision clearance required.`, { id: `lock-${agentId}` });
-      } else {
-        toast.success(`Terminal UNLOCKED for ${agentId}.`, { id: `lock-${agentId}` });
-      }
-      return { ...prev, [agentId]: isLocked };
-    });
-  };
+  const agentsList=demoAgents;
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -86,44 +48,14 @@ export default function SupervisorPortal() {
   const currentAgents = agentsList.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(agentsList.length / itemsPerPage);
 
-  const triggerMeshSync = () => {
-    setMeshState('broadcasting');
-    toast.loading("Activating Wi-Fi Direct & BLE Mesh Subsystem...", { id: 'mesh' });
-    
-    setTimeout(() => {
-      toast.success("GhostSync Hotspot Live (SSID: SOV-MULE-ADAMA)", { id: 'mesh' });
-      setMeshState('syncing');
-      
-      // Simulate discovering and syncing with offline agents
-      setTimeout(() => setSyncedAgents(p => [...p, { id: 'AGT-842', name: 'Zinash K.', tx: 42, bytes: '1.2MB' }]), 1500);
-      setTimeout(() => setSyncedAgents(p => [...p, { id: 'AGT-109', name: 'Bekele T.', tx: 18, bytes: '0.8MB' }]), 3500);
-      setTimeout(() => setSyncedAgents(p => [...p, { id: 'AGT-993', name: 'Alemu M.', tx: 7, bytes: '0.3MB' }]), 5000);
-      
-      setTimeout(() => {
-        setMeshState('complete');
-        toast.success("Mesh Sync Complete. 67 Offline ledgers securely buffered.", { id: 'mesh' });
-      }, 7000);
-    }, 2000);
-  };
-
-  const handleOnboardSubmit = () => {
-    toast.loading("Completing synthetic onboarding demonstration...", { id: 'onboard' });
-    setTimeout(() => {
-      toast.info("Demo complete. No identity or TIN was verified, and no agent was approved or provisioned.", { id: 'onboard' });
-      setOnboardStep(1);
-      setOnboardData({ fayda: '', tin: '', posSerial: '' });
-      setActiveView('DASHBOARD');
-    }, 3000);
-  };
-
   return (
-    <div className="h-screen w-screen bg-slate-950 text-white font-sans flex flex-col overflow-hidden select-none">
-      {/* Android Status Bar */}
+    <div className="supervisor-demo h-screen w-screen bg-slate-950 text-white font-sans flex flex-col overflow-hidden select-none">
+      <div className="p-3"><CapabilityBadge state="SYNTHETIC DEMO"/><p className="text-xs mt-2">Fixed sample fleet. No devices monitored, controlled or connected.</p></div>{/* Tablet presentation */}
       <div className="h-8 bg-black w-full flex justify-between items-center px-4 text-[10px] text-slate-400 font-medium tracking-wide">
         <div className="flex items-center space-x-2">
           <span>{time}</span>
           <Signal className="w-3 h-3" />
-          <span>Safaricom ET (Super)</span>
+          <span>Tablet layout illustration</span>
         </div>
         <div className="flex items-center space-x-3">
           <Bluetooth className="w-3 h-3 text-indigo-500" />
@@ -139,10 +71,10 @@ export default function SupervisorPortal() {
             <ShieldCheck className="w-6 h-6 mr-2 text-indigo-500" />
             Super Agent Hub
           </h1>
-          <p className="text-xs text-slate-400 font-bold tracking-widest mt-1">Modjo Command / Node 04</p>
+          <p className="text-xs text-slate-400 font-bold tracking-widest mt-1">Sample field-supervisor workspace</p>
         </div>
         <div className="bg-slate-950 px-4 py-2 rounded-xl border border-slate-800 text-right">
-          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-none mb-1">Master Float</p>
+          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-none mb-1">Mock Partner Float</p>
           <p className="text-xl font-black text-white leading-none">250,000 <span className="text-xs text-slate-400">ETB</span></p>
         </div>
       </header>
@@ -158,14 +90,14 @@ export default function SupervisorPortal() {
                 <CardContent className="p-6 flex flex-col items-center justify-center text-center">
                   <Activity className="w-8 h-8 mb-2 opacity-80" />
                   <p className="text-4xl font-black">12</p>
-                  <p className="text-xs uppercase font-bold tracking-widest opacity-80">Active Agents</p>
+                  <p className="text-xs uppercase font-bold tracking-widest opacity-80">Sample Agents</p>
                 </CardContent>
               </Card>
               <Card className="bg-slate-900 border-slate-800 text-white">
                 <CardContent className="p-6 flex flex-col items-center justify-center text-center relative overflow-hidden">
                   <div className="absolute top-0 right-0 p-3 bg-blue-500/10 rounded-bl-2xl">
                      <span className="text-[10px] font-black uppercase tracking-widest text-blue-400 flex items-center">
-                        <Truck className="w-3 h-3 mr-1" /> P2G Active
+                        <Truck className="w-3 h-3 mr-1" /> P2G Concept
                      </span>
                   </div>
                   <PackageOpen className="w-8 h-8 mb-2 text-blue-500" />
@@ -177,8 +109,8 @@ export default function SupervisorPortal() {
                 <CardContent className="p-6 flex flex-col items-center justify-center text-center">
                   <Coins className="w-8 h-8 mb-2 text-indigo-400" />
                   <p className="text-3xl font-black text-indigo-300">14.2<span className="text-sm">k</span></p>
-                  <p className="text-[10px] text-indigo-500 uppercase font-bold tracking-widest">Network Commissions</p>
-                  <p className="text-[9px] text-slate-500 font-mono mt-1">+125 ETB (30 mins)</p>
+                  <p className="text-[10px] text-indigo-500 uppercase font-bold tracking-widest">Simulated Commissions</p>
+                  <p className="text-[9px] text-slate-500 font-mono mt-1">Fixed sample: +125 ETB</p>
                 </CardContent>
               </Card>
             </div>
@@ -190,7 +122,7 @@ export default function SupervisorPortal() {
                   <Radar className="w-8 h-8 text-blue-500" />
                 </div>
                 <span className="font-black text-sm uppercase tracking-wider text-white">Data Mule Sync</span>
-                <span className="text-[10px] text-slate-500 mt-2">Buffer offline ledgers</span>
+                <span className="text-[10px] text-slate-500 mt-2">Illustrative transport steps</span>
               </button>
 
               <button onClick={() => setActiveView('ONBOARD')} className="bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-3xl p-6 flex flex-col items-center justify-center text-center transition-colors shadow-lg active:scale-95">
@@ -241,7 +173,7 @@ export default function SupervisorPortal() {
                         <p className="text-xl font-black text-white">45,000 <span className="text-xs text-slate-500">ETB</span></p>
                      </div>
                      <button 
-                        onClick={() => toast.success("Coordination Initiated. Routing details and GhostSync handshakes sent to BGI Truck.", { icon: <Truck className="w-4 h-4" /> })}
+                        onClick={() => toast.success("Sample coordination plan only. No message, order or data sent.", { icon: <Truck className="w-4 h-4" /> })}
                         className="bg-indigo-600 hover:bg-indigo-500 active:scale-95 transition-all p-3 rounded-lg flex items-center justify-center text-white"
                      >
                         <Truck className="w-5 h-5" />
@@ -250,7 +182,7 @@ export default function SupervisorPortal() {
                </CardContent>
             </Card>
 
-            <h3 className="text-sm font-bold tracking-widest uppercase text-slate-500 mt-8 mb-4">Financial Summaries (Top Agents)</h3>
+            <h3 className="text-sm font-bold tracking-widest uppercase text-slate-500 mt-8 mb-4">Illustrative agent activity</h3>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                {agentsList.slice(0, 3).map(agent => (
                  <Card key={agent.id} className="bg-slate-900 border-slate-800 transition-colors hover:border-slate-700">
@@ -282,207 +214,13 @@ export default function SupervisorPortal() {
         )}
 
         {/* === MESH SYNC (DATA MULE) VIEW === */}
-        {activeView === 'MESH_SYNC' && (
-          <div className="p-6 h-full flex flex-col max-w-6xl mx-auto pb-24">
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-black text-white uppercase tracking-widest">GhostSync Hub</h2>
-              <p className="text-slate-400 mt-2 text-sm">Activate local Hotspot/BLE mesh to harvest cryptographic ledgers from offline rural agents.</p>
-            </div>
-            
-            {/* Real-time D3 Mesh Sync proximity link graph */}
-            <div className="bg-slate-900/50 p-2 border border-slate-800 rounded-3xl mb-6">
-              <DataMuleGraph />
-            </div>
-
-            {/* GhostSync hardware triggers and state trackers */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
-              <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl">
-                <h3 className="text-sm font-black text-[#6366f1] uppercase tracking-widest mb-3">Sovereign Bluetooth Broadcast</h3>
-                <p className="text-slate-400 text-xs leading-relaxed mb-4">
-                  Activating BLE and Wi-Fi Direct beacons sends localized heartbeat signals to nearby data mules and offline merchants, allowing automated background reconciliation hooks.
-                </p>
-                
-                <div className="flex items-center space-x-4">
-                  <button 
-                    onClick={meshState === 'idle' ? triggerMeshSync : undefined}
-                    disabled={meshState !== 'idle'}
-                    className={`flex-1 py-4 border rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                      meshState === 'idle' 
-                        ? 'bg-indigo-600 border-indigo-500 hover:bg-indigo-500 text-white active:scale-95 cursor-pointer' 
-                        : 'bg-slate-950 border-slate-800 text-slate-500 cursor-not-allowed'
-                    }`}
-                  >
-                    {meshState === 'idle' ? 'Initiate Broadcaster' : 'Broadcaster Active'}
-                  </button>
-                  
-                  {meshState !== 'idle' && (
-                    <button 
-                      onClick={() => { setMeshState('idle'); setSyncedAgents([]); }}
-                      className="px-6 py-4 bg-red-600 hover:bg-red-500 text-white border border-red-500 text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all active:scale-95 cursor-pointer"
-                    >
-                      Kill Hotspot
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl flex flex-col justify-between">
-                <div>
-                  <h3 className="text-sm font-black text-emerald-400 uppercase tracking-widest mb-3">Sync Event Feed</h3>
-                  {syncedAgents.length === 0 ? (
-                    <p className="text-slate-500 text-xs font-mono">Listening on local 2.4GHz socket...</p>
-                  ) : (
-                    <div className="space-y-2 max-h-32 overflow-y-auto pr-2">
-                      {syncedAgents.map((agent, i) => (
-                        <div key={i} className="flex justify-between items-center bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs font-mono">
-                          <span className="text-slate-300 font-sans font-bold">{agent.name}</span>
-                          <span className="text-emerald-400 font-bold">+{agent.tx} TX ({agent.bytes})</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-4 pt-4 border-t border-slate-800/80 flex justify-between items-center">
-                  <span className="text-xs font-mono text-slate-500">GHOSTSYNC STATUS: {meshState.toUpperCase()}</span>
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* === ONBOARD AGENT VIEW === */}
-        {activeView === 'ONBOARD' && (
-          <div className="p-6 max-w-2xl mx-auto pb-24">
-            <h2 className="text-2xl font-black text-white uppercase tracking-widest mb-6 border-b border-slate-800 pb-4">Agent Provisioning</h2>
-            <p className="mb-6 rounded-xl border border-amber-600/40 bg-amber-950/30 p-4 text-sm text-amber-200">Synthetic demo only. This screen does not authenticate a supervisor, verify identity or tax records, or approve an agent. Use synthetic inputs only.</p>
-
-            {/* Stepper */}
-            <div className="flex items-center justify-between mb-8 relative">
-               <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-slate-800 z-0">
-                  <div className="h-full bg-indigo-500 transition-all duration-500" style={{ width: `${((onboardStep - 1) / 3) * 100}%` }} />
-               </div>
-               {[1, 2, 3, 4].map(step => (
-                  <div key={step} className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center font-black text-sm transition-colors ${
-                     onboardStep >= step ? 'bg-indigo-500 text-white shadow-[0_0_15px_rgba(79,70,229,0.5)]' : 'bg-slate-900 text-slate-500 border border-slate-800'
-                  }`}>
-                     {step}
-                  </div>
-               ))}
-            </div>
-
-            <Card className="bg-slate-900 border-slate-800 w-full mb-6 relative overflow-hidden">
-               <CardContent className="p-6 space-y-6 relative z-10">
-                  
-                  {/* Step 1: Fayda Identity */}
-                  {onboardStep === 1 && (
-                     <div className="animate-in fade-in slide-in-from-right-4">
-                        <div className="flex items-center mb-6">
-                           <div className="bg-indigo-500/20 p-3 rounded-xl mr-4"><Fingerprint className="w-6 h-6 text-indigo-400" /></div>
-                           <div>
-                              <h3 className="text-lg font-black text-white">Trust Root Identity</h3>
-                              <p className="text-xs text-slate-400 uppercase tracking-widest font-bold">Fayda Zero-Knowledge Probe</p>
-                           </div>
-                        </div>
-                        <input type="text" placeholder="Enter Fayda ID or Scan Thumbprint" value={onboardData.fayda} onChange={e => setOnboardData({...onboardData, fayda: e.target.value})} className="w-full bg-slate-950 border border-slate-800 py-4 px-4 rounded-xl text-white font-mono text-lg focus:outline-none focus:border-indigo-500 transition-colors" />
-                     </div>
-                  )}
-
-                  {/* Step 2: Commercial TIN */}
-                  {onboardStep === 2 && (
-                     <div className="animate-in fade-in slide-in-from-right-4">
-                        <div className="flex items-center mb-6">
-                           <div className="bg-blue-500/20 p-3 rounded-xl mr-4"><FileText className="w-6 h-6 text-blue-400" /></div>
-                           <div>
-                              <h3 className="text-lg font-black text-white">Business Compliance</h3>
-                              <p className="text-xs text-slate-400 uppercase tracking-widest font-bold">TIN & Trade License Capture</p>
-                           </div>
-                        </div>
-                        <input type="text" placeholder="Tax Identification Number (TIN)" value={onboardData.tin} onChange={e => setOnboardData({...onboardData, tin: e.target.value})} className="w-full bg-slate-950 border border-slate-800 py-4 px-4 rounded-xl text-white font-mono text-lg focus:outline-none focus:border-blue-500 transition-colors mb-4" />
-                        <button className="w-full py-6 border-2 border-dashed border-slate-700 rounded-xl text-slate-400 hover:text-white hover:border-slate-500 flex flex-col items-center justify-center transition-colors bg-slate-950/50">
-                           <Smartphone className="w-8 h-8 mb-2 opacity-50" />
-                           <span className="font-bold text-sm">Scan Trade License Document</span>
-                        </button>
-                     </div>
-                  )}
-
-                  {/* Step 3: Hardware Assignment */}
-                  {onboardStep === 3 && (
-                     <div className="animate-in fade-in slide-in-from-right-4">
-                        <div className="flex items-center mb-6">
-                           <div className="bg-orange-500/20 p-3 rounded-xl mr-4"><Box className="w-6 h-6 text-orange-400" /></div>
-                           <div>
-                              <h3 className="text-lg font-black text-white">Hardware Assignment</h3>
-                              <p className="text-xs text-slate-400 uppercase tracking-widest font-bold">POS Terminal & Printer Mating</p>
-                           </div>
-                        </div>
-                        <input type="text" placeholder="Scan Terminal Serial Barcode" value={onboardData.posSerial} onChange={e => setOnboardData({...onboardData, posSerial: e.target.value})} className="w-full bg-slate-950 border border-slate-800 py-4 px-4 rounded-xl text-white font-mono text-lg mb-4 focus:outline-none focus:border-orange-500" />
-                        <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-center justify-between">
-                           <div>
-                              <p className="text-white font-bold">Thermal Printer (MPT-II)</p>
-                              <p className="text-xs text-slate-500 font-mono">MAC: Pending Bind</p>
-                           </div>
-                           <button className="px-4 py-2 bg-slate-800 text-xs font-bold text-white rounded-lg uppercase">Bind BLE</button>
-                        </div>
-                     </div>
-                  )}
-
-                  {/* Step 4: Training & Finalize */}
-                  {onboardStep === 4 && (
-                     <div className="animate-in fade-in slide-in-from-right-4">
-                        <div className="flex items-center mb-6">
-                           <div className="bg-emerald-500/20 p-3 rounded-xl mr-4"><GraduationCap className="w-6 h-6 text-emerald-400" /></div>
-                           <div>
-                              <h3 className="text-lg font-black text-white">Academy Sign-off</h3>
-                              <p className="text-xs text-slate-400 uppercase tracking-widest font-bold">Confirm LMS Completion</p>
-                           </div>
-                        </div>
-                        
-                        <div className="space-y-3 mb-6">
-                           <div className="flex items-center bg-slate-950 p-3 border border-slate-800 rounded-lg">
-                              <CheckCircle2 className="w-5 h-5 text-emerald-500 mr-3" />
-                              <span className="text-sm font-bold text-slate-300">GhostSync Operations Configured</span>
-                           </div>
-                           <div className="flex items-center bg-slate-950 p-3 border border-slate-800 rounded-lg">
-                              <CheckCircle2 className="w-5 h-5 text-emerald-500 mr-3" />
-                              <span className="text-sm font-bold text-slate-300">SmartCycle Equb Matrix Initialized</span>
-                           </div>
-                           <div className="flex items-center bg-slate-950 p-3 border border-emerald-900 rounded-lg">
-                              <AlertTriangle className="w-5 h-5 text-yellow-500 mr-3" />
-                              <span className="text-sm font-bold text-emerald-400">Agent Handover Ready</span>
-                           </div>
-                        </div>
-
-                        <div className="bg-indigo-900/20 border border-indigo-500/30 p-4 rounded-xl text-center">
-                           <p className="text-xs text-indigo-300 font-bold uppercase tracking-widest mb-1">Cryptographic Binding</p>
-                           <p className="text-[10px] text-slate-400">Minting Sub-Agent keys on Sovereign Registry...</p>
-                        </div>
-                     </div>
-                  )}
-               </CardContent>
-            </Card>
-
-            <div className="flex justify-between">
-               {onboardStep > 1 ? (
-                  <button onClick={() => setOnboardStep(p => p - 1)} className="px-6 py-4 bg-slate-800 text-white font-bold uppercase tracking-widest rounded-xl hover:bg-slate-700 transition-colors">Back</button>
-               ) : <div></div>}
-               
-               {onboardStep < 4 ? (
-                  <button onClick={() => setOnboardStep(p => p + 1)} className="px-8 py-4 bg-indigo-600 text-white font-black uppercase tracking-widest rounded-xl hover:bg-indigo-500 transition-colors flex items-center">Next <ArrowRight className="w-5 h-5 ml-2" /></button>
-               ) : (
-                  <button onClick={handleOnboardSubmit} className="px-8 py-4 bg-emerald-600 text-white font-black uppercase tracking-widest rounded-xl hover:bg-emerald-500 transition-colors flex items-center shadow-[0_0_30px_rgba(16,185,129,0.3)]">Complete Demo</button>
-               )}
-            </div>
-          </div>
-        )}
-
-        {/* === FLEET MANAGEMENT VIEW === */}
+        {activeView === 'MESH_SYNC' && <div className="p-6"><TransportDemo/></div>}
+        {activeView === 'ONBOARD' && <div className="p-6"><OnboardingWalkthrough/></div>}
         {activeView === 'FLEET' && (
           <div className="p-6 max-w-6xl mx-auto pb-24">
             <div className="mb-6">
               <h2 className="text-2xl font-black text-white uppercase tracking-widest">Fleet Management</h2>
-              <p className="text-slate-400 mt-2 text-sm">Agent profiles, metrics, and remote supervision.</p>
+              <p className="text-slate-400 mt-2 text-sm">Synthetic agent profiles and metrics. Remote controls are local UI simulations only.</p>
             </div>
             
             {/* MAP VIEW */}
@@ -498,7 +236,7 @@ export default function SupervisorPortal() {
               <CardContent className="p-6 relative z-10 h-full w-full">
                 <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center">
                   <Map className="w-4 h-4 mr-2" />
-                  Live Agent Telemetry
+                  Synthetic fleet map
                 </h3>
                 
                 <div className="relative w-full h-[250px] bg-slate-950/50 rounded-xl border border-slate-800 backdrop-blur-sm overflow-hidden">
@@ -594,7 +332,7 @@ export default function SupervisorPortal() {
                       <TableHead className="text-slate-400 font-bold uppercase text-xs tracking-wider text-right">Status</TableHead>
                       <TableHead className="text-slate-400 font-bold uppercase text-xs tracking-wider text-right">Txns</TableHead>
                       <TableHead className="text-slate-400 font-bold uppercase text-xs tracking-wider text-right">Volume (ETB)</TableHead>
-                      <TableHead className="text-slate-400 font-bold uppercase text-xs tracking-wider text-right">Current Float</TableHead>
+                      <TableHead className="text-slate-400 font-bold uppercase text-xs tracking-wider text-right">Simulated Partner Float</TableHead>
                       <TableHead className="text-slate-400 font-bold uppercase text-xs tracking-wider text-right">Ardi Score</TableHead>
                       <TableHead className="text-slate-400 font-bold uppercase text-xs tracking-wider text-right">Remote Actions</TableHead>
                     </TableRow>
@@ -639,9 +377,9 @@ export default function SupervisorPortal() {
                         </TableCell>
                         <TableCell className="text-right">
                            <button 
-                             onClick={(e) => { e.stopPropagation(); handleLockToggle(agent.id); }}
+                             disabled
                              className={`p-2 rounded-lg transition-colors border ${lockedAgents[agent.id] ? 'bg-red-500/10 border-red-500/30 text-red-500 hover:bg-red-500/20' : 'bg-slate-900 border-slate-700 text-slate-400 hover:bg-slate-800 hover:text-white hover:border-slate-600'}`}
-                             title={lockedAgents[agent.id] ? "Unlock Terminal" : "Lock Terminal"}
+                             title={lockedAgents[agent.id] ? "Device control disabled" : "Device control disabled"}
                            >
                               {lockedAgents[agent.id] ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
                            </button>
@@ -771,7 +509,7 @@ export default function SupervisorPortal() {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 w-full bg-slate-900 border-t border-slate-800 px-6 py-3 pb-safe z-50">
+      <nav className="w-full shrink-0 bg-slate-900 border-t border-slate-800 px-6 py-3 pb-safe z-50">
          <div className="flex justify-between w-full max-w-lg mx-auto">
             <button onClick={() => setActiveView('DASHBOARD')} className={`flex flex-col items-center justify-center space-y-1 ${activeView === 'DASHBOARD' ? 'text-indigo-400' : 'text-slate-500'}`}>
                <Activity className="w-6 h-6" />
@@ -855,10 +593,10 @@ export default function SupervisorPortal() {
 
                   <div className="flex gap-4 pt-4">
                      <button
-                        onClick={() => handleLockToggle(selectedAgent.id)}
+                        disabled
                         className={`flex-1 py-4 flex justify-center items-center font-bold uppercase tracking-widest text-sm rounded-xl transition-colors ${lockedAgents[selectedAgent.id] ? 'bg-red-600 hover:bg-red-500 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}`}
                      >
-                        {lockedAgents[selectedAgent.id] ? <><Lock className="w-5 h-5 mr-2" /> Unlock Terminal</> : <><Unlock className="w-5 h-5 mr-2" /> Lock Terminal</>}
+                        {lockedAgents[selectedAgent.id] ? <><Lock className="w-5 h-5 mr-2" /> Device control disabled</> : <><Unlock className="w-5 h-5 mr-2" /> Device control disabled</>}
                      </button>
                   </div>
                </div>
