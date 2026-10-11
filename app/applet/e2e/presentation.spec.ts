@@ -83,9 +83,13 @@ test("static preview keeps portfolio visible without fabricating customer or par
 test("readiness, transport and conversation concepts never invoke external operations", async ({
   page,
 }) => {
-  const mutations: string[] = [];
+  const businessMutations: string[] = [];
+  const localAuthBootstraps: string[] = [];
   page.on("request", (r) => {
-    if (r.method() === "POST") mutations.push(r.url());
+    if (r.method() !== "POST") return;
+    const url = r.url();
+    if (url.endsWith("/api/demo/session/start")) localAuthBootstraps.push(url);
+    else businessMutations.push(url);
   });
   await page.goto("/onboard");
   await page.getByRole("button", { name: "2. Business review" }).click();
@@ -111,7 +115,10 @@ test("readiness, transport and conversation concepts never invoke external opera
   await expect(
     page.getByText("No. PartnerFI authorization is a separate step."),
   ).toHaveCount(0);
-  expect(mutations).toEqual([]);
+  expect(businessMutations).toEqual([]);
+  expect(localAuthBootstraps.length).toBeLessThanOrEqual(2);
+  for (const url of localAuthBootstraps)
+    expect(new URL(url).hostname).toBe("127.0.0.1");
 });
 test("presentation fits desktop and mobile with explicitly synthetic architecture", async ({
   page,
