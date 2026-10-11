@@ -167,6 +167,10 @@ export class CustomerStore {
     return structuredClone(customer); // callers cannot mutate canonical identity or KYC
   }
 
+  list(): Customer[] {
+    return [...this.customers.values()].map((customer) => structuredClone(customer));
+  }
+
   resolve(phone: string) {
     const id = this.aliases.get(normalizePhone(phone));
     if (!id) throw new Error("CUSTOMER_NOT_FOUND");
