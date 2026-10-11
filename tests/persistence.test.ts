@@ -7,16 +7,104 @@ import { CustomerStore } from "../src/domain/customer";
 import { KycService, MockFaydaAdapter } from "../src/domain/identity";
 import { MockPartnerFI, TransactionService } from "../src/domain/financial";
 import { AtomicJsonPartnerLedgerPersistence } from "../src/server/partner-ledger-persistence";
+import { AtomicJsonCustomerPersistence } from "../src/server/customer-persistence";
 
-function verifiedCustomer() {
-  const store = new CustomerStore(),
-    kyc = new KycService(store, new MockFaydaAdapter()),
+function verifiedCustomer(store = new CustomerStore()) {
+  const kyc = new KycService(store, new MockFaydaAdapter()),
     customer = store.create("+251900000001");
   kyc.start(customer.customerId);
   kyc.confirm(customer.customerId);
   store.recordMockPhoneVerification(customer.customerId);
   return { store, customer };
 }
+
+test("synthetic customer identity and alias state survives restart", () => {
+  const directory = mkdtempSync(join(tmpdir(), "enawuga-customer-")),
+    file = join(directory, "customers.json");
+  try {
+    const persistence = new AtomicJsonCustomerPersistence(file),
+      first = new CustomerStore(persistence),
+      { customer } = verifiedCustomer(first),
+      other = first.create("+251900000002");
+    first.linkPartnerCustomer(customer.customerId, `mock-partner:${customer.customerId}`);
+    first.linkPartnerCustomer(other.customerId, `mock-partner:${other.customerId}`);
+    const changed = first.changePhone(customer.customerId, "+251900000003");
+    assert.equal(changed.customerId, customer.customerId);
+    assert.equal(changed.kycStatus, "REVERIFICATION_REQUIRED");
+
+    const restarted = new CustomerStore(persistence);
+    assert.equal(
+      restarted.resolve("+251900000003").customerId,
+      customer.customerId,
+    );
+    assert.throws(() => restarted.resolve("+251900000001"));
+    assert.equal(
+      restarted.get(customer.customerId).partnerCustomerId,
+      `mock-partner:${customer.customerId}`,
+    );
+    assert.ok(restarted.audit.some((entry) => entry.reason === "PHONE_CHANGE"));
+    assert.throws(
+      () => restarted.changePhone(other.customerId, "+251900000003"),
+      /DUPLICATE_PHONE/,
+    );
+    assert.throws(
+      () =>
+        restarted.linkPartnerCustomer(
+          other.customerId,
+          `mock-partner:${customer.customerId}`,
+        ),
+      /DUPLICATE_PARTNER_CUSTOMER/,
+    );
+    assert.equal(
+      restarted.resolve("+251900000002").customerId,
+      other.customerId,
+    );
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("malformed or colliding persisted customer state fails closed", () => {
+  const directory = mkdtempSync(join(tmpdir(), "enawuga-customer-")),
+    file = join(directory, "customers.json"),
+    now = new Date().toISOString(),
+    duplicatePhone = "+251900000001";
+  try {
+    writeFileSync(
+      file,
+      JSON.stringify({
+        version: 1,
+        customers: [
+          {
+            customerId: crypto.randomUUID(),
+            primaryPhone: duplicatePhone,
+            phoneStatus: "UNVERIFIED",
+            kycStatus: "UNVERIFIED",
+            riskState: "NORMAL",
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            customerId: crypto.randomUUID(),
+            primaryPhone: duplicatePhone,
+            phoneStatus: "UNVERIFIED",
+            kycStatus: "UNVERIFIED",
+            riskState: "NORMAL",
+            createdAt: now,
+            updatedAt: now,
+          },
+        ],
+        audit: [],
+      }),
+    );
+    assert.throws(
+      () => new CustomerStore(new AtomicJsonCustomerPersistence(file)),
+      /DUPLICATE_PHONE/,
+    );
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
 
 test("synthetic PartnerFI state survives adapter restart and identical retry", () => {
   const directory = mkdtempSync(join(tmpdir(), "enawuga-ledger-")),
