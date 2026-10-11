@@ -71,7 +71,7 @@ test("static preview keeps portfolio visible without fabricating customer or par
     ).toBeVisible();
   await expect(
     page.getByText(
-      "Synthetic demo API unavailable. Existing outbox records are retained.",
+      "Synthetic authenticated demo API unavailable. Existing outbox records are retained.",
     ),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: /Cash In/ })).toHaveCount(0);
@@ -116,7 +116,7 @@ test("readiness, transport and conversation concepts never invoke external opera
 test("presentation fits desktop and mobile with explicitly synthetic architecture", async ({
   page,
 }) => {
-  test.setTimeout(120_000); // Fourteen full-page navigations across two viewports.
+  test.setTimeout(120_000);
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 900 });
     for (const route of [
