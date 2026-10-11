@@ -1,4 +1,10 @@
 import { CustomerWorkbench } from "../components/CustomerWorkbench";
+import { ServicePortfolio } from "../components/ProductPresentation";
 export default function Farmer360() {
-  return <CustomerWorkbench title="Customer — Partner Account" />;
+  return (
+    <>
+      <ServicePortfolio />
+      <CustomerWorkbench title="Customer — Partner Account" />
+    </>
+  );
 }

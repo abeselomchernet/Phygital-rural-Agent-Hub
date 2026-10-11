@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { CapabilityBadge } from "./ProductPresentation";
 import type { Customer } from "../domain/customer";
 import { assertTransactionEligible } from "../domain/customer";
 import { addEventToQueue, getPendingEvents } from "../lib/ghostsync";
@@ -89,8 +90,13 @@ export function CustomerWorkbench({ title = "Customer" }: { title?: string }) {
     );
   };
   return (
-    <section className="p-6 space-y-4 max-w-3xl mx-auto text-slate-100 bg-slate-900 rounded-xl">
+    <section className="workbench p-6 space-y-4 max-w-3xl mx-auto text-slate-100 bg-slate-900 rounded-xl">
+      <CapabilityBadge state="IMPLEMENTED" />
       <h1 className="text-2xl font-bold">{title}</h1>
+      <p>
+        Local customer and request workflow. Synthetic account data only; no
+        real identity verification.
+      </p>
       <p>
         Prototype / Synthetic Demo. Wishland supplies software; PartnerFI is the
         future regulated principal.

@@ -22,7 +22,7 @@ test("Ardi Engine dynamically renders LCR visual layout", async ({ page }) => {
   await page.getByRole("button", { name: /Agent Liquidity/i }).click();
   await expect(page.getByText("Liquidity Inputs")).toBeVisible();
   await expect(page.getByText("Awaiting Computation")).toBeVisible();
-  await page.getByRole("button", { name: "Compute Neural Score" }).click();
+  await page.getByRole("button", { name: "Compute Demo Score" }).click();
   await expect(page.getByText("Liquidity Coverage Ratio (LCR)")).toBeVisible();
   await expect(page.getByText("Node Grade (86 pts)")).toBeVisible();
 });

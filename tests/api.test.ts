@@ -97,3 +97,48 @@ test("synthetic API enforces KYC, alias identity, replay and closed legacy endpo
     );
   }
 });
+
+test("all presentation GET fixtures are deterministic and explicitly synthetic", async () => {
+  const server = createApp().listen(0, "127.0.0.1");
+  await new Promise<void>((resolve) => server.once("listening", resolve));
+  const base = `http://127.0.0.1:${(server.address() as any).port}`;
+  try {
+    for (const route of [
+      "/api/health",
+      "/api/demo/agents",
+      "/api/agents",
+      "/api/demo/swaps",
+      "/api/swaps",
+      "/api/demo/infrastructure",
+      "/api/node/metrics",
+      "/api/demo/iso20022/logs",
+      "/api/iso20022/logs",
+      "/api/demo/statements/AGT-842",
+      "/api/statements/AGT-842",
+    ]) {
+      const first = await (await fetch(base + route)).json(),
+        second = await (await fetch(base + route)).json();
+      assert.equal(first.simulated, true);
+      assert.equal(first.dataMode, "synthetic");
+      assert.equal(first.capabilityStatus, "SYNTHETIC DEMO");
+      assert.deepEqual(first, second);
+      assert.doesNotMatch(
+        JSON.stringify(first),
+        /NAGA-NODE|Sovereign|Raxio|GCP AI|Fabric Ledger|EthSwitch/i,
+      );
+    }
+    for (const route of [
+      "/api/demo/customer",
+      "/api/demo/account",
+      "/api/demo/lookup?phone=%2B251900000001",
+    ]) {
+      const data = await (await fetch(base + route)).json();
+      assert.equal(data.simulated, true);
+      assert.equal(data.dataMode, "synthetic");
+    }
+  } finally {
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve())),
+    );
+  }
+});

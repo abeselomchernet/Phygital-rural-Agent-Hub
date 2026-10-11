@@ -1,12 +1,15 @@
 import { CustomerWorkbench } from "../components/CustomerWorkbench";
+import {
+  OnboardingWalkthrough,
+  TrainingDemo,
+} from "../components/ProductPresentation";
 export default function OnboardAgent() {
   return (
     <>
-      <p className="p-6">
-        Synthetic customer verification demonstration only. Agent admission, TIN
-        checks and supervisor approval remain disabled pending authenticated
-        partner workflows.
-      </p>
+      <div className="product-grid">
+        <OnboardingWalkthrough />
+        <TrainingDemo />
+      </div>
       <CustomerWorkbench title="Mock identity workflow" />
     </>
   );

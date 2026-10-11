@@ -15,7 +15,7 @@ import { Slider } from "@/components/ui/slider";
 const dict = {
   EN: {
     title: "Ardi Intelligence Engine",
-    subtitle: "AI Credit Decisioning & Ecosystem Scoring Algorithm",
+    subtitle: "Synthetic arithmetic scoring illustration",
     tabGeneral: "Technical Schema",
     tabFarmer: "Farmer Scoring",
     tabAgent: "Agent Liquidity",
@@ -43,7 +43,7 @@ const dict = {
     a_swaps: "Successful Swaps",
     a_total: "Total Swap Requests",
     a_rap: "Risk-Adjusted Performance (RAP)",
-    calcScore: "Compute Neural Score",
+    calcScore: "Compute Demo Score",
     
     // Revenue Tab
     r_service: "Service",
@@ -53,8 +53,8 @@ const dict = {
     r_desc: "Global System Commission Parameters"
   },
   AM: {
-    title: "አርዲ አርቴፊሻል ኢንተለጀንስ",
-    subtitle: "የብድር ውሳኔ እና የስርዓት ግምገማ አልጎሪዝም",
+    title: "የአርዲ ማሳያ",
+    subtitle: "የሂሳብ ማሳያ",
     tabGeneral: "ቴክኒካዊ መዋቅር",
     tabFarmer: "የገበሬው ግምገማ",
     tabAgent: "የወኪል ፈሳሽነት",
@@ -90,7 +90,7 @@ const dict = {
   },
   OR: {
     title: "Injiinii Ardi",
-    subtitle: "Murtoo Liqii AI fi Madaallii Sirnicha",
+    subtitle: "Fakkeenya shallaggii",
     tabGeneral: "Akkaataa Teeknikaa",
     tabFarmer: "Madaallii Qonnaan Bulaa",
     tabAgent: "Dhangala'aa Bakka Bu'aa (LCR)",
@@ -158,7 +158,7 @@ export default function ArdiEngine() {
     const bounded = Math.max(300, Math.min(900, Math.floor(raw)));
     
     setFarmerFinal(bounded);
-    toast.success("AI Workflow Complete. Credit Eligibility Flags derived.", { icon: <BrainCircuit className="text-emerald-500 w-5 h-5"/> });
+    toast.success("Synthetic arithmetic complete. No credit eligibility decision.", { icon: <BrainCircuit className="text-emerald-500 w-5 h-5"/> });
   };
 
   const calculateAgentGrade = () => {
@@ -182,7 +182,7 @@ export default function ArdiEngine() {
     else { grade = 'D'; limit = 'Suspended'; }
 
     setAgentGrade({ lcr: Number(lcr.toFixed(2)), rap: Number(rap.toFixed(0)), grade, limit, volScore: Number(volScore.toFixed(0)), weightedScore: Number(weightedScore.toFixed(0)) });
-    toast.success("Liquidity Prediction Engine executed.", { icon: <BrainCircuit className="text-emerald-500 w-5 h-5"/> });
+    toast.success("Synthetic planning calculation complete.", { icon: <BrainCircuit className="text-emerald-500 w-5 h-5"/> });
   };
 
   const getLanguageLabel = (l: LangKey) => {
@@ -339,9 +339,9 @@ export default function ArdiEngine() {
                    {farmerFinal > 700 && (
                       <div className="animate-in slide-in-from-bottom-4 fade-in duration-500 bg-emerald-500/10 border border-emerald-500/30 p-4 rounded-xl inline-block text-left w-full max-w-sm backdrop-blur-sm">
                          <p className="text-xs text-emerald-400 font-black uppercase tracking-widest mb-1 flex items-center">
-                            <ShieldCheck className="w-4 h-4 mr-2" /> Credit Eligible
+                            <ShieldCheck className="w-4 h-4 mr-2" /> Illustrative score band
                          </p>
-                         <p className="text-emerald-100 font-mono text-xl tracking-tight">ETB {(farmerFinal * 22).toLocaleString()} <span className="text-sm text-emerald-500 font-sans">Micro-Credit Line</span></p>
+                         <p className="text-emerald-100 font-mono text-xl tracking-tight">ETB {(farmerFinal * 22).toLocaleString()} <span className="text-sm text-emerald-500 font-sans">Scenario only — not credit</span></p>
                       </div>
                    )}
                    {farmerFinal > 0 && farmerFinal <= 700 && (
@@ -446,7 +446,7 @@ export default function ArdiEngine() {
                                <span className={`text-5xl font-black uppercase ${agentGrade.grade === 'A' ? 'text-emerald-400' : agentGrade.grade === 'B' ? 'text-indigo-400' : agentGrade.grade === 'C' ? 'text-amber-400' : 'text-rose-400'}`}>{agentGrade.grade}</span>
                             </div>
                             <div className="text-left mt-4 border-t border-slate-700/50 pt-4">
-                               <span className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Approved Float Credit</span>
+                               <span className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Illustrative credit scenario (not an offer)</span>
                                <span className="font-mono text-2xl text-white tracking-tight">{agentGrade.limit}</span>
                             </div>
                          </div>
@@ -467,7 +467,7 @@ export default function ArdiEngine() {
            <Card className="bg-slate-900 border-slate-800 shadow-2xl relative overflow-hidden">
               <CardHeader className="bg-slate-800/30 border-b border-slate-800 pb-6">
                  <CardTitle className="text-white flex items-center tracking-tight">
-                    <ArrowRightLeft className="w-6 h-6 mr-3 text-emerald-500" /> Commission Limits
+                    <ArrowRightLeft className="w-6 h-6 mr-3 text-emerald-500" /> Illustrative commission concepts — not agreed fees
                  </CardTitle>
                  <CardDescription className="text-slate-400 mt-2 text-sm">{t.r_desc}</CardDescription>
               </CardHeader>
@@ -519,18 +519,18 @@ export default function ArdiEngine() {
            <Card className="bg-slate-900 border-slate-800 shadow-2xl relative overflow-hidden">
               <CardHeader className="bg-slate-800/30 border-b border-slate-800 pb-6">
                  <CardTitle className="text-white flex items-center tracking-tight">
-                    <Database className="w-6 h-6 mr-3 text-blue-400" /> AI Workflow Architecture
+                    <Database className="w-6 h-6 mr-3 text-blue-400" /> Local demonstration workflow
                  </CardTitle>
               </CardHeader>
               <CardContent className="p-8">
                  <div className="space-y-4">
                     {[
-                       { step: 1, title: 'Data Capture', desc: 'Daily reconciliation from Kiosk transactions, GhostSync queues, and Fayda root records.' },
-                       { step: 2, title: 'Normalization', desc: 'Inputs baselined against Super Agent Corridor metrics to eliminate geographical bias.' },
-                       { step: 3, title: 'Scoring Engine', desc: 'Neural network computes Farmer Ardi (300-900) & Agent LCR/RAP heuristics.' },
-                       { step: 4, title: 'Credit Decisioning', desc: 'Generates boolean flags for micro-credit line approvals and ledger bounds.' },
-                       { step: 5, title: 'Liquidity Forecasting', desc: 'Simulates shock stress events locally via predictive cash provisioning.' },
-                       { step: 6, title: 'Revenue Splitting', desc: 'Smart contracts allocate fees dynamically across Agent, Super Agent, and OS treasury.' }
+                       { step: 1, title: 'Data Capture', desc: 'Manual sample sliders only. No customer, Fayda or queue data is read.' },
+                       { step: 2, title: 'Normalization', desc: 'Fixed arithmetic weights illustrate a scenario; fairness and predictive validity are not established.' },
+                       { step: 3, title: 'Scoring Engine', desc: 'Local arithmetic computes bounded sample scores and LCR/RAP ratios; no trained model.' },
+                       { step: 4, title: 'Illustrative scenario', desc: 'Shows arithmetic outputs only. No credit approval, entitlement or ledger posting.' },
+                       { step: 5, title: 'Liquidity Forecasting', desc: 'User-supplied sample values illustrate coverage; no provisioning or validated prediction.' },
+                       { step: 6, title: 'Revenue Splitting', desc: 'Static proposed fee examples only; no contract, allocation or payment.' }
                     ].map(st => (
                        <div key={st.step} className="flex items-start bg-slate-950 border border-slate-800 rounded-xl p-4">
                           <div className="w-8 h-8 rounded-full bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold text-xs shrink-0 border border-blue-500/20 mr-4">

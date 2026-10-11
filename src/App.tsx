@@ -1,74 +1,117 @@
-import { Routes, Route, Outlet } from 'react-router-dom';
-import { AppLayout } from './components/layout/AppLayout';
-import { useEffect } from 'react';
-import { initGhostSync } from './lib/ghostsync';
-import Dashboard from './pages/Dashboard';
-import OnboardAgent from './pages/OnboardAgent';
-import SwapsLiquidity from './pages/SwapsLiquidity';
-import GhostSyncQueue from './pages/GhostSyncQueue';
-import AuditCompliance from './pages/AuditCompliance';
-import SovereignNodeStatus from './pages/SovereignNode';
-import JudgeTicker from './pages/JudgeTicker';
-import FmcgLiquidity from './pages/FmcgLiquidity';
-import DataMule from './pages/DataMule';
-import KentiqPayg from './pages/KentiqPayg';
-import PsnpPlus from './pages/PsnpPlus';
-import Securitization from './pages/Securitization';
-import AgriConnect from './pages/AgriConnect';
-import SmartCycleEqub from './pages/SmartCycle';
-import AgriTrustInsurance from './pages/AgriTrustInsurance';
-import GovernanceCouncil from './pages/GovernanceCouncil';
-import AgentLms from './pages/AgentLms';
-import AgentKiosk from './pages/AgentKiosk';
-import Farmer360 from './pages/Farmer360';
-import SupervisorPortal from './pages/SupervisorPortal';
-import InventoryManagement from './pages/InventoryManagement';
-import BankRacing from './pages/BankRacing';
-import SettlementSandbox from './pages/SettlementSandbox';
-import ArdiEngine from './pages/ArdiEngine';
-import LiveTranscription from './pages/LiveTranscription';
-import type { ReactNode } from 'react';
-function LegacyIllustration({children}:{children:ReactNode}) { return <><p className="p-3 bg-amber-950 text-amber-100">Legacy synthetic illustration. Financial actions are disabled pending migration to customer/KYC and PartnerFI boundaries.</p><fieldset disabled>{children}</fieldset></>; }
-import { Toaster } from './components/ui/sonner';
-
+import { Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
+import { initGhostSync } from "./lib/ghostsync";
+import {
+  PresentationShell,
+  ServicePortfolio,
+  InventoryDemo,
+  LiquidityDemo,
+  TrainingDemo,
+  CapabilityBadge,
+  OnboardingWalkthrough,
+} from "./components/ProductPresentation";
+import AgentKiosk from "./pages/AgentKiosk";
+import Farmer360 from "./pages/Farmer360";
+import GhostSyncQueue from "./pages/GhostSyncQueue";
+import OnboardAgent from "./pages/OnboardAgent";
+import SupervisorPortal from "./pages/SupervisorPortal";
+import DataMule from "./pages/DataMule";
+import LiveTranscription from "./pages/LiveTranscription";
+import DemoArchitecture from "./pages/SovereignNode";
+import ArdiEngine from "./pages/ArdiEngine";
+import { Toaster } from "./components/ui/sonner";
+// Legacy financial implementation files remain in Git/source for design history;
+// active routes expose read-only proposals, never alternate posting paths.
 export default function App() {
   useEffect(() => {
     initGhostSync();
   }, []);
-
   return (
     <>
-      <div role="note" className="p-3 bg-amber-950 text-amber-100 text-center">Prototype / Synthetic Demo — Wishland: technology provider. PartnerFI: future regulated principal. All financial and identity integrations are simulated; no production or pilot authorization.</div>
-      <Routes>
-        <Route path="/" element={<AppLayout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="onboard" element={<OnboardAgent />} />
-          <Route path="academy" element={<AgentLms />} />
-          <Route path="farmer-360" element={<Farmer360 />} />
-          <Route path="swaps" element={<LegacyIllustration><SwapsLiquidity /></LegacyIllustration>} />
-          <Route path="inventory" element={<InventoryManagement />} />
-          <Route path="queue" element={<GhostSyncQueue />} />
-          <Route path="audit" element={<LegacyIllustration><AuditCompliance /></LegacyIllustration>} />
-          <Route path="node-status" element={<SovereignNodeStatus />} />
-          <Route path="fmcg-liquidity" element={<LegacyIllustration><FmcgLiquidity /></LegacyIllustration>} />
-          <Route path="data-mule" element={<LegacyIllustration><DataMule /></LegacyIllustration>} />
-          <Route path="kentiq-payg" element={<LegacyIllustration><KentiqPayg /></LegacyIllustration>} />
-          <Route path="smartcycle" element={<LegacyIllustration><SmartCycleEqub /></LegacyIllustration>} />
-          <Route path="bank-racing" element={<LegacyIllustration><BankRacing /></LegacyIllustration>} />
-          <Route path="psnp-plus" element={<LegacyIllustration><PsnpPlus /></LegacyIllustration>} />
-          <Route path="securitization" element={<LegacyIllustration><Securitization /></LegacyIllustration>} />
-          <Route path="agri-connect" element={<LegacyIllustration><AgriConnect /></LegacyIllustration>} />
-          <Route path="agritrust" element={<LegacyIllustration><AgriTrustInsurance /></LegacyIllustration>} />
-          <Route path="governance" element={<LegacyIllustration><GovernanceCouncil /></LegacyIllustration>} />
-          <Route path="ardi-engine" element={<ArdiEngine />} />
-          <Route path="sandbox" element={<LegacyIllustration><SettlementSandbox /></LegacyIllustration>} />
-          <Route path="transcription" element={<LiveTranscription />} />
-        </Route>
-        {/* Cinematic Dashboards outside of AppLayout */}
-        <Route path="/judge-ticker" element={<JudgeTicker />} />
-        <Route path="/kiosk" element={<AgentKiosk />} />
-        <Route path="/supervisor" element={<SupervisorPortal />} />
-      </Routes>
+      <PresentationShell>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <>
+                <div className="section-heading">
+                  <h2>Service close to the community</h2>
+                  <p>
+                    Explore agent workflows, offline resilience and the proposed
+                    rural service portfolio.
+                  </p>
+                </div>
+                <div className="product-grid">
+                  <InventoryDemo />
+                  <LiquidityDemo />
+                </div>
+                <ServicePortfolio />
+              </>
+            }
+          />
+          <Route path="/kiosk" element={<AgentKiosk />} />
+          <Route path="/farmer-360" element={<Farmer360 />} />
+          <Route path="/queue" element={<GhostSyncQueue />} />
+          <Route path="/onboard" element={<OnboardAgent />} />
+          <Route path="/supervisor" element={<SupervisorPortal />} />
+          <Route path="/data-mule" element={<DataMule />} />
+          <Route path="/transcription" element={<LiveTranscription />} />
+          <Route path="/node-status" element={<DemoArchitecture />} />
+          <Route path="/judge-ticker" element={<DemoArchitecture />} />
+          <Route path="/inventory" element={<InventoryDemo />} />
+          <Route
+            path="/academy"
+            element={
+              <div className="product-grid">
+                <TrainingDemo />
+                <OnboardingWalkthrough />
+              </div>
+            }
+          />
+          <Route
+            path="/ardi-engine"
+            element={
+              <section className="rounded-xl p-4 bg-slate-950">
+                <CapabilityBadge state="SYNTHETIC DEMO" />
+                <p className="text-slate-200 p-4">
+                  Arithmetic scoring illustration only. No AI provider, credit
+                  decision or entitlement.
+                </p>
+                <ArdiEngine />
+              </section>
+            }
+          />
+          {[
+            "swaps",
+            "fmcg-liquidity",
+            "kentiq-payg",
+            "smartcycle",
+            "bank-racing",
+            "psnp-plus",
+            "securitization",
+            "agri-connect",
+            "agritrust",
+            "governance",
+            "sandbox",
+            "audit",
+          ].map((path) => (
+            <Route
+              key={path}
+              path={"/" + path}
+              element={<ServicePortfolio />}
+            />
+          ))}
+          <Route
+            path="*"
+            element={
+              <section className="product-card">
+                <h2>Module not found</h2>
+                <p>Choose a prototype module from the navigation.</p>
+              </section>
+            }
+          />
+        </Routes>
+      </PresentationShell>
       <Toaster position="top-right" />
     </>
   );

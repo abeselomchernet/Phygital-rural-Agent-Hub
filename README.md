@@ -30,8 +30,18 @@ The Express/Vite demo defaults to loopback port 3000. No secrets, Redis or Postg
 
 ## UI scope
 
-`/kiosk`, `/farmer-360` and `/onboard` use the shared synthetic customer workflow. The phone selector permits only declared fixture aliases. Kiosk requests enter the local outbox; an explicit separate action demonstrates mock partner authorization. It does not deliver the outbox. Supervisor fleet data remains a demo; agent admission is disabled. The legacy camera/OTP/FIN transaction paths and arbitrary identity form persistence were removed; their history is preserved in Git.
+The responsive presentation shell restores the rural-agent product breadth without live-integration claims. English, Amharic and Afaan Oromoo headings/navigation are available; detailed domain controls remain English, and translations need local-speaker review.
 
-Other financial scenario screens are read-only legacy illustrations, with financial controls disabled pending migration; they are not authoritative financial services. See the security backlog for further consolidation. Browser storage is unencrypted and unsuitable for real identity or financial data. Existing legacy `GhostSyncDB` records are retained in place and never auto-migrated or uploaded.
+- `/kiosk`: implemented local customer/request workflow plus synthetic inventory, liquidity planning, printer-slip and training concepts.
+- `/farmer-360`: proposed read-only agriculture, vouchers, climate/insurance, solar PAYG, carbon, diaspora, procurement and PartnerFI service portfolio.
+- `/onboard`: read-only readiness stages beside the existing mock identity workflow; no PII form, camera or real agent admission.
+- `/queue` and `/data-mule`: local outbox, conflict learning and illustrative handoff. No remote delivery or settlement.
+- `/supervisor`: synthetic fleet map/table/pagination; device controls disabled; readiness and transport concepts.
+- `/transcription`: fixed authored dialogue; no microphone or speech service.
+- `/node-status`: deterministic architecture samples, explicitly not operational telemetry.
+
+Every module labels its status. IMPLEMENTED describes local software only. External Vercel SPA previews show the product portfolio while explaining that the Express customer API is unavailable; they never fabricate customer/account state as a fallback. Historical financial pages remain in source/Git but are not mounted. Their routes display proposed capabilities.
+
+Browser storage is unencrypted and unsuitable for real identity or financial data. Legacy `GhostSyncDB` records remain untouched and are never auto-migrated or uploaded. See the [product-preservation inventory](docs/PRODUCT_PRESERVATION_REVIEW.md).
 
 See [operating model](docs/OPERATING_MODEL.md), [architecture](SYSTEM_ARCHITECTURE.md), [data policy](docs/DATA_RESIDENCY_AND_CLASSIFICATION.md), [runbook](RUNBOOK.md), and [remaining P0 blockers](docs/P0_BACKLOG.md).

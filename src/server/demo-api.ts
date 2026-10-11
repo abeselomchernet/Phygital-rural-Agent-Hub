@@ -1,3 +1,4 @@
+import { syntheticMetadata } from "../demo/fixtures";
 import type { Express } from "express";
 import { z } from "zod";
 import { CustomerStore } from "../domain/customer";
@@ -29,13 +30,13 @@ export function registerDemoApi(app: Express) {
   });
   const respond = (res: any, fn: () => unknown) => {
     try {
-      res.json(fn());
+      res.json({ ...(fn() as object), ...syntheticMetadata });
     } catch {
       res.status(400).json({ error: "DEMO_REQUEST_REJECTED" });
     }
   };
   app.get("/api/demo/customer", (_req, res) =>
-    res.json(customers.get(fixtureId)),
+    res.json({ ...customers.get(fixtureId), ...syntheticMetadata }),
   );
   app.get("/api/demo/lookup", (req, res) =>
     respond(res, () =>
@@ -65,7 +66,7 @@ export function registerDemoApi(app: Express) {
     }),
   );
   app.get("/api/demo/account", (_req, res) =>
-    res.json(partner.getAccountSummary(fixtureId)),
+    res.json({ ...partner.getAccountSummary(fixtureId), ...syntheticMetadata }),
   );
   app.post("/api/demo/transactions", (req, res) =>
     respond(res, () => {

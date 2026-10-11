@@ -1,11 +1,4 @@
+import { TranscriptDemo } from "../components/ProductPresentation";
 export default function LiveTranscription() {
-  return (
-    <section className="p-6">
-      <h1>Transcription disabled</h1>
-      <p>
-        External speech services and microphone capture are disabled in this
-        synthetic prototype pending data-residency review.
-      </p>
-    </section>
-  );
+  return <TranscriptDemo />;
 }

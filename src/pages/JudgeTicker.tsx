@@ -1,3 +1,4 @@
+// Historical presentation only; not mounted by App. Its former claims are not current capabilities.
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -149,11 +150,9 @@ export default function JudgeTicker() {
           </div>
         </div>
         <Dialog onOpenChange={(open) => { if (!open) { setIsScanning(false); setScanCompleted(false); } }}>
-          <DialogTrigger asChild>
-            <Button variant="outline" className="border-emerald-500 text-emerald-500 bg-emerald-950/20 hover:bg-emerald-900/40">
+          <DialogTrigger render={<Button variant="outline" className="border-emerald-500 text-emerald-500 bg-emerald-950/20 hover:bg-emerald-900/40" />}>
               <QrCode className="w-4 h-4 mr-2" />
               Verify Last Block
-            </Button>
           </DialogTrigger>
           <DialogContent className="bg-slate-900 text-white border-slate-800 max-w-lg relative overflow-hidden">
             <DialogHeader>
