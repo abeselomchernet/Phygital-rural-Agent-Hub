@@ -21,3 +21,7 @@ Browser coverage: current kiosk heading/KYC/account, Ardi calculation output, pa
 During development, the strengthened supervisor test initially counted all five fixture agents rather than three visible paginated rows; corrected to verify three agents plus header and the expected first agent. A production check initially reached an existing dev process on port 3000; using isolated port 3011 verified the intended process. The earlier baseline dev process also caused a harmless Vite WebSocket port warning during browser testing; tests completed successfully.
 
 Formatting-only changes followed the browser run; final typecheck/domain/API tests and build passed afterward. Docker build and hosted GitHub Actions were not run. No claim of regulated deployment readiness is made.
+
+## Hosted preview note
+
+Vercel preview deployment for the current private-repository PR is blocked on the Hobby plan because the preceding cloud-agent-authored commit was attributed to a separate GitHub identity that does not have contributing access to the Vercel project. Local validation and GitHub Actions passed. Hosted preview verification remains pending; no production protection settings were changed.
