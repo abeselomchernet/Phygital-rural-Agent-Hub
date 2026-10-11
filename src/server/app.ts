@@ -1,5 +1,5 @@
 import { validateDataConfig } from "../domain/residency";
-import { registerDemoApi } from "./demo-api";
+import { registerDemoApi, type DemoApiOptions } from "./demo-api";
 import express from "express";
 import {
   syntheticEnvelope,
@@ -9,7 +9,7 @@ import {
   isoFixtures,
 } from "../demo/fixtures";
 
-export function createApp() {
+export function createApp(options: DemoApiOptions = {}) {
   validateDataConfig(process.env);
   const app = express();
   app.disable("x-powered-by");
@@ -67,7 +67,7 @@ export function createApp() {
     (_req, res) => res.json(syntheticEnvelope([])),
   );
 
-  registerDemoApi(app);
+  registerDemoApi(app, options);
 
   app.post("/api/score/compute", (_req, res) =>
     res
