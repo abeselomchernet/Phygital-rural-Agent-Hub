@@ -1,26 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
-
+import { fileURLToPath } from 'node:url';
 export default defineConfig({
-  testDir: './e2e',
-  fullyParallel: true,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
-  reporter: 'html',
-  use: {
-    baseURL: 'http://localhost:3000',
-    trace: 'on-first-retry',
-  },
-  projects: [
-    {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
-  ],
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-  },
+  testDir:'./e2e', fullyParallel:false, workers:1, forbidOnly:!!process.env.CI, retries:0,
+  reporter:'list', outputDir:'../../test-results',
+  use:{baseURL:'http://127.0.0.1:3010',trace:'retain-on-failure',launchOptions:{executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH||undefined}},
+  projects:[{name:'chromium',use:{...devices['Desktop Chrome']}}],
+  webServer:{command:'npm run dev',cwd:fileURLToPath(new URL('../../',import.meta.url)),url:'http://127.0.0.1:3010/api/health',reuseExistingServer:false,timeout:120000,env:{HOST:'127.0.0.1',PORT:'3010',DATA_MODE:'synthetic',ALLOW_EXTERNAL_TELEMETRY:'false'}},
 });
