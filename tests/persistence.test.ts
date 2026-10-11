@@ -117,7 +117,12 @@ test("malformed persisted synthetic ledger fails closed", () => {
   try {
     writeFileSync(
       file,
-      JSON.stringify({ version: 1, balances: { not-a-uuid: 100 }, results: [], transactionKeys: [] }),
+      JSON.stringify({
+        version: 1,
+        balances: { "not-a-uuid": 100 },
+        results: [],
+        transactionKeys: [],
+      }),
     );
     const persistence = new AtomicJsonPartnerLedgerPersistence(file);
     assert.throws(() => new MockPartnerFI("accept", persistence));
