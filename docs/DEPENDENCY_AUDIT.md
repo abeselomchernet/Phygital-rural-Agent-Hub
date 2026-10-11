@@ -1,64 +1,52 @@
 # Dependency security audit
 
-Status: **OPEN PRE-MERGE GATE** for P0-A.
+Status: **PRODUCTION DEPENDENCY GATE CLEARED FOR P0-A MERGE REVIEW**.
 
-The final hosted P0-A cleanup run executed `npm audit --omit=dev`. It reported **38 vulnerabilities: 2 critical, 25 high, 8 moderate and 3 low**. This document records the evidence and the safe remediation policy; it is not a claim that every advisory is reachable in the current synthetic prototype.
+The dependency-remediation pass removed unused runtime provider packages, regenerated the lockfile, applied supported non-breaking production fixes, and added a narrow `qs` override because the Express 4 dependency range otherwise retained a version covered by the active advisory.
 
-## Policy
+The final hosted validation run executed `npm audit --omit=dev` after a clean `npm ci` and reported **0 production vulnerabilities**. CI now treats that command as a hard gate rather than report-only.
 
-1. Do **not** run `npm audit fix --force` on this branch. The current audit proposes breaking dependency changes for some chains, including a Firebase downgrade and a shadcn downgrade.
-2. Prefer removing dependencies that are no longer used by active source before upgrading their transitive trees.
-3. For dependencies that remain active, regenerate `package-lock.json` with npm, then run the complete lint/domain/API/build/Docker/Playwright suite.
-4. Do not hand-edit dependency versions without regenerating the lockfile.
-5. Before P0-A is marked ready to merge, either:
-   - eliminate high/critical production audit findings, or
-   - document a package-by-package reachability/acceptance rationale for any residual finding and keep production/pilot use blocked.
-6. The current CI audit step is report-only (`npm audit --omit=dev || true`). A green workflow therefore does **not** mean dependency-security clearance.
+This result is dependency-audit evidence for the current lockfile only. It is not a claim that the prototype is production-ready, regulated, approved, or safe for real customer data.
 
-## Current audit groups
+## Changes made
 
-### Critical
+- Removed unused `firebase` and `@google/genai` runtime dependencies after confirming the active prototype no longer imports them.
+- Kept `shadcn` as development/code-generation tooling instead of a production dependency.
+- Regenerated `package-lock.json` with npm rather than hand-editing lock entries.
+- Applied non-breaking production dependency updates with npm.
+- Added a root npm override for `qs` at `^6.15.4` to keep the Express dependency graph above the affected advisory range.
+- Retained Express 4 for this bounded pass instead of introducing an unnecessary major framework migration.
+- Changed GitHub Actions from `npm audit --omit=dev || true` to the enforced `npm audit --omit=dev` gate.
 
-- `proxy-addr` — critical IP-spoofing advisory; part of the HTTP/Express dependency graph and therefore requires priority remediation.
-- `websocket-driver` — critical WebSocket advisories; determine the owning direct dependency and remove or upgrade that chain.
+## Final hosted evidence
 
-### High-priority direct/runtime surfaces
+From a clean GitHub Actions install on the remediated lockfile:
 
-- `react-router` / `react-router-dom` — multiple high advisories; the application actively uses React Router and this chain must be upgraded/tested rather than dismissed as unused.
-- `vite` — high development-server advisory; upgrade through a lockfile-managed dependency update and rerun build/E2E.
-- Firebase / `@grpc/grpc-js` / protobuf-related packages — Firebase execution was removed from the active prototype, so first verify there are no remaining active imports. If unused, remove the direct Firebase dependency instead of accepting a forced breaking downgrade.
-- `@modelcontextprotocol/sdk` / Hono-related chain — identify the owning direct package and whether it is needed by the runtime prototype; remove unused tooling dependencies or upgrade safely.
-- Express-related `body-parser`, `qs`, `proxy-addr` and related packages — update the Express dependency graph and retest request parsing/origin controls.
-- `ws`, `js-yaml`, `nanoid`, PostCSS, browserslist, source-map and related transitive packages — apply supported non-breaking updates through npm and regenerate the lockfile.
+| Check | Result |
+| --- | --- |
+| `npm ci` | PASS; 576 packages installed |
+| `npm audit --omit=dev` | **PASS; 0 vulnerabilities** |
+| `npm run lint` | PASS |
+| `npm test` | PASS; 29 tests |
+| `npm run build` | PASS |
+| `docker build -t enawuga-synthetic-demo:pr .` | PASS |
+| `npm run test:e2e` | PASS; 10 tests |
 
-### Direct packages to review for removal
+The full dependency tree, including development tooling, still reports **23 findings (2 low, 4 moderate, 17 high)** during `npm ci`. Those findings are not present in the `--omit=dev` production graph. They remain a development-tooling hygiene backlog and should be upgraded or removed without using an indiscriminate `npm audit fix --force` downgrade. In particular, the shadcn/tooling chain should be handled separately from runtime dependencies.
 
-The synthetic P0-A source no longer uses Firebase for identity/financial persistence and no longer injects Gemini/GenAI credentials. The following direct dependencies should be checked for active imports before the dependency-remediation commit:
+## Policy going forward
 
-- `firebase`
-- `@firebase/eslint-plugin-security-rules`
-- `@google/genai`
+1. Do not use `npm audit fix --force` as a blanket remediation strategy.
+2. Keep the production audit as a hard CI gate.
+3. Prefer removing unused packages before accepting transitive risk.
+4. Regenerate and commit `package-lock.json` for dependency changes; do not hand-edit it.
+5. Re-run lint, tests, build, Docker and browser tests after dependency updates.
+6. Treat development-only findings separately, but do not allow a dev dependency to migrate into the production graph without clearing the production audit.
 
-If they are unused, remove them with npm so the lockfile is regenerated cleanly. Do not remove them by editing `package.json` alone.
+## Architecture boundaries preserved
 
-`shadcn` also introduces a vulnerable tooling chain in the current audit. Determine whether the package is required at runtime or only used as a development/code-generation tool before changing it. The audit's suggested forced downgrade is not acceptable without an explicit compatibility review.
-
-## Required verification after remediation
-
-Run all of the following from a clean install:
-
-```sh
-npm ci
-npm audit --omit=dev --audit-level=high
-npm run lint
-npm test
-npm run build
-docker build -t enawuga-synthetic-demo:pr .
-npm run test:e2e
-```
-
-The dependency remediation must not reintroduce Firebase execution, Gemini key injection, live identity/payment connectivity, remote GhostSync delivery, regulated mode, or unsafe historical financial routes.
+The dependency cleanup did not reintroduce Firebase execution, Gemini/GenAI credential injection, live Fayda/bank/payment connectivity, remote GhostSync delivery, regulated mode, fake settlement, or historical unsafe financial routes. Wishland remains a technology/software/orchestration provider only; PartnerFI remains the future regulated financial principal.
 
 ## Scope note
 
-P0-A remains a synthetic prototype. Dependency remediation is necessary for repository hygiene and safer development, but clearing the package audit alone would not make Enawuga production-ready, authorize a pilot, or satisfy the P0-B requirements for authentication, durable idempotency, encrypted storage, approved Ethiopia-resident infrastructure, key custody, partner contracts and regulated operational controls.
+Clearing the production npm audit is necessary repository hygiene, not production authorization. P0-B still requires authentication and partner roles, durable transaction/idempotency controls, real-customer object authorization, encrypted edge storage, approved Ethiopia-resident infrastructure and key custody, provider contracts, authenticated remote receiver controls, and other regulated operational safeguards before any real pilot or production use.
