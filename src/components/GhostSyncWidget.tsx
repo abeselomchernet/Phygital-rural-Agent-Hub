@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Wifi, WifiOff, RefreshCw, HardDriveDownload, Settings, Check, Clock } from 'lucide-react';
-import { syncEvents, getPendingEvents } from '@/lib/ghostsync';
+import { syncEvents, getPendingEvents, remoteSyncEnabled } from '@/lib/ghostsync';
 import { useSyncStatus } from './layout/AppLayout';
 import { toast } from 'sonner';
 
@@ -96,7 +96,7 @@ export function GhostSyncWidget() {
 
   // Background Auto-Sync Driver Effect
   useEffect(() => {
-    if (!autoSync || !isOnline) return;
+    if (!remoteSyncEnabled || !autoSync || !isOnline) return;
 
     const runAutoSync = async () => {
       // Fetch queue items to determine if sync is needed (presence of failed with retries < 5 or pending)
@@ -122,7 +122,7 @@ export function GhostSyncWidget() {
   }, [autoSync, syncInterval, isOnline, isSyncing]);
 
   const handleSyncNow = async () => {
-    if (!isOnline || pendingCount === 0 || isSyncing) return;
+    if (!remoteSyncEnabled || !isOnline || pendingCount === 0 || isSyncing) return;
     setIsSyncing(true);
     try {
       await syncEvents();
@@ -221,11 +221,15 @@ export function GhostSyncWidget() {
       ) : null}
       
       <div className="flex items-center justify-between text-sm">
-        <span className="text-slate-600">Pending TXs:</span>
+        <span className="text-slate-600">Local outbox items:</span>
         <span className={`font-mono font-bold ${pendingCount > 0 ? 'text-amber-600 animate-pulse' : 'text-slate-500'}`}>
           {pendingCount}
         </span>
       </div>
+
+      {!remoteSyncEnabled && (
+        <p className="text-[10px] text-amber-700">Demo mode: remote delivery is disabled. No queued item is synchronized.</p>
+      )}
 
       {syncProgress > 0 && (
         <div className="space-y-1.5 transition-all duration-300 animate-fade-in my-1">
@@ -246,7 +250,7 @@ export function GhostSyncWidget() {
 
       <button
         onClick={handleSyncNow}
-        disabled={!isOnline || pendingCount === 0 || isSyncing}
+        disabled={!remoteSyncEnabled || !isOnline || pendingCount === 0 || isSyncing}
         className="mt-1 w-full flex items-center justify-center px-3 py-1.5 bg-slate-900 border border-transparent rounded-md shadow-sm text-xs font-medium text-white hover:bg-slate-800 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         <RefreshCw className={`w-3.5 h-3.5 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
