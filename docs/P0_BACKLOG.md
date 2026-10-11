@@ -24,4 +24,4 @@ P0-A does not make this prototype production-ready or authorize a pilot. Do not 
 
 ## Known limitations
 
-No authentication, approved providers, durable account ledger, real cryptography, production observability, encrypted browser storage or high-availability recovery has been implemented. Mock-provider/admin authority is an internal domain contract, not a security credential. Old git revisions contain illustrative hardcoded values; if any were reused externally, their owner must rotate them independently. No actual credential validity was tested.
+Offline operation currently requires an already-loaded app; there is no service worker for offline page reload. No authentication, approved providers, durable account ledger, real cryptography, production observability, encrypted browser storage or high-availability recovery has been implemented. Mock-provider/admin authority is an internal domain contract, not a security credential. Old git revisions contain illustrative hardcoded values; if any were reused externally, their owner must rotate them independently. No actual credential validity was tested.

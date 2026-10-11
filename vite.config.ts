@@ -1,18 +1,18 @@
-import tailwindcss from '@tailwindcss/vite';
-import react from '@vitejs/plugin-react';
-import path from 'path';
-import {defineConfig, loadEnv} from 'vite';
-import { validateDataConfig } from './src/domain/residency';
+import tailwindcss from "@tailwindcss/vite";
+import react from "@vitejs/plugin-react";
+import path from "path";
+import { defineConfig, loadEnv } from "vite";
+import { validateDataConfig } from "./src/domain/residency";
 
-export default defineConfig(({mode}) => {
-  validateDataConfig({...loadEnv(mode, process.cwd(), ''), ...process.env});
+export default defineConfig(({ mode }) => {
+  validateDataConfig({ ...loadEnv(mode, process.cwd(), ""), ...process.env });
 
   return {
     plugins: [react(), tailwindcss()],
 
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, './src'),
+        "@": path.resolve(__dirname, "./src"),
       },
     },
     server: {
