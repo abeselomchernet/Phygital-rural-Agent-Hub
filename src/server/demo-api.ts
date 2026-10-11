@@ -1,9 +1,16 @@
 import { syntheticMetadata } from "../demo/fixtures";
 import type { Express } from "express";
 import { z } from "zod";
-import { CustomerStore } from "../domain/customer";
+import {
+  CustomerStore,
+  type CustomerStorePersistence,
+} from "../domain/customer";
 import { KycService, MockFaydaAdapter } from "../domain/identity";
-import { MockPartnerFI, TransactionService } from "../domain/financial";
+import {
+  MockPartnerFI,
+  TransactionService,
+  type PartnerLedgerPersistence,
+} from "../domain/financial";
 import {
   SyntheticAuthError,
   SyntheticAuthService,
@@ -18,25 +25,45 @@ export const demoPhones = [
 
 export interface DemoApiOptions {
   allowPrivilegedSyntheticRoles?: boolean;
+  customerPersistence?: CustomerStorePersistence;
+  partnerLedgerPersistence?: PartnerLedgerPersistence;
 }
 
 const roleSchema = z.enum(["AGENT", "SUPERVISOR", "PARTNER_ADMIN"]);
 const mutationMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+const demoPhoneSet = new Set<string>(demoPhones);
 
 export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
-  const customers = new CustomerStore(),
-    identity = new KycService(customers, new MockFaydaAdapter());
-  const partner = new MockPartnerFI(),
+  const customers = new CustomerStore(options.customerPersistence),
+    identity = new KycService(customers, new MockFaydaAdapter()),
+    partner = new MockPartnerFI("accept", options.partnerLedgerPersistence),
     transactions = new TransactionService(customers, partner),
     auth = new SyntheticAuthService();
-  const customer = customers.create(demoPhones[0]);
-  identity.start(customer.customerId);
-  identity.confirm(customer.customerId);
-  customers.recordMockPhoneVerification(customer.customerId);
-  customers.linkPartnerCustomer(
-    customer.customerId,
-    partner.lookupPartnerCustomer(customer.customerId),
-  );
+
+  let customer = customers
+    .list()
+    .find((entry) => entry.primaryPhone && demoPhoneSet.has(entry.primaryPhone));
+  if (!customer) {
+    customer = customers.create(demoPhones[0]);
+    identity.start(customer.customerId);
+    customer = identity.confirm(customer.customerId);
+    customer = customers.recordMockPhoneVerification(customer.customerId);
+  } else if (
+    customer.kycStatus === "UNVERIFIED" ||
+    customer.kycStatus === "PENDING"
+  ) {
+    // Synthetic fixture bootstrap recovery only. This does not recover or
+    // override a suspended/re-verification-required regulated decision.
+    identity.start(customer.customerId);
+    customer = identity.confirm(customer.customerId);
+    if (customer.primaryPhone)
+      customer = customers.recordMockPhoneVerification(customer.customerId);
+  }
+  if (!customer.partnerCustomerId)
+    customer = customers.linkPartnerCustomer(
+      customer.customerId,
+      partner.lookupPartnerCustomer(customer.customerId),
+    );
   const fixtureId = customer.customerId;
 
   app.use("/api/demo", (req, res, next) => {
