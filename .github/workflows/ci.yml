@@ -17,8 +17,12 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - name: Report production dependency audit
+        run: npm audit --omit=dev || true
       - run: npm run lint
       - run: npm test
       - run: npm run build
+      - name: Validate synthetic Docker image
+        run: docker build -t enawuga-synthetic-demo:pr .
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
