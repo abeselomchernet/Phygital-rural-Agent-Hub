@@ -1,0 +1,22 @@
+name: Dependency lockfile candidate
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Regenerate lockfile without install scripts
+        run: npm install --package-lock-only --ignore-scripts
+      - name: Audit regenerated production graph
+        run: npm audit --omit=dev || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package-lock-candidate
+          path: package-lock.json
+          if-no-files-found: error
