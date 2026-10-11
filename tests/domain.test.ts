@@ -16,8 +16,13 @@ function fixture(outcome: "accept" | "reject" | "reconcile" = "accept") {
   const customer = store.create("+251900000001");
   kyc.start(customer.customerId);
   kyc.confirm(customer.customerId);
-  const partner = new MockPartnerFI(outcome),
-    service = new TransactionService(store, partner);
+  store.recordMockPhoneVerification(customer.customerId);
+  const partner = new MockPartnerFI(outcome);
+  store.linkPartnerCustomer(
+    customer.customerId,
+    partner.lookupPartnerCustomer(customer.customerId),
+  );
+  const service = new TransactionService(store, partner);
   const request = {
     transactionId: crypto.randomUUID(),
     customerId: customer.customerId,
@@ -109,7 +114,38 @@ test("normal transaction never invokes identity adapter", () => {
   };
   assert.equal(f.service.submit(f.request).state, "PARTNER_ACCEPTED");
 });
-test("re-verification invokes provider and returns to VERIFIED", () => {
+test("identity verification does not prove phone possession or create PartnerFI linkage", () => {
+  const store = new CustomerStore(),
+    provider = new MockFaydaAdapter(),
+    kyc = new KycService(store, provider),
+    customer = store.create("+251900000001");
+  kyc.start(customer.customerId);
+  const verified = kyc.confirm(customer.customerId);
+  assert.equal(verified.kycStatus, "VERIFIED");
+  assert.equal(verified.phoneStatus, "UNVERIFIED");
+  assert.equal(verified.partnerCustomerId, undefined);
+  assert.match(verified.identityReference ?? "", /^mock-identity:/);
+});
+test("verification challenges are idempotent while one is pending", () => {
+  const store = new CustomerStore(),
+    provider = new MockFaydaAdapter(),
+    kyc = new KycService(store, provider),
+    customer = store.create("+251900000001");
+  const first = kyc.start(customer.customerId),
+    retry = kyc.start(customer.customerId);
+  assert.equal(retry, first);
+  kyc.confirm(customer.customerId);
+  const reverifyFirst = kyc.requestReverification(
+      customer.customerId,
+      "KYC_REFRESH_DUE",
+    ),
+    reverifyRetry = kyc.requestReverification(
+      customer.customerId,
+      "KYC_REFRESH_DUE",
+    );
+  assert.equal(reverifyRetry, reverifyFirst);
+});
+test("re-verification keeps identity and phone-channel verification distinct", () => {
   const f = fixture();
   let calls = 0;
   const original = f.provider.requestReverification.bind(f.provider);
@@ -121,7 +157,14 @@ test("re-verification invokes provider and returns to VERIFIED", () => {
   f.kyc.requestReverification(f.customer.customerId, "PHONE_CHANGE");
   assert.equal(calls, 1);
   assert.equal(f.kyc.confirm(f.customer.customerId).kycStatus, "VERIFIED");
-  assert.equal(f.store.get(f.customer.customerId).phoneStatus, "VERIFIED");
+  assert.equal(
+    f.store.get(f.customer.customerId).phoneStatus,
+    "REVERIFICATION_REQUIRED",
+  );
+  assert.equal(
+    f.store.recordMockPhoneVerification(f.customer.customerId).phoneStatus,
+    "VERIFIED",
+  );
   assert.throws(() => f.kyc.confirm(f.customer.customerId));
 });
 test("KYC transitions require authority; suspended recovery is partner-admin only", () => {
@@ -165,6 +208,10 @@ test("mock account belongs to PartnerFI, never Wishland", () => {
     balanceMinor: 100000,
     currency: "ETB",
   });
+  assert.equal(
+    f.store.get(f.customer.customerId).partnerCustomerId,
+    f.partner.lookupPartnerCustomer(f.customer.customerId),
+  );
 });
 test("offline credential verification is explicitly unsupported", () =>
   assert.deepEqual(new MockFaydaAdapter().verifyOfflineCredential(), {
