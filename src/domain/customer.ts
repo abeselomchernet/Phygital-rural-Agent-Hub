@@ -126,7 +126,7 @@ export class CustomerStore {
     });
     return this.get(id);
   }
-  recordMockVerification(id: string, reference: string) {
+  recordIdentityVerification(id: string, reference: string) {
     const customer = this.get(id);
     if (
       customer.kycStatus !== "VERIFIED" ||
@@ -135,12 +135,29 @@ export class CustomerStore {
       throw new Error("INVALID_VERIFICATION");
     customer.kycMethod = "MOCK_FAYDA";
     customer.identityReference = reference;
-    customer.partnerCustomerId = `mock-partner:${id}`;
-    // The synthetic fixture simulates phone verification, never actual possession.
-    if (customer.primaryPhone) {
-      customer.phoneStatus = "VERIFIED";
-      customer.phoneVerifiedAt = customer.updatedAt;
-    }
+    customer.updatedAt = new Date().toISOString();
+    this.customers.set(id, customer);
+    return this.get(id);
+  }
+  recordMockPhoneVerification(id: string) {
+    const customer = this.get(id);
+    if (!customer.primaryPhone) throw new Error("PHONE_ALIAS_REQUIRED");
+    customer.phoneStatus = "VERIFIED";
+    customer.phoneVerifiedAt = new Date().toISOString();
+    customer.updatedAt = customer.phoneVerifiedAt;
+    this.customers.set(id, customer);
+    return this.get(id);
+  }
+  linkPartnerCustomer(id: string, partnerCustomerId: string) {
+    const customer = this.get(id);
+    if (
+      !partnerCustomerId ||
+      partnerCustomerId.length > 128 ||
+      partnerCustomerId === customer.primaryPhone
+    )
+      throw new Error("INVALID_PARTNER_CUSTOMER_REFERENCE");
+    customer.partnerCustomerId = partnerCustomerId;
+    customer.updatedAt = new Date().toISOString();
     this.customers.set(id, customer);
     return this.get(id);
   }
