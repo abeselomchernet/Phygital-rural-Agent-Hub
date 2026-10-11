@@ -6,6 +6,8 @@ coverage/
 *.log
 .env*
 !.env.example
+.synthetic-state/
+synthetic-state/
 
 test-results/
 playwright-report/
