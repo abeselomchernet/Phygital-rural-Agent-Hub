@@ -6,7 +6,9 @@ import test from "node:test";
 import { randomUUID } from "node:crypto";
 import {
   DurableTelebirrPreorderIntentStore,
+  type TelebirrPreorderIntentPersistence,
   type TelebirrPreorderIntentRequest,
+  type TelebirrPreorderIntentSnapshot,
 } from "../src/domain/telebirrPreorderIntent";
 import { AtomicJsonTelebirrPreorderIntentPersistence } from "../src/server/telebirr-preorder-intent-persistence";
 
@@ -54,6 +56,34 @@ test("preorder correlation intent survives restart before any provider mutation"
     assert.deepEqual(restarted.getByTransactionId(input.transactionId), first);
     assert.deepEqual(restarted.getByMerchantOrderId(input.merchantOrderId), first);
   });
+});
+
+test("failed durable save does not expose a phantom in-memory reservation", () => {
+  let snapshot: TelebirrPreorderIntentSnapshot | undefined;
+  let failSave = true;
+  const persistence: TelebirrPreorderIntentPersistence = {
+    load: () => snapshot,
+    save: (candidate) => {
+      if (failSave) throw new Error("SYNTHETIC_PERSISTENCE_FAILURE");
+      snapshot = structuredClone(candidate);
+    },
+  };
+  const store = new DurableTelebirrPreorderIntentStore(persistence);
+  const input = request();
+
+  assert.throws(
+    () => store.reserve(input),
+    /SYNTHETIC_PERSISTENCE_FAILURE/,
+  );
+  assert.equal(store.getByTransactionId(input.transactionId), undefined);
+  assert.equal(store.getByMerchantOrderId(input.merchantOrderId), undefined);
+  assert.equal(snapshot, undefined);
+
+  failSave = false;
+  const persisted = store.reserve(input);
+  assert.equal(persisted.status, "PREORDER_INTENT_RECORDED");
+  assert.equal(snapshot?.records.length, 1);
+  assert.equal(snapshot?.records[0]?.request.transactionId, input.transactionId);
 });
 
 test("same idempotency key with changed preorder intent fails closed", () => {
