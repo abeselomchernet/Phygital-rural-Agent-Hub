@@ -3,25 +3,9 @@ import { CapabilityBadge } from "./ProductPresentation";
 import type { Customer } from "../domain/customer";
 import { assertTransactionEligible } from "../domain/customer";
 import { addEventToQueue, getPendingEvents } from "../lib/ghostsync";
+import { demoApi } from "../lib/demo-api-client";
 import type { Envelope } from "../domain/transport";
 
-async function api(path: string, body?: unknown) {
-  const response = await fetch(
-    `/api/demo/${path}`,
-    body === undefined
-      ? {}
-      : {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        },
-  );
-  if (!response.ok)
-    throw new Error(
-      "Request blocked. Check KYC, alias, and synthetic demo server availability.",
-    );
-  return response.json();
-}
 export function CustomerWorkbench({ title = "Customer" }: { title?: string }) {
   const [customer, setCustomer] = useState<Customer | null>(null),
     [phone, setPhone] = useState("+251900000001");
@@ -32,13 +16,13 @@ export function CustomerWorkbench({ title = "Customer" }: { title?: string }) {
     [verificationStarted, setVerificationStarted] = useState(false);
   const [pending, setPending] = useState<Envelope | null>(null);
   const refresh = async () => {
-    setCustomer(await api("customer"));
-    setAccount(await api("account"));
+    setCustomer(await demoApi("customer"));
+    setAccount(await demoApi("account"));
   };
   useEffect(() => {
     refresh().catch(() =>
       setMessage(
-        "Synthetic demo API unavailable. Existing outbox records are retained.",
+        "Synthetic authenticated demo API unavailable. Existing outbox records are retained.",
       ),
     );
   }, []);
@@ -98,6 +82,11 @@ export function CustomerWorkbench({ title = "Customer" }: { title?: string }) {
         real identity verification.
       </p>
       <p>
+        Local development authentication is server-verified for this synthetic
+        demo. It is not PartnerFI SSO, Fayda authentication, or production
+        access control.
+      </p>
+      <p>
         Prototype / Synthetic Demo. Wishland supplies software; PartnerFI is the
         future regulated principal.
       </p>
@@ -118,7 +107,9 @@ export function CustomerWorkbench({ title = "Customer" }: { title?: string }) {
         disabled={busy}
         onClick={() =>
           act(async () => {
-            setCustomer(await api(`lookup?phone=${encodeURIComponent(phone)}`));
+            setCustomer(
+              await demoApi(`lookup?phone=${encodeURIComponent(phone)}`),
+            );
             setMessage("Alias resolved to existing customer ID.");
           })
         }
@@ -130,7 +121,7 @@ export function CustomerWorkbench({ title = "Customer" }: { title?: string }) {
         disabled={busy}
         onClick={() =>
           act(async () => {
-            setCustomer(await api("phone", { phone }));
+            setCustomer(await demoApi("phone", { phone }));
             setVerificationStarted(false);
             setMessage(
               "Phone changed; customer ID retained. Re-verification required.",
@@ -146,9 +137,9 @@ export function CustomerWorkbench({ title = "Customer" }: { title?: string }) {
             Customer ID:{" "}
             <code data-testid="customer-id">{customer.customerId}</code>
           </p>
-          <p>Phone status: {customer.phoneStatus}</p>
+          <p>Mock phone-channel status: {customer.phoneStatus}</p>
           <p>
-            KYC status:{" "}
+            Mock KYC status:{" "}
             <strong data-testid="kyc-status">{customer.kycStatus}</strong>
           </p>
           <p>
@@ -162,7 +153,7 @@ export function CustomerWorkbench({ title = "Customer" }: { title?: string }) {
             disabled={busy || verificationStarted}
             onClick={() =>
               act(async () => {
-                setCustomer(await api("reverify/start", {}));
+                setCustomer(await demoApi("reverify/start", {}));
                 setVerificationStarted(true);
                 setMessage(
                   "Mock identity re-verification pending; no Fayda call.",
@@ -177,7 +168,7 @@ export function CustomerWorkbench({ title = "Customer" }: { title?: string }) {
             disabled={busy || !verificationStarted}
             onClick={() =>
               act(async () => {
-                setCustomer(await api("reverify/confirm", {}));
+                setCustomer(await demoApi("reverify/confirm", {}));
                 setVerificationStarted(false);
                 setMessage(
                   "Mock KYC verified. No real identity verification performed.",
@@ -190,12 +181,12 @@ export function CustomerWorkbench({ title = "Customer" }: { title?: string }) {
           <p>
             Partner Account — simulated balance:{" "}
             <span data-testid="partner-balance">
-              {((account?.balanceMinor ?? 0) / 100).toFixed(2)} ETB
+              {account ? `${(account.balanceMinor / 100).toFixed(2)} ETB` : "Unavailable"}
             </span>
           </p>
           <p>
             Prototype simulation only — not a real customer liability of
-            Wishland.
+            Wishland. No real cash collection, cash dispense or agent settlement is authorized.
           </p>
           <label className="block">
             Request amount (ETB)
@@ -226,7 +217,7 @@ export function CustomerWorkbench({ title = "Customer" }: { title?: string }) {
               disabled={busy}
               onClick={() =>
                 act(async () => {
-                  const result = await api("transactions", pending.payload);
+                  const result = await demoApi("transactions", pending.payload);
                   await refresh();
                   setMessage(
                     `${result.state} (mock only). Outbox transport remains pending; no settlement asserted.`,

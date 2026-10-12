@@ -4,9 +4,37 @@ import express from "express";
 import path from "node:path";
 import { createApp } from "./src/server/app";
 import { validateDataConfig } from "./src/domain/residency";
+import { AtomicJsonCustomerPersistence } from "./src/server/customer-persistence";
+import { AtomicJsonPartnerLedgerPersistence } from "./src/server/partner-ledger-persistence";
+import {
+  AtomicJsonKycPendingPersistence,
+  AtomicJsonMockIdentityPersistence,
+} from "./src/server/identity-persistence";
+import { AtomicJsonSyntheticAuditPersistence } from "./src/server/audit-persistence";
 
 validateDataConfig(process.env);
-const app = createApp();
+const syntheticStateDir = process.env.SYNTHETIC_STATE_DIR;
+const app = createApp(
+  syntheticStateDir
+    ? {
+        customerPersistence: new AtomicJsonCustomerPersistence(
+          path.join(syntheticStateDir, "customers.json"),
+        ),
+        partnerLedgerPersistence: new AtomicJsonPartnerLedgerPersistence(
+          path.join(syntheticStateDir, "partner-ledger.json"),
+        ),
+        identityProviderPersistence: new AtomicJsonMockIdentityPersistence(
+          path.join(syntheticStateDir, "mock-identity-provider.json"),
+        ),
+        kycPendingPersistence: new AtomicJsonKycPendingPersistence(
+          path.join(syntheticStateDir, "kyc-pending.json"),
+        ),
+        auditPersistence: new AtomicJsonSyntheticAuditPersistence(
+          path.join(syntheticStateDir, "audit.json"),
+        ),
+      }
+    : {},
+);
 if (process.env.NODE_ENV !== "production") {
   const vite = await createViteServer({
     server: { middlewareMode: true, hmr: false },
@@ -20,5 +48,7 @@ if (process.env.NODE_ENV !== "production") {
 const host = process.env.HOST || "127.0.0.1";
 const port = Number(process.env.PORT || 3000);
 app.listen(port, host, () =>
-  console.log(`Synthetic demo listening on ${host}:${port}`),
+  console.log(
+    `Synthetic demo listening on ${host}:${port}${syntheticStateDir ? " with local synthetic durable state" : ""}`,
+  ),
 );

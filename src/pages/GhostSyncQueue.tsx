@@ -26,7 +26,8 @@ export default function GhostSyncQueue() {
         <p>
           Offline transport only. Delivery success is not financial settlement.
           Legacy records remain in their original database and are never
-          uploaded.
+          uploaded. Browser storage is plaintext and synthetic-only. Future recovery
+          requires an explicit governed migration; receiver availability is not consent.
         </p>
         <button
           className="product-button"

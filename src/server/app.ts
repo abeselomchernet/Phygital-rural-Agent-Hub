@@ -1,5 +1,5 @@
 import { validateDataConfig } from "../domain/residency";
-import { registerDemoApi } from "./demo-api";
+import { registerDemoApi, type DemoApiOptions } from "./demo-api";
 import express from "express";
 import {
   syntheticEnvelope,
@@ -9,7 +9,7 @@ import {
   isoFixtures,
 } from "../demo/fixtures";
 
-export function createApp() {
+export function createApp(options: DemoApiOptions = {}) {
   validateDataConfig(process.env);
   const app = express();
   app.disable("x-powered-by");
@@ -25,7 +25,6 @@ export function createApp() {
     res.setHeader("Cache-Control", "no-store");
     next();
   });
-  // Legacy unauthenticated identity, settlement and upload paths are closed.
   app.post(
     [
       "/api/ghostsync",
@@ -41,7 +40,6 @@ export function createApp() {
         .json({ error: "PROTOTYPE_OPERATION_DISABLED", simulated: true });
     },
   );
-  registerDemoApi(app);
 
   app.get("/api/health", (_req, res) =>
     res.json({
@@ -50,6 +48,8 @@ export function createApp() {
       ...syntheticMetadata,
     }),
   );
+  // Public presentation fixtures contain no customer-specific state. The
+  // customer workbench API is registered below and is session protected.
   app.get(["/api/demo/agents", "/api/agents"], (_req, res) =>
     res.json(syntheticEnvelope(demoAgents)),
   );
@@ -66,6 +66,9 @@ export function createApp() {
     ["/api/demo/statements/:agentId", "/api/statements/:agentId"],
     (_req, res) => res.json(syntheticEnvelope([])),
   );
+
+  registerDemoApi(app, options);
+
   app.post("/api/score/compute", (_req, res) =>
     res
       .status(403)

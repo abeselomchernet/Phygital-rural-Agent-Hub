@@ -45,3 +45,9 @@ Every module labels its status. IMPLEMENTED describes local software only. Exter
 Browser storage is unencrypted and unsuitable for real identity or financial data. Legacy `GhostSyncDB` records remain untouched and are never auto-migrated or uploaded. See the [product-preservation inventory](docs/PRODUCT_PRESERVATION_REVIEW.md).
 
 See [operating model](docs/OPERATING_MODEL.md), [architecture](SYSTEM_ARCHITECTURE.md), [data policy](docs/DATA_RESIDENCY_AND_CLASSIFICATION.md), [runbook](RUNBOOK.md), and [remaining P0 blockers](docs/P0_BACKLOG.md).
+
+## P0-B bounded synthetic foundation
+
+See the [P0-B plan](docs/P0_B_PLAN.md), [audit and recovery controls](docs/P0_B_AUDIT_RECOVERY.md), [edge-storage contract/threat model](docs/P0_B_EDGE_SECURITY.md), [Ethiopia staging evidence checklist](docs/P0_B_ET_STAGING_EVIDENCE.md), and [active claims review](docs/P0_B_CLAIMS_REVIEW.md).
+
+The encrypted-edge adapter is an unavailable, fail-closed interface, not encryption for the existing browser database. Partner reconciliation is a local synthetic contract, not a live callback service. Optional JSON persistence is single-process development storage; real regulated infrastructure, atomic audit, key custody and provider contracts remain unapproved.
