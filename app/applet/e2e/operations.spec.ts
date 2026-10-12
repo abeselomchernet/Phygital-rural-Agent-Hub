@@ -8,10 +8,14 @@ test.beforeEach(async ({ page }) => {
   );
 });
 
-test("operations reconciliation workspace is visible but privileged session is fail-closed by default", async ({
+test("operations reconciliation workspace is first-class navigation but privileged session is fail-closed by default", async ({
   page,
 }) => {
-  await page.goto("/operations");
+  await page.goto("/");
+  await expect(page.getByRole("navigation", { name: "Prototype modules" }))
+    .toContainText("Operations");
+  await page.getByRole("link", { name: "Operations", exact: true }).click();
+  await expect(page).toHaveURL(/\/operations$/);
   await expect(
     page.getByRole("heading", { name: "Operations & Reconciliation Center" }),
   ).toBeVisible();
