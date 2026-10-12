@@ -1,6 +1,6 @@
 # Direct Telebirr sandbox workstream
 
-**Status:** first bounded adapter slice implemented; payment initiation still blocked by contract gate  
+**Status:** bounded config/signing/token/preorder-construction slice implemented; payment initiation still blocked by contract gate  
 **Branch:** `feat/telebirr-sandbox-adapter`  
 **Baseline:** `023a0919a44a28241711331a2dfc115e530d2294`  
 **Environment:** Telebirr developer/test environment only  
@@ -40,7 +40,7 @@ Current portal support/examples identify the C2B create-order path as:
 
 `/payment/v1/merchant/preOrder`
 
-but provider-network payment initiation is still blocked in this workstream until the active account's subscribed product/scope and response contract are verified.
+but provider-network payment initiation is still blocked in this workstream until the active account's subscribed product/scope and response contract are verified. The public support material explicitly documents that an account without the relevant API/product subscription can receive an authorization error and must have the interface subscribed for its product.
 
 Current request-signature documentation states that payment requests use RSA key pairs. The merchant keeps the private key and shares the public key with the service provider. For the current `payment.preorder` example, the signing input:
 
@@ -113,7 +113,8 @@ Controls include:
 - production/alternate gateway URLs fail closed;
 - URL-embedded credentials are forbidden;
 - Fabric App ID, app secret, merchant app ID, merchant code and private key remain server-side configuration only;
-- private-key material accepts PEM or the portal-export bare PKCS#8 base64 representation without logging or persistence.
+- private-key material accepts PEM or the portal-export bare PKCS#8 base64 representation without logging or persistence;
+- unresolved redirect/H5 parameters are not required by config until their current contract is pinned.
 
 `.env.example` contains placeholders only. It does not contain the project's sandbox credential values.
 
@@ -143,6 +144,37 @@ CI uses freshly generated synthetic RSA keys. No project Telebirr private key is
 
 This client **does not create an order, initiate a payment, query payment status, receive callbacks or change any Enawuga financial state**.
 
+## Implemented — T4 pure signed `payment.preorder` builder
+
+`buildTelebirrPreorderRequest` constructs but does **not submit** a direct Telebirr C2B request.
+
+The builder:
+
+- accepts a caller-generated unique merchant order ID and nonce using an alphanumeric-only policy;
+- accepts explicit provider timestamp, title and ETB amount in integer minor units;
+- converts ETB minor units to provider decimal text without floating-point arithmetic;
+- uses only the currently pinned public request fields:
+  - `timestamp`;
+  - `nonce_str`;
+  - `method=payment.preorder`;
+  - `version=1.0`;
+  - `notify_url`;
+  - `appid`;
+  - `merch_code`;
+  - `merch_order_id`;
+  - `trade_type=Checkout`;
+  - `title`;
+  - `total_amount`;
+  - `trans_currency=ETB`;
+  - `timeout_express=120m`;
+  - `sign`;
+  - `sign_type=SHA256WithRSA`;
+- intentionally does **not** inject historical/demo-only `business_type`, `redirect_url`, `callback_info` or payee fields until the active C2B contract establishes them;
+- signs entirely server-side using the guarded sandbox config;
+- exports the current documented relative path constant `/payment/v1/merchant/preOrder` for later provider-client use, but no network submit method exists yet.
+
+The merchant-order policy also reflects the developer portal's published error guidance that `merch_order_id` must be a non-null, unique alphanumeric string.
+
 ## Security requirements before payment initiation
 
 The direct Telebirr adapter MUST continue to:
@@ -160,36 +192,44 @@ The direct Telebirr adapter MUST continue to:
 - avoid real customer PII until a later approved data/partner gate explicitly allows it;
 - reuse the existing authenticated session, CSRF, object-authorization, audit and reconciliation patterns.
 
-## Remaining contract gates before C2B payment code
+## Remaining contract gates before C2B payment network code
 
 1. Confirm the active developer account is subscribed/authorized for the intended C2B Web Checkout API scope.
 2. Confirm the current `preOrder` response schema and checkout/raw-request assembly required by that subscribed product.
-3. Confirm whether any account-specific fields beyond the current public example are mandatory.
+3. Confirm whether any account-specific fields beyond the current public signing example are mandatory.
 4. Capture the exact current `queryOrder` endpoint, request shape, response lifecycle and terminal statuses from authoritative account/current documentation.
 5. Establish server-to-server `notify_url` callback authentication/signature and replay rules before treating any callback as authoritative.
 6. Confirm any TestBed consumer/account identifiers needed for a synthetic network smoke test.
 
 Until those gates are satisfied, **no direct Telebirr payment initiation network code is enabled**.
 
-## Validation targets for this slice
+## Validation evidence
 
-Tests cover:
+The first config/signing/token slice validated on GitHub Actions run `38279771191` with:
 
-- sandbox/test gateway pinning;
-- HTTPS and production/alternate-host rejection;
-- environment loader network-off default;
-- exact documented canonical signing string;
-- RSA-PSS SHA-256 sign/verify using generated keys;
-- PEM and bare-PKCS#8 key normalization;
-- token-client network-disable behavior;
-- token request URL/header/body shape;
-- token response parsing;
-- controlled auth/malformed/network error mapping.
+- Node `24.21.0` / npm `11.19.0`;
+- `npm ci`: pass;
+- production dependency audit: **0 vulnerabilities**;
+- TypeScript/lint: pass;
+- unit/domain/API tests: **89/89 pass**;
+- production build: pass;
+- Docker build: pass;
+- Chromium E2E: **13/13 pass**.
+
+The existing full development/tooling dependency findings remain 23 (2 low, 4 moderate, 17 high), and the existing Vite >500 kB bundle advisory remains non-blocking.
+
+The current preorder-builder head adds tests for:
+
+- exact currently pinned builder fields;
+- RSA-PSS verification of the generated request signature;
+- exclusion of unpinned historical fields;
+- integer ETB minor-unit conversion;
+- rejection of unsafe merchant-order IDs and nonces.
 
 ## Next implementation slice after the remaining contract pinning
 
-1. one C2B `preOrder` path only;
-2. durable pre-submit intent and merchant-order idempotency;
+1. provider-network C2B `preOrder` client only after subscription/scope and response contract verification;
+2. durable pre-submit intent and merchant-order idempotency before the first provider mutation;
 3. provider result mapped to gateway-scoped states only;
 4. authenticated AGENT/customer route with no provider secret/reference exposure;
 5. read-only `queryOrder` reconciliation after the authoritative status contract is captured;
@@ -198,4 +238,4 @@ Tests cover:
 
 ## Claim boundary
 
-> This workstream currently implements direct Telebirr developer/test configuration, request signing and fabric-token acquisition using synthetic test evidence. It does not initiate a Telebirr payment, represent production connectivity, move live funds, create PartnerFI settlement, expose Wishland as a regulated principal, or authorize physical cash activity.
+> This workstream currently implements direct Telebirr developer/test configuration, request signing, fabric-token acquisition and local construction of signed C2B preorder requests using synthetic test evidence. It does not submit a Telebirr preorder, initiate a Telebirr payment, represent production connectivity, move live funds, create PartnerFI settlement, expose Wishland as a regulated principal, or authorize physical cash activity.
