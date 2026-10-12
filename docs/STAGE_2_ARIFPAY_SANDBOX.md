@@ -14,8 +14,6 @@ Current ArifPay Developer Portal and its linked Sandbox Postman collection confi
 - authentication uses `x-arifpay-key`;
 - the portal sandbox uses the fixed public test key `arif-sandbox-portal-key`;
 - the sandbox collection explicitly states **no live PSP calls**;
-- sandbox simulator requests may use `x-arifpay-sim-mode: SUCCESS|FAIL`;
-- sandbox-only fee-source header supports `CUSTOMER|MERCHANT`;
 - hosted C2B sandbox session creation is `POST /api/sandbox/c2b/session`;
 - current session-create body uses callback URLs, simulator `phone`/`email`, unique `nonce`, `expireDate`, `amount`, `items`, and `lang`;
 - C2B rail paths are provider-specific after session creation;
@@ -131,7 +129,7 @@ Reconciliation safeguards:
 - network/5xx/404/auth/malformed status responses never become payment failure or success by inference;
 - provider session IDs/transaction references are not written into the controlled audit schema.
 
-The synthetic API now also exposes:
+The synthetic API exposes:
 
 `POST /api/demo/payments/arifpay/c2b/reconcile`
 
@@ -145,7 +143,29 @@ This route:
 - records controlled reconciliation audit events;
 - remains unavailable by default unless the guarded ArifPay sandbox runtime is explicitly configured.
 
-`server.ts` wires checkout plus reconciliation only when `ARIFPAY_MODE=sandbox` is explicitly configured, and requires `SYNTHETIC_STATE_DIR` before provider networking can be enabled.
+## Implemented — S2-E Operations & Reconciliation UX
+
+The application now exposes `/operations` as a bounded synthetic operations workspace over the verified reconciliation service.
+
+The workspace:
+
+- identifies the provider as **ArifPay · Sandbox**;
+- shows webhook authority as disabled because callback authenticity is not yet established;
+- shows PartnerFI settlement authority as separate;
+- requires an explicit synthetic supervisor session before status checks can be performed;
+- accepts only the Enawuga transaction UUID from the operator;
+- never accepts an ArifPay session ID from the browser;
+- shows `PAYMENT_PENDING`, `GATEWAY_CONFIRMED`, `GATEWAY_FAILED`, `GATEWAY_CANCELED`, `GATEWAY_EXPIRED`, and `OUTCOME_UNCERTAIN` with explicit operational guidance;
+- displays the rule that uncertain outcomes must not be automatically retried;
+- includes an evidence timeline separating checkout creation, provider status, gateway state, and PartnerFI authority.
+
+Privileged synthetic access remains fail-closed by default. `server.ts` enables `SUPERVISOR` / `PARTNER_ADMIN` synthetic sessions only when the development runtime is explicitly started with:
+
+`ALLOW_PRIVILEGED_SYNTHETIC_ROLES=true`
+
+This opt-in is local synthetic development authentication only. It is not PartnerFI SSO, production IAM, or authorization for live operations.
+
+`ARIFPAY_MODE=sandbox` still requires `SYNTHETIC_STATE_DIR` before provider networking/reconciliation can be wired.
 
 ## Validation evidence
 
@@ -153,11 +173,22 @@ Earlier Stage 2 milestones:
 
 - run #103: 66/66 tests, 12/12 Chromium E2E;
 - run #108: 71/71 tests, 12/12 Chromium E2E;
-- run #113: 75/75 tests, production audit 0, lint/build/Docker pass, 12/12 Chromium E2E.
+- run #113: 75/75 tests, production audit 0, lint/build/Docker pass, 12/12 Chromium E2E;
+- run #129: 82/82 tests, production audit 0, lint/build/Docker pass, 12/12 Chromium E2E.
 
-Final S2-D reconciliation validation is recorded on Draft PR #5 after the reconciliation implementation and temporary-probe removal.
+S2-E Operations UX validation — run #135:
 
-The existing development/tooling dependency findings and Vite bundle-size advisory remain separate non-production follow-up items; production dependency audit remains the blocking dependency check.
+- Node 24.21.0 / npm 11.19.0;
+- `npm ci`: pass;
+- production dependency audit: **0 vulnerabilities**;
+- TypeScript/lint: pass;
+- unit/domain/API tests: **82/82 pass**;
+- production build: pass;
+- Docker build: pass;
+- Chromium E2E: **13/13 pass**;
+- browser coverage verifies `/operations` renders its authority boundaries and refuses privileged synthetic access by default.
+
+The existing development/tooling dependency findings remain 23 (2 low, 4 moderate, 17 high), and the existing Vite >500 kB bundle advisory remains non-blocking. Production dependency audit remains the blocking dependency check.
 
 ## Successful sandbox-network evidence
 
@@ -174,24 +205,26 @@ No production credential, real customer PII, real money, or live PSP call was in
 
 ## Provider-contract gap that remains
 
-The portal documents raw JSON merchant notifications to `notifyUrl`, but no callback-signature/authentication mechanism has been established from the reviewed sandbox contract. Raw provider webhooks therefore remain **non-authoritative** in Enawuga and no production-style webhook receiver is enabled.
+The portal documents raw JSON merchant notifications to `notifyUrl`, but no callback-signature/authentication mechanism has been established from the reviewed sandbox/public contract. Raw provider webhooks therefore remain **non-authoritative** in Enawuga and no production-style webhook receiver is enabled.
+
+Session-ID polling remains the verified authoritative sandbox status mechanism for the current C2B slice.
 
 ## Not implemented yet
 
 - authoritative provider webhook ingestion, pending a verifiable callback-authentication mechanism;
-- Operations/Reconciliation dashboard UI over the new reconciliation service;
 - B2C, wallet-to-bank, OTP/direct-payment, or other rails;
 - direct Telebirr or direct M-Pesa adapters;
-- production host/key support.
+- production host/key support;
+- production IAM/SSO and approved Ethiopia-resident production infrastructure.
 
 ## Required progression
 
 1. Keep session-ID reconciliation as the authoritative sandbox read path for the current C2B slice.
-2. Add callback handling only after provider callback authenticity is explicitly verifiable.
-3. Build Operations/Reconciliation UX on top of the verified reconciliation service, not raw callback trust.
-4. Treat any future direct Telebirr/M-Pesa integrations as separate provider adapters with their own contracts and credentials.
-5. Keep PartnerFI authorization/settlement and physical cash-in/cash-out outside the payment-gateway adapter.
+2. Add provider callback handling only after callback authenticity is explicitly verifiable; do not trust raw notify payloads.
+3. Treat any future direct Telebirr/M-Pesa integrations as separate provider adapters with their own contracts and credentials.
+4. Keep PartnerFI authorization/settlement and physical cash-in/cash-out outside the payment-gateway adapter.
+5. Keep PR #5 Draft/unmerged until the remaining Stage 2 callback-authenticity gap is explicitly closed or deliberately deferred after review.
 
 ## Claim boundary
 
-> This work demonstrates guarded ArifPay sandbox C2B orchestration plus provider-backed session-ID reconciliation using synthetic simulator traffic. It does not represent a live PSP transaction, live cash-in/cash-out deployment, a PartnerFI account, PartnerFI settlement, or production payment authorization.
+> This work demonstrates guarded ArifPay sandbox C2B orchestration, provider-backed session-ID reconciliation, and a governed synthetic operations UX using simulator traffic. It does not represent a live PSP transaction, live cash-in/cash-out deployment, a PartnerFI account, PartnerFI settlement, production IAM, or production payment authorization.
