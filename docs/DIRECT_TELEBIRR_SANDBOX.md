@@ -7,13 +7,9 @@
 **Data:** synthetic only  
 **Live funds / production authority:** not enabled
 
-## Scope
+## Scope and boundary
 
 Direct Ethio telecom Telebirr integration remains separate from ArifPay. `TELEBIRR / DIRECT_TELEBIRR` provenance must remain distinct from `TELEBIRR / ARIFPAY`.
-
-No Telebirr sandbox credential, app secret, merchant private key, short code or account-specific identifier is committed to Git, browser code, documentation examples or CI output.
-
-## Current provider-contract boundary — 2026-10-12
 
 Current Ethio telecom material establishes Telebirr Payment/TestBed tooling, `/payment/v1/token`, the `/payment/v1/merchant/preOrder` family, `payment.preorder`, ETB Checkout signing fields, RSA SHA-256/MGF1 signing, merchant-side private-key custody, and account/product subscription requirements.
 
@@ -25,12 +21,12 @@ Project account-export evidence pins the developer/test gateway and token header
 
 ## Implemented controls
 
-- **T1 sandbox configuration guard:** sandbox-only mode, network off by default, HTTPS, pinned test gateway, no URL credentials, server-side secrets only.
-- **T2 canonical request signing:** deterministic flattened canonical string and RSA-PSS/SHA-256 MGF1 signing with synthetic CI keys.
-- **T3 guarded fabric-token client:** server-side `/payment/v1/token`, explicit network opt-in, controlled failures, no token exposure/persistence.
-- **T4 pure signed preorder builder:** constructs but does not submit `payment.preorder`; unique order ID/nonce and integer ETB minor units.
-- **T5 bounded preorder-response classifier:** exact order binding; `ORDER_CREATED` is never payment/settlement confirmation.
-- **T6 durable pre-submit correlation intent:** reserves Enawuga transaction/customer/idempotency plus Telebirr merchant-order ID/nonce before any future provider mutation; restart/idempotency/transaction/order/nonce replay controls; atomic versioned local persistence.
+- **T1:** sandbox config guard — sandbox-only, network off by default, HTTPS, pinned test gateway, server-side secrets.
+- **T2:** deterministic RSA-PSS/SHA-256 MGF1 request signing with synthetic CI keys.
+- **T3:** guarded server-side fabric-token acquisition; no payment operation/token exposure.
+- **T4:** pure signed `payment.preorder` construction; no provider submission.
+- **T5:** bounded preorder-response classification; `ORDER_CREATED` never means paid/settled.
+- **T6:** durable pre-submit correlation reservation binding Enawuga transaction/customer/idempotency to Telebirr merchant-order ID and nonce, with restart and replay controls.
 
 T6 snapshots store **no app secret, private key, access token, request signature, callback payload or provider payment state**. They are bounded synthetic reservation records, not payment ledgers, production outboxes or residency evidence.
 
