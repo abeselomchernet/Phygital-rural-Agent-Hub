@@ -4,6 +4,12 @@ import express from "express";
 import path from "node:path";
 import { createApp } from "./src/server/app";
 import { validateDataConfig } from "./src/domain/residency";
+import {
+  ArifPaySandboxAdapter,
+  arifPaySandboxConfigFromEnv,
+  type PaymentGatewayAdapter,
+} from "./src/domain/paymentGateway";
+import { DurablePaymentGatewayAdapter } from "./src/domain/paymentGatewayState";
 import { AtomicJsonCustomerPersistence } from "./src/server/customer-persistence";
 import { AtomicJsonPartnerLedgerPersistence } from "./src/server/partner-ledger-persistence";
 import {
@@ -11,11 +17,27 @@ import {
   AtomicJsonMockIdentityPersistence,
 } from "./src/server/identity-persistence";
 import { AtomicJsonSyntheticAuditPersistence } from "./src/server/audit-persistence";
+import { AtomicJsonPaymentGatewayPersistence } from "./src/server/payment-gateway-persistence";
 
 validateDataConfig(process.env);
 const syntheticStateDir = process.env.SYNTHETIC_STATE_DIR;
-const app = createApp(
-  syntheticStateDir
+
+let paymentGateway: PaymentGatewayAdapter | undefined;
+if (process.env.ARIFPAY_MODE !== undefined) {
+  if (process.env.ARIFPAY_MODE !== "sandbox")
+    throw new Error("ARIFPAY_SANDBOX_MODE_REQUIRED");
+  if (!syntheticStateDir)
+    throw new Error("ARIFPAY_SANDBOX_REQUIRES_SYNTHETIC_STATE_DIR");
+  paymentGateway = new DurablePaymentGatewayAdapter(
+    new ArifPaySandboxAdapter(arifPaySandboxConfigFromEnv(process.env)),
+    new AtomicJsonPaymentGatewayPersistence(
+      path.join(syntheticStateDir, "payment-gateway.json"),
+    ),
+  );
+}
+
+const app = createApp({
+  ...(syntheticStateDir
     ? {
         customerPersistence: new AtomicJsonCustomerPersistence(
           path.join(syntheticStateDir, "customers.json"),
@@ -33,8 +55,9 @@ const app = createApp(
           path.join(syntheticStateDir, "audit.json"),
         ),
       }
-    : {},
-);
+    : {}),
+  ...(paymentGateway ? { paymentGateway } : {}),
+});
 if (process.env.NODE_ENV !== "production") {
   const vite = await createViteServer({
     server: { middlewareMode: true, hmr: false },
@@ -49,6 +72,6 @@ const host = process.env.HOST || "127.0.0.1";
 const port = Number(process.env.PORT || 3000);
 app.listen(port, host, () =>
   console.log(
-    `Synthetic demo listening on ${host}:${port}${syntheticStateDir ? " with local synthetic durable state" : ""}`,
+    `Synthetic demo listening on ${host}:${port}${syntheticStateDir ? " with local synthetic durable state" : ""}${paymentGateway ? " with guarded ArifPay sandbox adapter" : ""}`,
   ),
 );
