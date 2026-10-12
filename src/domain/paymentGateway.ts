@@ -2,6 +2,9 @@ import { z } from "zod";
 
 export const ARIFPAY_SANDBOX_ORIGIN = "https://gateway.arifpay.org";
 export const ARIFPAY_PORTAL_SANDBOX_KEY = "arif-sandbox-portal-key";
+export const ARIFPAY_SANDBOX_CHECKOUT_PATH = "/api/sandbox/c2b/session";
+export const ARIFPAY_SANDBOX_SIMULATOR_PHONE = "251911000000";
+export const ARIFPAY_SANDBOX_SIMULATOR_EMAIL = "sandbox@example.com";
 
 export const PaymentGatewayC2BRequestSchema = z
   .object({
@@ -50,23 +53,12 @@ export interface PaymentGatewayAdapter {
   ): PaymentGatewayResult | undefined;
 }
 
-const RelativePathSchema = z
-  .string()
-  .min(2)
-  .refine(
-    (value) => value.startsWith("/") && !value.startsWith("//") && !value.includes("://"),
-    "relative API path required",
-  );
-
 export const ArifPaySandboxConfigSchema = z
   .object({
     mode: z.literal("sandbox"),
     networkEnabled: z.boolean(),
     baseUrl: z.string().url(),
     apiKey: z.string().min(1),
-    checkoutCreatePath: RelativePathSchema,
-    beneficiaryAccountNumber: z.string().min(1).max(128),
-    beneficiaryBankCode: z.string().min(1).max(64),
     notifyUrl: z.string().url(),
     successUrl: z.string().url(),
     cancelUrl: z.string().url(),
@@ -86,20 +78,23 @@ const ArifPayEnvelopeSchema = z
 
 const ArifPayCheckoutDataSchema = z
   .object({
-    sessionId: z.string().min(1),
-    paymentUrl: z.string().url(),
-    cancelUrl: z.string().url().optional(),
-    totalAmount: z.number().nonnegative(),
+    sessionId: z.string().min(1).optional(),
+    uuid: z.string().min(1).optional(),
+    paymentUrl: z.string().url().optional(),
+    totalAmount: z.number().nonnegative().optional(),
+    amount: z.number().nonnegative().optional(),
   })
-  .passthrough();
+  .passthrough()
+  .refine((value) => Boolean(value.sessionId || value.uuid), {
+    message: "sandbox checkout response must include a session reference",
+  });
 
 function fingerprint(request: PaymentGatewayC2BRequest) {
   return JSON.stringify(request);
 }
 
 function sandboxOrigin(input: string) {
-  const url = new URL(input);
-  return url.origin;
+  return new URL(input).origin;
 }
 
 function controlledProviderError(message?: string) {
@@ -121,9 +116,6 @@ export function arifPaySandboxConfigFromEnv(
     networkEnabled: env.ARIFPAY_SANDBOX_NETWORK_ENABLED === "true",
     baseUrl: env.ARIFPAY_SANDBOX_BASE_URL,
     apiKey: env.ARIFPAY_SANDBOX_API_KEY,
-    checkoutCreatePath: env.ARIFPAY_SANDBOX_CHECKOUT_PATH,
-    beneficiaryAccountNumber: env.ARIFPAY_SANDBOX_BENEFICIARY_ACCOUNT,
-    beneficiaryBankCode: env.ARIFPAY_SANDBOX_BENEFICIARY_BANK,
     notifyUrl: env.ARIFPAY_SANDBOX_NOTIFY_URL,
     successUrl: env.ARIFPAY_SANDBOX_SUCCESS_URL,
     cancelUrl: env.ARIFPAY_SANDBOX_CANCEL_URL,
@@ -137,15 +129,17 @@ export function arifPaySandboxConfigFromEnv(
 /**
  * ArifPay sandbox-only C2B checkout adapter.
  *
+ * Current contract source: ArifPay developer-portal Sandbox Postman collection
+ * checked 2026-10-12. It documents POST /api/sandbox/c2b/session on
+ * https://gateway.arifpay.org with the public portal sandbox key.
+ *
  * Safety properties:
  * - only the current documented sandbox origin is allowed;
  * - only the public portal sandbox key is accepted in this stage;
- * - no customer phone, FIN/FAN, biometric or PartnerFI credential is sent;
- * - provider acceptance creates a checkout only and is never settlement;
+ * - only fixed ArifPay simulator phone/email values are sent, never customer PII;
+ * - provider session creation is never PartnerFI authorization or settlement;
  * - timeout/network/5xx/malformed outcomes are recorded as uncertain and are
- *   not automatically retried;
- * - the checkout path must be supplied from the current ArifPay sandbox
- *   contract instead of being guessed from an older SDK.
+ *   not automatically retried.
  */
 export class ArifPaySandboxAdapter implements PaymentGatewayAdapter {
   private readonly config: ArifPaySandboxConfig;
@@ -202,27 +196,23 @@ export class ArifPaySandboxAdapter implements PaymentGatewayAdapter {
     const amount = request.amountMinor / 100;
     const payload = {
       cancelUrl: this.config.cancelUrl,
+      phone: ARIFPAY_SANDBOX_SIMULATOR_PHONE,
+      email: ARIFPAY_SANDBOX_SIMULATOR_EMAIL,
       nonce: request.transactionId,
       errorUrl: this.config.errorUrl,
       notifyUrl: this.config.notifyUrl,
       successUrl: this.config.successUrl,
-      paymentMethods: [] as string[],
       expireDate: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+      amount,
       items: [
         {
-          name: "Enawuga synthetic sandbox C2B",
+          name: "Enawuga sandbox item",
           price: amount,
           quantity: 1,
           description: "Synthetic sandbox payment orchestration test",
         },
       ],
-      beneficiaries: [
-        {
-          accountNumber: this.config.beneficiaryAccountNumber,
-          bank: this.config.beneficiaryBankCode,
-          amount,
-        },
-      ],
+      lang: "EN",
     };
 
     const controller = new AbortController();
@@ -230,12 +220,14 @@ export class ArifPaySandboxAdapter implements PaymentGatewayAdapter {
     let response: Response;
     try {
       response = await this.fetcher(
-        `${this.config.baseUrl.replace(/\/$/, "")}${this.config.checkoutCreatePath}`,
+        `${this.config.baseUrl.replace(/\/$/, "")}${ARIFPAY_SANDBOX_CHECKOUT_PATH}`,
         {
           method: "POST",
           headers: {
             "content-type": "application/json",
             "x-arifpay-key": this.config.apiKey,
+            "x-arifpay-sim-mode": "SUCCESS",
+            "x-arifpay-fee-source": "MERCHANT",
           },
           body: JSON.stringify(payload),
           signal: controller.signal,
@@ -304,7 +296,12 @@ export class ArifPaySandboxAdapter implements PaymentGatewayAdapter {
         "OUTCOME_UNCERTAIN",
         "GATEWAY_RESPONSE_INVALID",
       );
-    if (Math.round(checkout.data.totalAmount * 100) !== request.amountMinor)
+
+    const returnedAmount = checkout.data.totalAmount ?? checkout.data.amount;
+    if (
+      returnedAmount !== undefined &&
+      Math.round(returnedAmount * 100) !== request.amountMinor
+    )
       return this.result(
         request,
         "OUTCOME_UNCERTAIN",
@@ -315,7 +312,7 @@ export class ArifPaySandboxAdapter implements PaymentGatewayAdapter {
       request,
       "CHECKOUT_CREATED",
       "GATEWAY_ACCEPTED_CHECKOUT",
-      checkout.data.sessionId,
+      checkout.data.sessionId ?? checkout.data.uuid,
       checkout.data.paymentUrl,
     );
   }
