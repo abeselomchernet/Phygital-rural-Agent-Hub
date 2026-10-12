@@ -17,6 +17,10 @@ import {
   type PartnerLedgerPersistence,
 } from "../domain/financial";
 import {
+  PaymentGatewayC2BRequestSchema,
+  type PaymentGatewayAdapter,
+} from "../domain/paymentGateway";
+import {
   SyntheticAuthError,
   SyntheticAuthService,
   type SyntheticRole,
@@ -39,6 +43,7 @@ export interface DemoApiOptions {
   identityProviderPersistence?: MockIdentityProviderPersistence;
   kycPendingPersistence?: KycPendingPersistence;
   auditPersistence?: SyntheticAuditPersistence;
+  paymentGateway?: PaymentGatewayAdapter;
 }
 
 const roleSchema = z.enum(["AGENT", "SUPERVISOR", "PARTNER_ADMIN"]);
@@ -285,4 +290,86 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
       return result;
     }),
   );
+
+  app.post("/api/demo/payments/arifpay/c2b/checkout", async (req, res) => {
+    const session = res.locals.syntheticSession;
+    let request;
+    try {
+      auth.requireRole(session, ["AGENT"]);
+      request = PaymentGatewayC2BRequestSchema.parse(req.body);
+      auth.requireCustomer(session, request.customerId);
+      if (request.customerId !== fixtureId)
+        throw new SyntheticAuthError("OBJECT_ACCESS_DENIED", 403);
+    } catch (error) {
+      if (error instanceof SyntheticAuthError)
+        return res.status(error.status).json({ error: error.code });
+      return res.status(400).json({ error: "DEMO_REQUEST_REJECTED" });
+    }
+
+    if (!options.paymentGateway) {
+      audit.record({
+        category: "FINANCIAL",
+        action: "PAYMENT_GATEWAY_REJECTED",
+        outcome: "FAIL",
+        actor: { userId: session.userId, role: session.role },
+        customerId: request.customerId,
+        transactionId: request.transactionId,
+        code: "GATEWAY_UNAVAILABLE",
+      });
+      return res.status(503).json({
+        error: "PAYMENT_GATEWAY_UNAVAILABLE",
+        ...syntheticMetadata,
+      });
+    }
+
+    audit.record({
+      category: "FINANCIAL",
+      action: "PAYMENT_GATEWAY_SUBMITTED",
+      outcome: "PENDING",
+      actor: { userId: session.userId, role: session.role },
+      customerId: request.customerId,
+      transactionId: request.transactionId,
+    });
+
+    try {
+      const result = await options.paymentGateway.createC2BCheckout(request);
+      audit.record({
+        category: "FINANCIAL",
+        action: "PAYMENT_GATEWAY_RESULT",
+        outcome:
+          result.state === "CHECKOUT_CREATED"
+            ? "SUCCESS"
+            : result.state === "GATEWAY_REJECTED"
+              ? "FAIL"
+              : "PENDING",
+        actor: { userId: session.userId, role: session.role },
+        customerId: request.customerId,
+        transactionId: request.transactionId,
+        stateTo: result.state,
+        code: result.code,
+      });
+      return res.json({ ...result, ...syntheticMetadata });
+    } catch (error) {
+      const recoveryRequired =
+        error instanceof Error &&
+        error.message === "GATEWAY_RECOVERY_RECONCILIATION_REQUIRED";
+      audit.record({
+        category: "FINANCIAL",
+        action: "PAYMENT_GATEWAY_REJECTED",
+        outcome: recoveryRequired ? "PENDING" : "FAIL",
+        actor: { userId: session.userId, role: session.role },
+        customerId: request.customerId,
+        transactionId: request.transactionId,
+        code: recoveryRequired
+          ? "GATEWAY_RECOVERY_RECONCILIATION_REQUIRED"
+          : "REQUEST_REJECTED",
+      });
+      return res.status(recoveryRequired ? 409 : 400).json({
+        error: recoveryRequired
+          ? "PAYMENT_GATEWAY_RECONCILIATION_REQUIRED"
+          : "PAYMENT_GATEWAY_REQUEST_REJECTED",
+        ...syntheticMetadata,
+      });
+    }
+  });
 }
