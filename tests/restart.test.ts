@@ -6,6 +6,10 @@ import { join } from "node:path";
 import { createApp } from "../src/server/app";
 import { AtomicJsonCustomerPersistence } from "../src/server/customer-persistence";
 import { AtomicJsonPartnerLedgerPersistence } from "../src/server/partner-ledger-persistence";
+import {
+  AtomicJsonKycPendingPersistence,
+  AtomicJsonMockIdentityPersistence,
+} from "../src/server/identity-persistence";
 
 async function listenWithState(directory: string) {
   const app = createApp({
@@ -14,6 +18,12 @@ async function listenWithState(directory: string) {
       ),
       partnerLedgerPersistence: new AtomicJsonPartnerLedgerPersistence(
         join(directory, "partner-ledger.json"),
+      ),
+      identityProviderPersistence: new AtomicJsonMockIdentityPersistence(
+        join(directory, "mock-identity-provider.json"),
+      ),
+      kycPendingPersistence: new AtomicJsonKycPendingPersistence(
+        join(directory, "kyc-pending.json"),
       ),
     }),
     server = app.listen(0, "127.0.0.1");
@@ -138,6 +148,52 @@ test("opt-in synthetic customer and PartnerFI records survive server restart", a
       ).balanceMinor,
       101000,
     );
+  } finally {
+    if (firstServer) await close(firstServer.server);
+    if (secondServer) await close(secondServer.server);
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("pending synthetic re-verification challenge survives server restart", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "enawuga-kyc-restart-"));
+  let firstServer: Awaited<ReturnType<typeof listenWithState>> | undefined,
+    secondServer: Awaited<ReturnType<typeof listenWithState>> | undefined;
+  try {
+    firstServer = await listenWithState(directory);
+    const firstAuth = await session(firstServer.base),
+      firstCustomer = await (
+        await get(firstServer.base, firstAuth, "/api/demo/customer")
+      ).json();
+    const changed = await (
+      await post(firstServer.base, firstAuth, "/api/demo/phone", {
+        phone: "+251900000002",
+      })
+    ).json();
+    assert.equal(changed.customerId, firstCustomer.customerId);
+    assert.equal(changed.kycStatus, "REVERIFICATION_REQUIRED");
+    assert.equal(
+      (await post(firstServer.base, firstAuth, "/api/demo/reverify/start", {}))
+        .status,
+      200,
+    );
+    await close(firstServer.server);
+    firstServer = undefined;
+
+    secondServer = await listenWithState(directory);
+    const secondAuth = await session(secondServer.base),
+      beforeConfirm = await (
+        await get(secondServer.base, secondAuth, "/api/demo/customer")
+      ).json();
+    assert.equal(beforeConfirm.customerId, firstCustomer.customerId);
+    assert.equal(beforeConfirm.kycStatus, "REVERIFICATION_REQUIRED");
+    const confirmed = await (
+      await post(secondServer.base, secondAuth, "/api/demo/reverify/confirm", {})
+    ).json();
+    assert.equal(confirmed.customerId, firstCustomer.customerId);
+    assert.equal(confirmed.kycStatus, "VERIFIED");
+    assert.equal(confirmed.phoneStatus, "VERIFIED");
+    assert.equal(confirmed.primaryPhone, "+251900000002");
   } finally {
     if (firstServer) await close(firstServer.server);
     if (secondServer) await close(secondServer.server);
