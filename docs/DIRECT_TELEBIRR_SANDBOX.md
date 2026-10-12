@@ -209,9 +209,9 @@ Until these gates are satisfied, **no direct Telebirr payment initiation network
 
 ## Validation evidence
 
-Prior milestone T5 was green at head `df3db0026e6a6b5b1138b9cc1ab26c2ff66d9fe0` with 98/98 unit/domain/API tests and 13/13 Chromium E2E.
+T5 exact-head validation was green at `df3db0026e6a6b5b1138b9cc1ab26c2ff66d9fe0`: 98/98 unit/domain/API tests and 13/13 Chromium E2E.
 
-T6 code validation — GitHub Actions run `38298524544`, head `93819d53a82caa369493edc62453d72d11c181c7`:
+T6 code validation was green on GitHub Actions run `38298524544` at code head `93819d53a82caa369493edc62453d72d11c181c7`:
 
 - Node 24.21.0 / npm 11.19.0;
 - `npm ci`: pass — 576 packages;
@@ -223,6 +223,8 @@ T6 code validation — GitHub Actions run `38298524544`, head `93819d53a82caa369
 - Chromium E2E: **13/13 pass**.
 
 T6 adds tests for restart durability, idempotency conflict, transaction replay, merchant-order replay, nonce replay, secret/signature exclusion from snapshots, malformed/duplicate persistence and unsafe identifier rejection.
+
+A docs-only follow-up records this milestone; the current PR head must also pass the same normal CI before the evidence chain is considered closed.
 
 Existing development/tooling findings remain 23 (2 low, 4 moderate, 17 high). The existing Vite >500 kB bundle advisory remains non-blocking.
 
