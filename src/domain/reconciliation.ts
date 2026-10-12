@@ -1,3 +1,4 @@
+import type { SyntheticAuditSink } from "./audit";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 import type { PartnerResult } from "./financial";
@@ -163,6 +164,7 @@ export class PartnerReconciliationService {
   constructor(
     private verifier: PartnerCallbackVerifier,
     private persistence?: PartnerReconciliationPersistence,
+    private audit?: SyntheticAuditSink,
   ) {
     const snapshot = persistence?.load();
     if (snapshot) this.restore(snapshot);
@@ -185,10 +187,29 @@ export class PartnerReconciliationService {
     };
     this.operations.set(result.transactionId, operation);
     this.persist();
+    this.audit?.record({ category: "RECONCILIATION", action: "PARTNER_OPERATION_REGISTERED", outcome: "SUCCESS",
+      actor: { userId: "system", role: "SYSTEM" }, customerId: operation.customerId,
+      transactionId: operation.transactionId, stateTo: operation.state });
     return structuredClone(operation);
   }
 
   handleAuthenticatedCallback(rawBody: string, signature: string) {
+    try { return this.applyAuthenticatedCallback(rawBody, signature); }
+    catch (error) {
+      // Storage/audit failures are not evidence that the partner rejected an operation.
+      const validationFailure = error instanceof z.ZodError || (error instanceof Error && [
+        "PARTNER_CALLBACK_AUTH_FAILED", "INVALID_PARTNER_CALLBACK", "PARTNER_CALLBACK_REPLAY_CONFLICT",
+        "PARTNER_OPERATION_NOT_FOUND", "STALE_PARTNER_CALLBACK", "TERMINAL_PARTNER_STATE_REGRESSION",
+      ].includes(error.message));
+      if (!validationFailure) throw error;
+      // Never include unverified payload fields, signatures or provider errors.
+      this.audit?.record({ category: "RECONCILIATION", action: "PARTNER_CALLBACK_REJECTED", outcome: "DENY",
+        actor: { userId: "system", role: "SYSTEM" }, code: "CALLBACK_REJECTED" });
+      throw error;
+    }
+  }
+
+  private applyAuthenticatedCallback(rawBody: string, signature: string) {
     if (!this.verifier.verify(rawBody, signature))
       throw new Error("PARTNER_CALLBACK_AUTH_FAILED");
     let parsed: unknown;
@@ -203,7 +224,11 @@ export class PartnerReconciliationService {
     if (prior) {
       if (prior.fingerprint !== fingerprint)
         throw new Error("PARTNER_CALLBACK_REPLAY_CONFLICT");
-      return this.getOperation(prior.transactionId);
+      const operation = this.getOperation(prior.transactionId);
+      this.audit?.record({ category: "RECONCILIATION", action: "PARTNER_CALLBACK_DUPLICATE", outcome: "SUCCESS",
+        actor: { userId: "mock-partner-provider", role: "SYSTEM" }, customerId: operation.customerId,
+        transactionId: operation.transactionId, callbackId: callback.callbackId, stateTo: operation.state });
+      return operation;
     }
 
     const current = this.operations.get(callback.transactionId);
@@ -224,6 +249,9 @@ export class PartnerReconciliationService {
       transactionId: callback.transactionId,
     });
     this.persist();
+    this.audit?.record({ category: "RECONCILIATION", action: "PARTNER_CALLBACK_APPLIED", outcome: "SUCCESS",
+      actor: { userId: "mock-partner-provider", role: "SYSTEM" }, customerId: next.customerId,
+      transactionId: next.transactionId, callbackId: callback.callbackId, stateFrom: current.state, stateTo: next.state });
     return structuredClone(next);
   }
 
@@ -234,7 +262,11 @@ export class PartnerReconciliationService {
   }
 
   statusQuery(transactionId: string) {
-    return this.getOperation(transactionId);
+    const operation = this.getOperation(transactionId);
+    this.audit?.record({ category: "RECONCILIATION", action: "PARTNER_STATUS_QUERIED", outcome: "SUCCESS",
+      actor: { userId: "system", role: "SYSTEM" }, customerId: operation.customerId,
+      transactionId, stateTo: operation.state });
+    return operation;
   }
 
   snapshot(): PartnerReconciliationSnapshot {

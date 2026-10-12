@@ -1,11 +1,11 @@
 import { randomUUID, timingSafeEqual } from "node:crypto";
 import type { Request, Response } from "express";
-import { SyntheticAuditLog } from "./audit";
+import { SyntheticAuditLog, type SyntheticAuditEventInput } from "./audit";
 
 export type SyntheticRole = "AGENT" | "SUPERVISOR" | "PARTNER_ADMIN";
 
 export interface SyntheticPrincipal {
-  userId: string;
+  userId: "synthetic-agent-01" | "synthetic-supervisor-01" | "synthetic-partner-admin-01";
   role: SyntheticRole;
   allowedCustomerIds: readonly string[];
 }
@@ -184,7 +184,7 @@ export class SyntheticAuthService {
   }
 
   private record(
-    action: string,
+    action: SyntheticAuditEventInput["action"],
     outcome: "ALLOW" | "DENY",
     session?: Pick<StoredSession, "userId" | "role">,
     objectRef?: string,

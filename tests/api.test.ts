@@ -1,3 +1,4 @@
+import { assertAuditPrivacy } from "./helpers/audit-privacy";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createApp } from "../src/server/app";
@@ -180,10 +181,13 @@ test("synthetic customer API requires session, CSRF, role and object authorizati
       "/api/demo/security/audit",
     );
     assert.equal(auditResponse.status, 200);
-    const auditText = JSON.stringify(await auditResponse.json());
+    const auditData = await auditResponse.json();
+    const auditText = JSON.stringify(auditData);
     assert.match(auditText, /ROLE_DENIED|CSRF_DENIED|OBJECT_ACCESS_DENIED/);
-    assert.doesNotMatch(auditText, new RegExp(agent.csrfToken));
-    assert.doesNotMatch(auditText, /sessionId|FIN|FAN|biometric/i);
+    assertAuditPrivacy(auditData, [agent.csrfToken, agent.cookie.split("=")[1], supervisor.csrfToken, admin.csrfToken, "+251900000001", "+251900000002"]);
+    assert.ok(auditData.events.some((event: any) => event.category === "FINANCIAL"));
+    for (const action of ["PHONE_ALIAS_CHANGED", "KYC_TRANSITION", "KYC_REVERIFICATION_REQUESTED", "KYC_REVERIFICATION_CONFIRMED", "PARTNER_TRANSACTION_SUBMITTED", "PARTNER_TRANSACTION_RESULT", "PARTNER_TRANSACTION_REJECTED"])
+      assert.ok(auditData.events.some((event: any) => event.action === action), action);
 
     assert.equal(
       (await post(base, agent, "/api/demo/session/logout", {})).status,

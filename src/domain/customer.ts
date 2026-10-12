@@ -1,3 +1,4 @@
+import type { SyntheticAuditSink } from "./audit";
 import { z } from "zod";
 
 export type KycStatus =
@@ -136,7 +137,7 @@ export class CustomerStore {
     at: string;
   }[] = [];
 
-  constructor(private persistence?: CustomerStorePersistence) {
+  constructor(private persistence?: CustomerStorePersistence, private auditSink?: SyntheticAuditSink) {
     const snapshot = persistence?.load();
     if (snapshot) this.restore(snapshot);
   }
@@ -205,10 +206,14 @@ export class CustomerStore {
       from = customer.kycStatus;
     if (!transitions[from].includes(to))
       throw new Error("INVALID_KYC_TRANSITION");
+    if (from === "SUSPENDED" && authority !== "PARTNER_ADMIN") {
+      this.auditSink?.record({ category: "RECOVERY", action: "ADMIN_RECOVERY_DENIED", outcome: "DENY",
+        actor: { userId: "system", role: "SYSTEM" }, customerId: id,
+        stateFrom: from, stateTo: from, code: "PARTNER_ADMIN_REQUIRED" });
+      throw new Error("PARTNER_ADMIN_REQUIRED");
+    }
     if (to === "VERIFIED" && !authority)
       throw new Error("VERIFICATION_AUTHORITY_REQUIRED");
-    if (from === "SUSPENDED" && authority !== "PARTNER_ADMIN")
-      throw new Error("PARTNER_ADMIN_REQUIRED");
     customer.kycStatus = to;
     customer.updatedAt = new Date().toISOString();
     if (to === "VERIFIED") customer.kycVerifiedAt = customer.updatedAt;
@@ -221,6 +226,14 @@ export class CustomerStore {
       at: customer.updatedAt,
     });
     this.persist();
+    this.auditSink?.record({
+      category: from === "SUSPENDED" ? "RECOVERY" : "KYC",
+      action: from === "SUSPENDED" ? "ADMIN_RECOVERY_COMPLETED" : "KYC_TRANSITION",
+      outcome: "SUCCESS", actor: authority === "PARTNER_ADMIN"
+        ? { userId: "synthetic-partner-admin-01", role: "PARTNER_ADMIN" }
+        : { userId: "system", role: "SYSTEM" },
+      customerId: id, stateFrom: from, stateTo: to, code: reason,
+    });
     return this.get(id);
   }
 

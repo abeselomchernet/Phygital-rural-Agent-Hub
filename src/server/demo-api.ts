@@ -46,12 +46,12 @@ const mutationMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const demoPhoneSet = new Set<string>(demoPhones);
 
 export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
-  const customers = new CustomerStore(options.customerPersistence),
+  const audit = new SyntheticAuditLog(options.auditPersistence),
+    customers = new CustomerStore(options.customerPersistence, audit),
     provider = new MockFaydaAdapter(options.identityProviderPersistence),
     identity = new KycService(customers, provider, options.kycPendingPersistence),
     partner = new MockPartnerFI("accept", options.partnerLedgerPersistence),
     transactions = new TransactionService(customers, partner),
-    audit = new SyntheticAuditLog(options.auditPersistence),
     auth = new SyntheticAuthService({}, audit);
 
   let customer = customers
@@ -85,8 +85,10 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
     if (mutationMethods.has(req.method) && !req.is("application/json"))
       return res.status(415).json({ error: "JSON_REQUIRED" });
     const origin = req.get("origin");
-    if (origin && origin !== `${req.protocol}://${req.get("host")}`)
+    if (origin && origin !== `${req.protocol}://${req.get("host")}`) {
+      audit.record({ category: "AUTH", action: "CROSS_ORIGIN_DENIED", outcome: "DENY", actor: { userId: "anonymous", role: "NONE" } });
       return res.status(403).json({ error: "CROSS_ORIGIN_DISABLED" });
+    }
     next();
   });
 
@@ -106,8 +108,10 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
         .object({ role: roleSchema.default("AGENT") })
         .strict()
         .parse(req.body);
-      if (role !== "AGENT" && !options.allowPrivilegedSyntheticRoles)
+      if (role !== "AGENT" && !options.allowPrivilegedSyntheticRoles) {
+        audit.record({ category: "AUTH", action: "PRIVILEGED_ROLE_DENIED", outcome: "DENY", actor: { userId: "anonymous", role: "NONE" } });
         throw new SyntheticAuthError("PRIVILEGED_SYNTHETIC_ROLE_DISABLED", 403);
+      }
       const allowedCustomerIds = [fixtureId];
       const session = auth.createSession(role as SyntheticRole, allowedCustomerIds);
       auth.setSessionCookie(req, res, session);
@@ -254,10 +258,18 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
       auth.requireCustomer(session, requestedCustomerId);
       if (requestedCustomerId !== fixtureId)
         throw new SyntheticAuthError("OBJECT_ACCESS_DENIED", 403);
-      const result = transactions.submit(req.body);
+      audit.record({ category: "FINANCIAL", action: "PARTNER_TRANSACTION_SUBMITTED", outcome: "PENDING",
+        actor: { userId: session.userId, role: session.role }, customerId: requestedCustomerId });
+      let result;
+      try { result = transactions.submit(req.body); }
+      catch (error) {
+        audit.record({ category: "FINANCIAL", action: "PARTNER_TRANSACTION_REJECTED", outcome: "FAIL",
+          actor: { userId: session.userId, role: session.role }, customerId: requestedCustomerId, code: "REQUEST_REJECTED" });
+        throw error;
+      }
       audit.record({
         category: "FINANCIAL",
-        action: "PARTNER_TRANSACTION_SUBMITTED",
+        action: "PARTNER_TRANSACTION_RESULT",
         outcome:
           result.state === "PARTNER_REJECTED"
             ? "FAIL"

@@ -229,3 +229,21 @@ test("reconciliation operation and callback replay state survive restart", () =>
     rmSync(directory, { recursive: true, force: true });
   }
 });
+
+test("reconciliation audit records outcomes and duplicates without raw callbacks or credentials", async () => {
+  const { SyntheticAuditLog } = await import("../src/server/audit"),
+    { assertAuditPrivacy } = await import("./helpers/audit-privacy"),
+    secret = crypto.randomUUID(), verifier = new MockPartnerCallbackVerifier(secret), audit = new SyntheticAuditLog(),
+    service = new PartnerReconciliationService(verifier, undefined, audit), result = partnerResult("RECONCILIATION_REQUIRED");
+  service.registerPartnerResult(result);
+  const event = callback(result.transactionId, 1, "SETTLED"), message = signed(verifier, event);
+  assert.throws(() => service.handleAuthenticatedCallback(message.raw, "wrong"), /AUTH_FAILED/);
+  service.handleAuthenticatedCallback(message.raw, message.signature);
+  service.handleAuthenticatedCallback(message.raw, message.signature);
+  service.statusQuery(result.transactionId);
+  const events = audit.list();
+  assert.deepEqual(events.map(e => e.action), ["PARTNER_OPERATION_REGISTERED", "PARTNER_CALLBACK_REJECTED", "PARTNER_CALLBACK_APPLIED", "PARTNER_CALLBACK_DUPLICATE", "PARTNER_STATUS_QUERIED"]);
+  assert.equal(events[2].stateFrom, "OUTCOME_UNCERTAIN");
+  assert.equal(events[2].stateTo, "SETTLED_BY_PARTNER");
+  assertAuditPrivacy(events, [secret, message.signature, event.providerReference, message.raw]);
+});

@@ -1,3 +1,4 @@
+import { assertAuditPrivacy } from "./helpers/audit-privacy";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -133,7 +134,6 @@ test("security audit remains redacted and contains no session or CSRF secret", (
   );
   const serialized = JSON.stringify(auth.getAuditEntries());
   assert.doesNotMatch(serialized, new RegExp(csrf.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
-  assert.doesNotMatch(serialized, /sessionId/i);
-  assert.doesNotMatch(serialized, /phone|FIN|FAN|biometric/i);
+  assertAuditPrivacy(auth.getAuditEntries(), [csrf, session.sessionId, "customer-secret-object"]);
   assert.match(serialized, /OBJECT_ACCESS_DENIED/);
 });

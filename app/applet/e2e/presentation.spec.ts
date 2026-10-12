@@ -157,3 +157,49 @@ test("presentation fits desktop and mobile with explicitly synthetic architectur
     ),
   ).toBeVisible();
 });
+
+test("legacy browser records remain quarantined even when a receiver appears reachable", async ({ page, context }) => {
+  await page.goto("/queue");
+  await page.evaluate(async () => {
+    await new Promise<void>((resolve, reject) => {
+      const request = indexedDB.open("GhostSyncDB", 1);
+      request.onupgradeneeded = () => request.result.createObjectStore("legacy");
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const db = request.result, tx = db.transaction("legacy", "readwrite");
+        tx.objectStore("legacy").put({ marker: "synthetic-legacy-record" }, "demo");
+        tx.oncomplete = () => { db.close(); resolve(); };
+        tx.onerror = () => reject(tx.error);
+      };
+    });
+  });
+  let uploads = 0;
+  await page.route("**/api/ghostsync", route => {
+    uploads++;
+    return route.fulfill({ json: { enabled: true } });
+  });
+  await context.setOffline(true);
+  await context.setOffline(false);
+  await page.reload();
+  await page.getByRole("button", { name: "Check sync availability" }).click();
+  await expect(page.getByText("Remote delivery disabled. Requests retained; no funds moved.")).toBeVisible();
+  const saved = await page.evaluate(() => new Promise<unknown>((resolve, reject) => {
+    const request = indexedDB.open("GhostSyncDB", 1);
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      const db = request.result, read = db.transaction("legacy").objectStore("legacy").get("demo");
+      read.onsuccess = () => { db.close(); resolve(read.result); };
+      read.onerror = () => reject(read.error);
+    };
+  }));
+  expect(saved).toEqual({ marker: "synthetic-legacy-record" });
+  expect(uploads).toBe(0);
+});
+
+test("unavailable partner account is not displayed as a fabricated zero balance", async ({ page }) => {
+  await page.route("**/api/demo/account", route => route.fulfill({ status: 503, json: { error: "SYNTHETIC_ACCOUNT_UNAVAILABLE" } }));
+  await page.goto("/kiosk");
+  await expect(page.getByTestId("customer-id")).toBeVisible();
+  await expect(page.getByTestId("partner-balance")).toHaveText("Unavailable");
+  await expect(page.getByText(/No real cash collection, cash dispense or agent settlement is authorized/)).toBeVisible();
+});

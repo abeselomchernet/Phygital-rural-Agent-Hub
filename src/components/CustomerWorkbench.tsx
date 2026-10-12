@@ -137,9 +137,9 @@ export function CustomerWorkbench({ title = "Customer" }: { title?: string }) {
             Customer ID:{" "}
             <code data-testid="customer-id">{customer.customerId}</code>
           </p>
-          <p>Phone status: {customer.phoneStatus}</p>
+          <p>Mock phone-channel status: {customer.phoneStatus}</p>
           <p>
-            KYC status:{" "}
+            Mock KYC status:{" "}
             <strong data-testid="kyc-status">{customer.kycStatus}</strong>
           </p>
           <p>
@@ -181,12 +181,12 @@ export function CustomerWorkbench({ title = "Customer" }: { title?: string }) {
           <p>
             Partner Account — simulated balance:{" "}
             <span data-testid="partner-balance">
-              {((account?.balanceMinor ?? 0) / 100).toFixed(2)} ETB
+              {account ? `${(account.balanceMinor / 100).toFixed(2)} ETB` : "Unavailable"}
             </span>
           </p>
           <p>
             Prototype simulation only — not a real customer liability of
-            Wishland.
+            Wishland. No real cash collection, cash dispense or agent settlement is authorized.
           </p>
           <label className="block">
             Request amount (ETB)
