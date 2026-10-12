@@ -20,7 +20,7 @@ T6 — durable pre-submit correlation intent with idempotency, transaction, merc
 
 T7 — merchant-side read-only `payment.queryorder` request construction and sandbox query client for `/payment/v1/merchant/queryOrder`. The client returns transport/provider payload evidence only and deliberately does not map provider status fields to payment or settlement until the authoritative status-value contract is pinned.
 
-T8 — pure signed H5/SuperApp `rawRequest` construction from `appid`, `merch_code`, `nonce_str`, `prepay_id`, timestamp, sign type and signature. Provider identifiers are constrained so delimiter injection cannot alter the raw request. The builder performs no provider call and does not invoke client `startPay`.
+T8 — pure signed H5/SuperApp `rawRequest` construction from `appid`, `merch_code`, `nonce_str`, `prepay_id`, timestamp, sign type and signature. Provider and merchant identifiers are constrained so delimiter injection cannot alter the raw request. The builder performs no provider call and does not invoke client `startPay`.
 
 T9 — pure C2B browser Web Checkout URL construction based on the supplied `C2B_WebCheckoutDemo`. It prefixes the signed raw request with the provider TestBed web paygate and appends `version=1.0&trade_type=Checkout`. It performs no provider call, opens no browser, and does not import B2B `WebCheckout` / `TransferToOtherOrg` semantics.
 
@@ -78,6 +78,22 @@ T7 therefore uses only the merchant `queryOrder` contract for server-side reconc
 T8 uses only the H5 raw-request field set shown in the supplied Telebirr demo. It does not invoke SuperApp startPay and does not interpret any client callback as payment authority.
 
 T9 constructs only the C2B browser Web Checkout URL. It does not launch navigation, create a provider order, confirm a payment, or establish settlement.
+
+## Exact T9 validation
+
+Head validated before this evidence-only documentation update: `98ecb584118537ea5679436b1987276f3f2e8d73`.
+GitHub Actions run: `38308461486`.
+
+- Node 24.21.0 / npm 11.19.0;
+- `npm ci`: pass — 576 packages;
+- production dependency audit: **0 vulnerabilities**;
+- TypeScript/lint: pass;
+- unit/domain/API tests: **115/115 pass**;
+- production build: pass;
+- Docker build: pass;
+- Chromium E2E: **13/13 pass**.
+
+Existing full development/tooling findings remain 23 (2 low, 4 moderate, 17 high). The existing Vite >500 kB bundle advisory remains non-blocking.
 
 ## Remaining provider gates
 
