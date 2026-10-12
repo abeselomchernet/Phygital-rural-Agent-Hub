@@ -138,6 +138,7 @@ export function PresentationShell({ children }: { children: ReactNode }) {
           <Link to="/queue">GhostSync</Link>
           <Link to="/onboard">{t.onboarding}</Link>
           <Link to="/supervisor">Supervisor</Link>
+          <Link to="/operations">Operations</Link>
           <Link to="/data-mule">Data Mule</Link>
           <Link to="/node-status">Demo architecture</Link>
           <Link to="/academy">{t.training}</Link>
@@ -207,7 +208,7 @@ export function InventoryDemo() {
           max="20"
           value={quantity}
           onChange={(e) => {
-            setQuantity(Math.max(1, Math.min(20, Number(e.target.value) || 1)));
+            setQuantity(Math.max(1, Math.min(20, Number(e.target.value) || 1));
             setDraft(false);
           }}
         />
