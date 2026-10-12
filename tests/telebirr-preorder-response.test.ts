@@ -72,6 +72,25 @@ test("preorder response must bind to the exact submitted merchant order id", () 
   });
 });
 
+test("provider identifiers are not trimmed or normalized into a binding match", () => {
+  const result = classifyTelebirrPreorderResponse(
+    {
+      result: "SUCCESS",
+      biz_content: {
+        merch_order_id: ` ${expectedMerchantOrderId} `,
+        prepay_id: "SYNTHETICPREPAY123",
+      },
+    },
+    expectedMerchantOrderId,
+  );
+
+  assert.deepEqual(result, {
+    state: "RESPONSE_UNVERIFIED",
+    paymentConfirmed: false,
+    settlementConfirmed: false,
+  });
+});
+
 test("missing prepay or merchant-order binding remains unverified rather than successful", () => {
   assert.deepEqual(
     classifyTelebirrPreorderResponse(
