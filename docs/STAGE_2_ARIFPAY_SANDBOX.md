@@ -13,6 +13,7 @@ Current ArifPay Developer Portal and its linked Sandbox Postman collection confi
 - sandbox testing must not use production hosts;
 - authentication uses `x-arifpay-key`;
 - the portal sandbox uses the fixed public test key `arif-sandbox-portal-key`;
+- the sandbox collection explicitly states **no live PSP calls**;
 - sandbox simulator requests may use `x-arifpay-sim-mode: SUCCESS|FAIL`;
 - sandbox-only fee-source header supports `CUSTOMER|MERCHANT`;
 - hosted C2B sandbox session creation is `POST /api/sandbox/c2b/session`;
@@ -99,19 +100,42 @@ The route:
 
 Draft PR #5 initial run #103 passed with 66/66 tests and 12/12 Chromium E2E.
 
-After current Postman contract alignment and durable state, run #108 passed with:
+After current Postman contract alignment and durable state, run #108 passed with 71/71 tests and 12/12 Chromium E2E.
+
+Current-head validation run #113 passed with:
 
 - Node 24.21.0 / npm 11.19.0;
-- production dependency audit: 0 vulnerabilities;
+- `npm ci`: pass;
+- production dependency audit: **0 vulnerabilities**;
 - TypeScript/lint: pass;
-- 71/71 tests: pass;
+- **75/75** unit/domain/API tests: pass;
 - production build: pass;
 - Docker build: pass;
-- Chromium E2E: 12/12 pass.
+- Chromium E2E: **12/12** pass.
 
-The authenticated server-boundary integration is validated by the current PR #5 CI head.
+The existing development/tooling graph still reports 23 findings (2 low, 4 moderate, 17 high), and the existing Vite >500 kB bundle advisory remains non-blocking.
 
-A direct synthetic POST was attempted from the ChatGPT execution container after the current endpoint was verified. The container could not resolve `gateway.arifpay.org` (`curl: Could not resolve host`), so no request reached ArifPay and no provider response was observed. This is an execution-environment DNS limitation, not an ArifPay failure.
+## Successful sandbox-network smoke evidence
+
+The ChatGPT execution container could not resolve `gateway.arifpay.org`, so no provider request was possible from that container. To avoid treating that environment limitation as a provider failure, a one-time temporary GitHub Actions workflow was created on Draft PR #5 using only the official public sandbox key and documented simulator values.
+
+**GitHub Actions run:** `38266511796` — `Temporary ArifPay sandbox smoke`  
+**Job:** `sandbox-session` — success
+
+The run submitted one synthetic request to:
+
+`POST https://gateway.arifpay.org/api/sandbox/c2b/session`
+
+Observed controlled result:
+
+- HTTP status: **200**;
+- `error`: **false**;
+- message: **Sandbox session created**;
+- session reference present: **true**.
+
+No production credential, real customer PII or real PSP call was involved. The official sandbox collection explicitly states that the developer-portal sandbox makes no live PSP calls.
+
+The temporary smoke workflow was removed immediately after evidence capture so normal repository CI does not depend on ArifPay network availability. The workflow run remains historical GitHub evidence.
 
 ## Provider-contract gaps that remain
 
@@ -121,7 +145,6 @@ The current portal describes raw JSON merchant notifications to `notifyUrl`, but
 
 ## Not implemented yet
 
-- successful end-to-end network execution against ArifPay sandbox from an environment with outbound DNS/network access;
 - verified current sandbox transaction/session/nonce status endpoint;
 - provider-backed read-only verification/reconciliation service;
 - authenticated provider webhook receiver, pending an explicit authenticity mechanism;
@@ -131,13 +154,12 @@ The current portal describes raw JSON merchant notifications to `notifyUrl`, but
 
 ## Required progression
 
-1. Execute one synthetic C2B checkout from an approved development environment that can reach `gateway.arifpay.org`.
-2. Obtain/verify ArifPay's current sandbox status/verification contract.
-3. Implement read-only provider reconciliation; checkout creation remains non-terminal.
-4. Add provider callback handling only after callback authenticity is explicitly verifiable.
-5. Build Operations/Reconciliation UX on top of verified status/reconciliation, not raw callback trust.
-6. Keep PartnerFI authorization/settlement and physical cash-in/cash-out outside the payment-gateway adapter.
+1. Obtain or verify ArifPay's current sandbox status/verification contract.
+2. Implement read-only provider reconciliation; checkout creation remains non-terminal.
+3. Add provider callback handling only after callback authenticity is explicitly verifiable.
+4. Build Operations/Reconciliation UX on top of verified status/reconciliation, not raw callback trust.
+5. Keep PartnerFI authorization/settlement and physical cash-in/cash-out outside the payment-gateway adapter.
 
 ## Claim boundary
 
-> This work demonstrates guarded payment-gateway orchestration against current ArifPay sandbox contracts. It does not represent a live cash-in/cash-out deployment, a PartnerFI account, PartnerFI settlement, or production payment authorization.
+> This work demonstrates guarded payment-gateway orchestration against current ArifPay sandbox contracts, including a successful synthetic sandbox session-create network smoke. It does not represent a live PSP transaction, live cash-in/cash-out deployment, a PartnerFI account, PartnerFI settlement, or production payment authorization.
