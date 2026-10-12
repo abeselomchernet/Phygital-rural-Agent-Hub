@@ -106,6 +106,13 @@ test("rawRequest builder remains pure and rejects unsafe provider correlation va
   );
   assert.throws(() =>
     buildTelebirrRawRequest(safeConfig, {
+      prepayId: "PREPAY123&sign=attacker",
+      nonce: "RAWNONCE123456",
+      timestamp: "1755866911",
+    }),
+  );
+  assert.throws(() =>
+    buildTelebirrRawRequest(safeConfig, {
       prepayId: "PREPAY123",
       nonce: "nonce with spaces",
       timestamp: "1755866911",
