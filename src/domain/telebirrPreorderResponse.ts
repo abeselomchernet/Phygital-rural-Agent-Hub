@@ -1,6 +1,11 @@
 import { z } from "zod";
 
-const NonEmptyProviderId = z.string().trim().min(1).max(256);
+const MerchantOrderId = z.string().regex(/^[A-Za-z0-9]+$/).max(64);
+const NonEmptyProviderId = z
+  .string()
+  .min(1)
+  .max(256)
+  .refine((value) => value === value.trim());
 
 /**
  * Bounded response envelope based on current Ethio telecom FAQ evidence and
@@ -23,7 +28,7 @@ export const TelebirrPreorderResponseEnvelopeSchema = z
     sign_type: z.string().optional(),
     biz_content: z
       .object({
-        merch_order_id: z.union([NonEmptyProviderId, z.null()]).optional(),
+        merch_order_id: z.union([MerchantOrderId, z.null()]).optional(),
         prepay_id: z.union([NonEmptyProviderId, z.null()]).optional(),
       })
       .passthrough()
@@ -78,11 +83,7 @@ export function classifyTelebirrPreorderResponse(
   raw: unknown,
   expectedMerchantOrderId: string,
 ): TelebirrPreorderClassification {
-  const expected = z
-    .string()
-    .regex(/^[A-Za-z0-9]+$/)
-    .max(64)
-    .parse(expectedMerchantOrderId);
+  const expected = MerchantOrderId.parse(expectedMerchantOrderId);
   const parsed = TelebirrPreorderResponseEnvelopeSchema.safeParse(raw);
   if (!parsed.success) {
     return {
