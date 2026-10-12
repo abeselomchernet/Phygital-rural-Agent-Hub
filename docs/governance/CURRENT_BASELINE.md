@@ -34,9 +34,27 @@ Merged. Bounded synthetic work includes:
 - Ethiopia-resident staging evidence checklist;
 - active UI/claims review.
 
-Historical validation recorded 59 domain/API tests and 12 Chromium E2E tests passing, a passing build and zero production dependency vulnerabilities at that validation point.
+## 2. Stage 1 re-validation and closure
 
-## 2. Existing UI/product skeleton
+Stage 1 — Workspace Re-baseline & P0 Closure is complete for its governed scope.
+
+Fresh GitHub-hosted validation on 2026-10-12 reproduced the bounded baseline with:
+
+- Node `v24.21.0` and npm `11.19.0`;
+- `npm ci` PASS with 576 packages;
+- `npm audit --omit=dev` PASS with 0 production vulnerabilities;
+- lint PASS;
+- 59/59 domain/API tests PASS;
+- production build PASS;
+- Docker image build PASS;
+- 12/12 Chromium E2E tests PASS;
+- `DATA_MODE=synthetic` and external telemetry disabled.
+
+Known non-blocking observations remain the full development/tooling graph's 23 findings (2 low, 4 moderate, 17 high) and the existing Vite >500 kB chunk advisory.
+
+See `docs/P0_POST_MERGE_CLOSURE.md` for the closure record. Historical P0-A/P0-B validation documents remain unchanged.
+
+## 3. Existing UI/product skeleton
 
 Current routes provide a useful product base:
 
@@ -54,7 +72,7 @@ Current routes provide a useful product base:
 
 These surfaces SHOULD be evolved rather than discarded.
 
-## 3. Current hard boundaries
+## 4. Current hard boundaries
 
 The current repository MUST still be described as a bounded synthetic prototype. It does not establish:
 
@@ -70,16 +88,20 @@ The current repository MUST still be described as a bounded synthetic prototype.
 - live SMS/USSD/hardware control;
 - regulated pilot authorization.
 
-## 4. Known documentation synchronization item
+## 5. Current program position
 
-`docs/P0_BACKLOG.md` contains some pre-completion descriptions of P0-B controls. It is historical/stale in parts and SHOULD be synchronized in a separate closure update without rewriting `P0_B_COMPLETION_VALIDATION.md`.
+The active substantive stage is now:
 
-## 5. Immediate program position
+> **Stage 2 — ArifPay Sandbox Integration**
 
-The next sequence is:
+The Stage 2 sequence is:
 
-1. Re-baseline the private coding workspace against current `main` without code edits or deployment.
-2. Complete a small post-P0-B closure/documentation synchronization.
-3. Begin a separate sandbox-only ArifPay payment-gateway adapter workstream.
-4. Add partner-ecosystem, network-liquidity, fleet and FMCG simulation capabilities behind clear maturity states.
-5. Advance toward approved ET-resident staging only when its evidence gate can be populated with external artifacts.
+1. Re-verify current official ArifPay sandbox documentation before implementation.
+2. Create a separate task-specific branch after governance PR closure.
+3. Implement `PaymentGatewayAdapter` and `ArifPaySandboxAdapter` with a hard sandbox-only guard.
+4. Prove one narrow C2B sandbox flow using synthetic customer/amount data.
+5. Integrate callback/status reconciliation with the existing P0-B state model, idempotency and replay protections.
+6. Add bounded sandbox Operations/Reconciliation UX and validation evidence.
+7. Keep ArifPay separate from PartnerFI authority and keep all real-data/live-cash/production-provider capabilities disabled.
+
+After Stage 2, the next planned substantive stage is Partner Ecosystem & Network Liquidity: partner organization types, NLC/LCI, Cash Fleet planning, FMCG/logistics, synthetic liquidity matching and expanded Supervisor/Operations UX.
