@@ -9,7 +9,7 @@
 
 ## Purpose
 
-This workstream adds a **direct Ethio telecom Telebirr adapter** behind Enawuga's payment-gateway boundary. It is separate from the merged ArifPay adapter. A Telebirr transaction routed through ArifPay and a direct Telebirr merchant integration are different routes and MUST retain different provenance.
+This workstream adds a **direct Ethio telecom Telebirr adapter** behind Enawuga's payment-gateway boundary, separate from the merged ArifPay adapter. Route provenance must keep direct Telebirr distinct from Telebirr reached through ArifPay.
 
 No Telebirr sandbox credential, app secret, merchant private key, short code or account-specific identifier is committed to Git, browser code, documentation examples or CI output.
 
@@ -31,37 +31,36 @@ PaymentGatewayAdapter
 └── TelebirrSandboxAdapter
 ```
 
-Direct-route provenance remains `provider=TELEBIRR / route=DIRECT_TELEBIRR`, distinct from `provider=TELEBIRR / route=ARIFPAY`.
+Direct route: `provider=TELEBIRR / route=DIRECT_TELEBIRR`  
+ArifPay route: `provider=TELEBIRR / route=ARIFPAY`
 
 ## Implemented controls
 
 ### T1 — sandbox configuration guard
-Sandbox-only mode, networking false by default, HTTPS mandatory, developer/test gateway pinned, alternate/production gateway rejected, URL credentials forbidden, provider secrets server-side only, and placeholders only in `.env.example`.
+Sandbox-only mode, network off by default, HTTPS required, test gateway pinned, alternate/production gateway rejected, URL credentials forbidden, server-side secrets only, placeholder `.env.example`.
 
 ### T2 — canonical request signing
-One-level business-content flattening, deterministic alphabetical `key=value` canonicalization, RSA-PSS/SHA-256 MGF1 signing, base64 output, and generated synthetic CI keys only.
+Deterministic flattened alphabetical `key=value` canonicalization and RSA-PSS/SHA-256 MGF1 signing. CI uses generated synthetic keys only.
 
 ### T3 — guarded fabric-token client
-Server-side token acquisition through `/payment/v1/token`, `X-APP-Key`, JSON `appSecret`, explicit network opt-in, controlled errors, and no token logging/persistence/browser exposure. It does not create an order or payment.
+Server-side `/payment/v1/token` acquisition with explicit network opt-in and controlled failures. No payment operation and no token logging/persistence/browser exposure.
 
 ### T4 — pure signed preorder builder
-Builds but does not submit a signed `payment.preorder` request using unique merchant-order ID/nonce, integer ETB minor units and only pinned request fields. `/payment/v1/merchant/preOrder` is exported as a future client path constant only.
+Constructs but does not submit a signed `payment.preorder` request using unique merchant-order ID/nonce, integer ETB minor units and only pinned fields.
 
 ### T5 — bounded preorder-response classification
-Local-only classification. `ORDER_CREATED` requires a non-empty `prepay_id` exactly bound to the submitted alphanumeric merchant-order ID. Binding mismatch/malformed responses fail closed. All states keep `paymentConfirmed=false` and `settlementConfirmed=false`. Provider response signatures remain non-authoritative until their current verification contract is pinned.
+`ORDER_CREATED` requires non-empty `prepay_id` exactly bound to the submitted merchant-order ID. Binding mismatch or malformed data fails closed. All classifications retain `paymentConfirmed=false` and `settlementConfirmed=false`.
 
 ### T6 — durable pre-submit correlation intent
-`src/domain/telebirrPreorderIntent.ts` and `src/server/telebirr-preorder-intent-persistence.ts` provide a provider-independent persist-before-submit reservation.
+`src/domain/telebirrPreorderIntent.ts` and `src/server/telebirr-preorder-intent-persistence.ts` reserve Enawuga `transactionId`, canonical `customerId`, `idempotencyKey`, Telebirr `merchantOrderId`, nonce, timestamp/title and integer ETB amount **before any future provider mutation**.
 
-The reservation binds Enawuga `transactionId`, canonical `customerId`, `idempotencyKey`, Telebirr `merchantOrderId`, Telebirr `nonce`, timestamp/title, ETB amount in integer minor units and ETB currency.
+Controls include idempotent identical replay, changed-payload conflict, transaction replay prevention, merchant-order replay prevention, nonce replay prevention, restart durability, malformed/duplicate state rejection, correlation lookup, and atomic versioned local JSON replacement.
 
-It provides identical-idempotent replay, fail-closed changed-payload conflict, transaction replay protection, merchant-order replay protection, nonce replay protection, restart durability, malformed/duplicate persisted-state rejection, lookup by Enawuga transaction ID or merchant-order ID, and atomic versioned local JSON replacement.
+The snapshot stores **no app secret, private key, access token, request signature, callback payload or provider payment state**. It is a bounded synthetic reservation record, not a payment ledger, production outbox or residency evidence.
 
-The snapshot deliberately stores **no app secret, private key, access token, request signature, callback payload or provider payment state**. It is a bounded synthetic reservation record, not a payment ledger, production outbox or residency evidence.
+## Remaining gates before C2B payment networking
 
-## Remaining gates before any C2B payment network mutation
-
-1. Verify the active developer account's C2B Web Checkout subscription/scope.
+1. Verify active developer-account C2B Web Checkout subscription/scope.
 2. Pin the current `preOrder` response and checkout/raw-request assembly contract.
 3. Pin any account-specific required request fields.
 4. Pin authoritative current `queryOrder` endpoint/request/response/status lifecycle.
@@ -83,13 +82,13 @@ T6 code validation — GitHub Actions run `38298524544`, code head `93819d53a82c
 - Docker build: pass;
 - Chromium E2E: **13/13 pass**.
 
-T6 tests cover restart durability, idempotency conflict, transaction replay, merchant-order replay, nonce replay, secret/signature exclusion from snapshots, malformed/duplicate persistence and unsafe identifier rejection.
+T6 tests cover restart durability, idempotency conflict, transaction replay, merchant-order replay, nonce replay, secret/signature exclusion, malformed/duplicate persistence and unsafe identifiers.
 
-Only documentation changed after the green T6 code head. Normal CI on the final documentation head closes the evidence chain. Existing development/tooling findings remain 23 (2 low, 4 moderate, 17 high); the existing >500 kB Vite bundle advisory remains non-blocking.
+Only documentation changed after the green T6 code head. Normal CI on this final documentation head closes the evidence chain. Existing development/tooling findings remain 23 (2 low, 4 moderate, 17 high); the existing >500 kB Vite advisory remains non-blocking.
 
 ## Next implementation after provider-contract pinning
 
-Add the provider-network preorder client only after subscription/scope and response/checkout verification; require T6 reservation before mutation; map provider result only to gateway-scoped states; expose through authenticated AGENT/customer controls without secrets/provider references; add read-only `queryOrder` reconciliation only after authoritative status-contract capture; test uncertainty/replay/restart; and add callbacks only after authenticity is verifiable.
+Add the provider-network preorder client only after subscription/scope and response/checkout verification; require the T6 reservation before mutation; map provider results only to gateway-scoped states; expose through authenticated AGENT/customer controls without secrets/provider references; add read-only `queryOrder` reconciliation only after authoritative status-contract capture; test uncertainty/replay/restart; add callbacks only after authenticity is verifiable.
 
 ## Claim boundary
 
