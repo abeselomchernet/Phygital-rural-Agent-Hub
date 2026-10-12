@@ -20,6 +20,8 @@ T6 — durable pre-submit correlation intent with idempotency, transaction, merc
 
 T7 — merchant-side read-only `payment.queryorder` request construction and sandbox query client for `/payment/v1/merchant/queryOrder`. The client returns transport/provider payload evidence only and deliberately does not map provider status fields to payment or settlement until the authoritative status-value contract is pinned.
 
+T8 — pure signed H5/SuperApp `rawRequest` construction from `appid`, `merch_code`, `nonce_str`, `prepay_id`, timestamp, sign type and signature. Provider identifiers are constrained so delimiter injection cannot alter the raw request. The builder performs no provider call and does not invoke client `startPay`.
+
 ## Evidence basis
 
 Current Ethio telecom developer-portal documentation confirms:
@@ -49,6 +51,8 @@ The supplied Postman `CreateOrder` example is an InApp/OpenAPI-style flow with a
 
 T7 therefore uses only the merchant `queryOrder` contract for server-side reconciliation. It does not use app-side payer identifiers/PINs or client callback state.
 
+T8 uses only the H5 raw-request field set shown in the supplied Telebirr demo. It does not invoke SuperApp startPay and does not interpret any client callback as payment authority.
+
 ## Remaining provider gates
 
 Before enabling the first direct Telebirr sandbox preorder network mutation:
@@ -64,4 +68,4 @@ Until those gates are satisfied, direct Telebirr payment initiation remains disa
 
 ## Boundary
 
-This branch contains sandbox integration safety primitives and read-only query transport support. It does not prove a live payment, customer-funds authority, PartnerFI settlement, Wishland-held funds, physical cash authority, production IAM, or regulated production deployment.
+This branch contains sandbox integration safety primitives, read-only merchant query transport support and pure checkout handoff construction. It does not prove a live payment, customer-funds authority, PartnerFI settlement, Wishland-held funds, physical cash authority, production IAM, or regulated production deployment.
