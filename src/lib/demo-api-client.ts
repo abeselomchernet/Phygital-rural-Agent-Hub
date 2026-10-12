@@ -1,10 +1,13 @@
+type SyntheticRole = "AGENT" | "SUPERVISOR" | "PARTNER_ADMIN";
+
 type SessionView = {
   csrfToken: string;
-  role: "AGENT" | "SUPERVISOR" | "PARTNER_ADMIN";
+  role: SyntheticRole;
   localDevelopmentAuth: true;
 };
 
 let csrfToken: string | null = null;
+let cachedRole: SyntheticRole | null = null;
 
 async function parseJson(response: Response) {
   const type = response.headers.get("content-type") ?? "";
@@ -12,28 +15,75 @@ async function parseJson(response: Response) {
   return response.json();
 }
 
-async function getOrStartSession() {
-  const existing = await fetch("/api/demo/session", { credentials: "same-origin" });
-  if (existing.ok) {
-    const session = (await parseJson(existing)) as SessionView;
-    csrfToken = session.csrfToken;
-    return session;
-  }
-  if (existing.status !== 401) throw new Error("DEMO_SESSION_UNAVAILABLE");
+function remember(session: SessionView) {
+  csrfToken = session.csrfToken;
+  cachedRole = session.role;
+  return session;
+}
+
+async function currentSession() {
+  const response = await fetch("/api/demo/session", {
+    credentials: "same-origin",
+  });
+  if (response.status === 401) return undefined;
+  if (!response.ok) throw new Error("DEMO_SESSION_UNAVAILABLE");
+  return remember((await parseJson(response)) as SessionView);
+}
+
+async function getOrStartAgentSession() {
+  const existing = await currentSession();
+  if (existing?.role === "AGENT") return existing;
+  return startDemoSession("AGENT");
+}
+
+/**
+ * Explicit local synthetic role switch. Privileged roles are still rejected by
+ * the server unless the runtime was intentionally started with privileged
+ * synthetic roles enabled. No production identity/SSO semantics are implied.
+ */
+export async function startDemoSession(role: SyntheticRole) {
   const started = await fetch("/api/demo/session/start", {
     method: "POST",
     credentials: "same-origin",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ role: "AGENT" }),
+    body: JSON.stringify({ role }),
   });
-  if (!started.ok) throw new Error("DEMO_SESSION_UNAVAILABLE");
-  const session = (await parseJson(started)) as SessionView;
-  csrfToken = session.csrfToken;
-  return session;
+  if (!started.ok) {
+    let code = "DEMO_SESSION_UNAVAILABLE";
+    try {
+      code = (await parseJson(started)).error ?? code;
+    } catch {
+      // Keep the generic local-demo error when the response is not JSON.
+    }
+    throw new Error(code);
+  }
+  return remember((await parseJson(started)) as SessionView);
 }
 
 export async function demoApi(path: string, body?: unknown) {
-  if (!csrfToken) await getOrStartSession();
+  if (!csrfToken || cachedRole !== "AGENT") await getOrStartAgentSession();
+  return sendDemoApi(path, body, "AGENT");
+}
+
+/**
+ * Call an authenticated synthetic endpoint as an explicitly established role.
+ * This never auto-escalates privileges: callers must first call
+ * startDemoSession(role), and the server must independently authorize it.
+ */
+export async function demoApiAs(
+  role: Exclude<SyntheticRole, "AGENT">,
+  path: string,
+  body?: unknown,
+) {
+  if (!csrfToken || cachedRole !== role) throw new Error("DEMO_ROLE_SESSION_REQUIRED");
+  return sendDemoApi(path, body, role);
+}
+
+async function sendDemoApi(
+  path: string,
+  body: unknown,
+  expectedRole: SyntheticRole,
+) {
   const send = () =>
     fetch(`/api/demo/${path}`, {
       ...(body === undefined
@@ -51,7 +101,9 @@ export async function demoApi(path: string, body?: unknown) {
   let response = await send();
   if (response.status === 401) {
     csrfToken = null;
-    await getOrStartSession();
+    cachedRole = null;
+    if (expectedRole !== "AGENT") throw new Error("DEMO_ROLE_SESSION_REQUIRED");
+    await getOrStartAgentSession();
     response = await send();
   }
   if (!response.ok) {
@@ -68,4 +120,5 @@ export async function demoApi(path: string, body?: unknown) {
 
 export function clearCachedDemoSession() {
   csrfToken = null;
+  cachedRole = null;
 }
