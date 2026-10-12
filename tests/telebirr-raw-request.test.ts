@@ -119,3 +119,23 @@ test("rawRequest builder remains pure and rejects unsafe provider correlation va
     }),
   );
 });
+
+test("rawRequest builder rejects delimiter-capable merchant configuration identifiers", () => {
+  const input = {
+    prepayId: "PREPAY123",
+    nonce: "RAWNONCE123456",
+    timestamp: "1755866911",
+  };
+  assert.throws(() =>
+    buildTelebirrRawRequest(
+      config({ merchantAppId: "merchant&appid=evil" }),
+      input,
+    ),
+  );
+  assert.throws(() =>
+    buildTelebirrRawRequest(
+      config({ merchantCode: "101011=evil" }),
+      input,
+    ),
+  );
+});
