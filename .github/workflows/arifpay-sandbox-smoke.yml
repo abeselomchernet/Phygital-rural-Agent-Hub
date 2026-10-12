@@ -1,0 +1,52 @@
+name: Temporary ArifPay sandbox smoke
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sandbox-session:
+    if: github.event_name == 'workflow_dispatch' || github.head_ref == 'feat/arifpay-sandbox-adapter'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Create one synthetic ArifPay sandbox session
+        shell: bash
+        run: |
+          set -euo pipefail
+          nonce="enawuga_sandbox_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}_$(date +%s)"
+          jq -n \
+            --arg nonce "$nonce" \
+            '{
+              cancelUrl: "https://payment.arifpay.org/Cancel",
+              phone: "251911000000",
+              email: "sandbox@example.com",
+              nonce: $nonce,
+              errorUrl: "https://payment.arifpay.org/Error",
+              notifyUrl: "http://localhost:3000/api/sandbox/webhook-inbox",
+              successUrl: "https://payment.arifpay.org/success",
+              expireDate: "2027-12-31T23:59:00",
+              amount: 10,
+              items: [{name:"Enawuga sandbox smoke",quantity:1,price:10,description:"Synthetic sandbox verification"}],
+              lang: "EN"
+            }' > request.json
+
+          http_code=$(curl --silent --show-error \
+            --connect-timeout 15 --max-time 30 \
+            --output response.json --write-out '%{http_code}' \
+            -X POST 'https://gateway.arifpay.org/api/sandbox/c2b/session' \
+            -H 'Content-Type: application/json' \
+            -H 'x-arifpay-key: arif-sandbox-portal-key' \
+            -H 'x-arifpay-sim-mode: SUCCESS' \
+            -H 'x-arifpay-fee-source: MERCHANT' \
+            --data @request.json)
+
+          echo "http_status=$http_code"
+          jq -c '{error,msg,sessionReferencePresent:((.data.sessionId // .data.uuid // .sessionId // null) != null)}' response.json
+          test "$http_code" = "200"
+          jq -e '.error == false and ((.data.sessionId // .data.uuid // .sessionId // null) != null)' response.json >/dev/null
+          echo 'ArifPay sandbox session smoke: PASS'
