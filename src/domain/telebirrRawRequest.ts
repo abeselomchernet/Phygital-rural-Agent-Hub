@@ -5,6 +5,11 @@ import {
   type TelebirrSandboxConfig,
 } from "./telebirrSandbox";
 
+const SafeProviderConfigIdentifier = z
+  .string()
+  .regex(/^[A-Za-z0-9._~-]+$/)
+  .max(128);
+
 export const TelebirrRawRequestInputSchema = z
   .object({
     prepayId: z
@@ -33,6 +38,8 @@ export function buildTelebirrRawRequest(
   input: TelebirrRawRequestInput,
 ) {
   const safeConfig = assertTelebirrSandboxConfig(config);
+  SafeProviderConfigIdentifier.parse(safeConfig.merchantAppId);
+  SafeProviderConfigIdentifier.parse(safeConfig.merchantCode);
   const parsed = TelebirrRawRequestInputSchema.parse(input);
   const unsigned = {
     appid: safeConfig.merchantAppId,
@@ -44,9 +51,9 @@ export function buildTelebirrRawRequest(
   const sign = signTelebirrRequest(unsigned, safeConfig.privateKey);
 
   // Preserve the field order shown in Ethio telecom's H5 demo. The signature
-  // itself is generated from the canonical sorted representation. Provider
-  // identifiers are restricted above so no unescaped '&'/'=' delimiters can
-  // be injected into this legacy rawRequest format.
+  // itself is generated from the canonical sorted representation. All
+  // unsigned identifiers are restricted above so no unescaped '&'/'='
+  // delimiters can be injected into this legacy rawRequest format.
   return [
     `appid=${unsigned.appid}`,
     `merch_code=${unsigned.merch_code}`,
