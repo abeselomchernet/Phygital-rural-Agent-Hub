@@ -1,5 +1,6 @@
 import { randomUUID, timingSafeEqual } from "node:crypto";
 import type { Request, Response } from "express";
+import { SyntheticAuditLog } from "./audit";
 
 export type SyntheticRole = "AGENT" | "SUPERVISOR" | "PARTNER_ADMIN";
 
@@ -13,23 +14,6 @@ export interface SyntheticSessionView extends SyntheticPrincipal {
   csrfToken: string;
   expiresAt: string;
   localDevelopmentAuth: true;
-}
-
-export interface SyntheticSecurityAuditEvent {
-  at: string;
-  action:
-    | "SESSION_CREATED"
-    | "SESSION_REVOKED"
-    | "SESSION_EXPIRED"
-    | "AUTHENTICATION_DENIED"
-    | "ROLE_DENIED"
-    | "OBJECT_ACCESS_DENIED"
-    | "CSRF_DENIED"
-    | "RATE_LIMITED";
-  outcome: "ALLOW" | "DENY";
-  userId: string;
-  role: SyntheticRole | "NONE";
-  objectRef?: string;
 }
 
 interface StoredSession extends SyntheticPrincipal {
@@ -73,12 +57,14 @@ function cookieValue(req: Request, name: string) {
 export class SyntheticAuthService {
   private sessions = new Map<string, StoredSession>();
   private counters = new Map<string, { startedAt: number; count: number }>();
-  private audit: SyntheticSecurityAuditEvent[] = [];
   private sessionTtlMs: number;
   private rateWindowMs: number;
   private maxRequestsPerWindow: number;
 
-  constructor(config: SyntheticAuthConfig = {}) {
+  constructor(
+    config: SyntheticAuthConfig = {},
+    private audit = new SyntheticAuditLog(),
+  ) {
     this.sessionTtlMs = config.sessionTtlMs ?? 30 * 60_000;
     this.rateWindowMs = config.rateWindowMs ?? 60_000;
     this.maxRequestsPerWindow = config.maxRequestsPerWindow ?? 60;
@@ -180,7 +166,7 @@ export class SyntheticAuthService {
   }
 
   getAuditEntries() {
-    return structuredClone(this.audit);
+    return this.audit.list();
   }
 
   private consumeRateLimit(session: StoredSession) {
@@ -198,19 +184,22 @@ export class SyntheticAuthService {
   }
 
   private record(
-    action: SyntheticSecurityAuditEvent["action"],
-    outcome: SyntheticSecurityAuditEvent["outcome"],
+    action: string,
+    outcome: "ALLOW" | "DENY",
     session?: Pick<StoredSession, "userId" | "role">,
     objectRef?: string,
   ) {
-    this.audit.push({
-      at: new Date().toISOString(),
+    this.audit.record({
+      category: "AUTH",
       action,
       outcome,
-      userId: session?.userId ?? "anonymous",
-      role: session?.role ?? "NONE",
-      ...(objectRef ? { objectRef } : {}),
+      actor: {
+        userId: session?.userId ?? "anonymous",
+        role: session?.role ?? "NONE",
+      },
+      ...(objectRef && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(objectRef)
+        ? { customerId: objectRef }
+        : {}),
     });
-    if (this.audit.length > 500) this.audit.splice(0, this.audit.length - 500);
   }
 }

@@ -10,6 +10,7 @@ import {
   AtomicJsonKycPendingPersistence,
   AtomicJsonMockIdentityPersistence,
 } from "./src/server/identity-persistence";
+import { AtomicJsonSyntheticAuditPersistence } from "./src/server/audit-persistence";
 
 validateDataConfig(process.env);
 const syntheticStateDir = process.env.SYNTHETIC_STATE_DIR;
@@ -27,6 +28,9 @@ const app = createApp(
         ),
         kycPendingPersistence: new AtomicJsonKycPendingPersistence(
           path.join(syntheticStateDir, "kyc-pending.json"),
+        ),
+        auditPersistence: new AtomicJsonSyntheticAuditPersistence(
+          path.join(syntheticStateDir, "audit.json"),
         ),
       }
     : {},

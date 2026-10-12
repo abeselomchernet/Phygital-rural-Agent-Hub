@@ -21,6 +21,10 @@ import {
   SyntheticAuthService,
   type SyntheticRole,
 } from "./auth";
+import {
+  SyntheticAuditLog,
+  type SyntheticAuditPersistence,
+} from "./audit";
 
 export const demoPhones = [
   "+251900000001",
@@ -34,6 +38,7 @@ export interface DemoApiOptions {
   partnerLedgerPersistence?: PartnerLedgerPersistence;
   identityProviderPersistence?: MockIdentityProviderPersistence;
   kycPendingPersistence?: KycPendingPersistence;
+  auditPersistence?: SyntheticAuditPersistence;
 }
 
 const roleSchema = z.enum(["AGENT", "SUPERVISOR", "PARTNER_ADMIN"]);
@@ -46,7 +51,8 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
     identity = new KycService(customers, provider, options.kycPendingPersistence),
     partner = new MockPartnerFI("accept", options.partnerLedgerPersistence),
     transactions = new TransactionService(customers, partner),
-    auth = new SyntheticAuthService();
+    audit = new SyntheticAuditLog(options.auditPersistence),
+    auth = new SyntheticAuthService({}, audit);
 
   let customer = customers
     .list()
@@ -167,31 +173,66 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
   );
   app.post("/api/demo/phone", (req, res) =>
     respond(res, () => {
-      auth.requireRole(res.locals.syntheticSession, ["AGENT"]);
-      auth.requireCustomer(res.locals.syntheticSession, fixtureId);
+      const session = res.locals.syntheticSession;
+      auth.requireRole(session, ["AGENT"]);
+      auth.requireCustomer(session, fixtureId);
       const { phone } = z
         .object({ phone: z.enum(demoPhones) })
         .strict()
         .parse(req.body);
-      return customers.changePhone(fixtureId, phone);
+      const changed = customers.changePhone(fixtureId, phone);
+      audit.record({
+        category: "CUSTOMER",
+        action: "PHONE_ALIAS_CHANGED",
+        outcome: "SUCCESS",
+        actor: { userId: session.userId, role: session.role },
+        customerId: fixtureId,
+        stateTo: changed.phoneStatus,
+      });
+      return changed;
     }),
   );
   app.post("/api/demo/reverify/start", (req, res) =>
     respond(res, () => {
-      auth.requireRole(res.locals.syntheticSession, ["AGENT"]);
-      auth.requireCustomer(res.locals.syntheticSession, fixtureId);
+      const session = res.locals.syntheticSession;
+      auth.requireRole(session, ["AGENT"]);
+      auth.requireCustomer(session, fixtureId);
       z.object({}).strict().parse(req.body);
+      const before = customers.get(fixtureId).kycStatus;
       identity.requestReverification(fixtureId, "PHONE_CHANGE");
-      return customers.get(fixtureId);
+      const after = customers.get(fixtureId);
+      audit.record({
+        category: "KYC",
+        action: "KYC_REVERIFICATION_REQUESTED",
+        outcome: "PENDING",
+        actor: { userId: session.userId, role: session.role },
+        customerId: fixtureId,
+        stateFrom: before,
+        stateTo: after.kycStatus,
+        code: "PHONE_CHANGE",
+      });
+      return after;
     }),
   );
   app.post("/api/demo/reverify/confirm", (req, res) =>
     respond(res, () => {
-      auth.requireRole(res.locals.syntheticSession, ["AGENT"]);
-      auth.requireCustomer(res.locals.syntheticSession, fixtureId);
+      const session = res.locals.syntheticSession;
+      auth.requireRole(session, ["AGENT"]);
+      auth.requireCustomer(session, fixtureId);
       z.object({}).strict().parse(req.body);
+      const before = customers.get(fixtureId).kycStatus;
       identity.confirm(fixtureId);
-      return customers.recordMockPhoneVerification(fixtureId);
+      const confirmed = customers.recordMockPhoneVerification(fixtureId);
+      audit.record({
+        category: "KYC",
+        action: "KYC_REVERIFICATION_CONFIRMED",
+        outcome: "SUCCESS",
+        actor: { userId: session.userId, role: session.role },
+        customerId: fixtureId,
+        stateFrom: before,
+        stateTo: confirmed.kycStatus,
+      });
+      return confirmed;
     }),
   );
   app.get("/api/demo/account", (_req, res) =>
@@ -207,12 +248,29 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
   );
   app.post("/api/demo/transactions", (req, res) =>
     respond(res, () => {
-      auth.requireRole(res.locals.syntheticSession, ["AGENT"]);
+      const session = res.locals.syntheticSession;
+      auth.requireRole(session, ["AGENT"]);
       const requestedCustomerId = z.string().uuid().parse(req.body?.customerId);
-      auth.requireCustomer(res.locals.syntheticSession, requestedCustomerId);
+      auth.requireCustomer(session, requestedCustomerId);
       if (requestedCustomerId !== fixtureId)
         throw new SyntheticAuthError("OBJECT_ACCESS_DENIED", 403);
-      return transactions.submit(req.body);
+      const result = transactions.submit(req.body);
+      audit.record({
+        category: "FINANCIAL",
+        action: "PARTNER_TRANSACTION_SUBMITTED",
+        outcome:
+          result.state === "PARTNER_REJECTED"
+            ? "FAIL"
+            : result.state === "PARTNER_AUTH_PENDING" ||
+                result.state === "RECONCILIATION_REQUIRED"
+              ? "PENDING"
+              : "SUCCESS",
+        actor: { userId: session.userId, role: session.role },
+        customerId: requestedCustomerId,
+        transactionId: result.transactionId,
+        stateTo: result.state,
+      });
+      return result;
     }),
   );
 }
