@@ -31,7 +31,7 @@ Current portal material establishes:
 
 Current H5/MiniApp checkout documentation says the merchant backend produces a `rawRequest`, which the frontend passes to the SuperApp start-pay API. It also shows a client-side callback after the payment interaction. Enawuga does **not** treat that client callback as authoritative payment or settlement evidence.
 
-The current public documentation/navigation references order-query behavior, but the exact active-account `queryOrder` endpoint/request/response lifecycle and terminal-status contract have **not** been captured from authoritative current Ethio telecom text. Public material reviewed on 2026-10-12 also does not establish a server-to-server `notify_url` authentication/signature/replay contract sufficient for authoritative reconciliation.
+The exact active-account `queryOrder` endpoint/request/response lifecycle and terminal-status contract have **not** been captured from authoritative current Ethio telecom text. Public material reviewed on 2026-10-12 also does not establish a server-to-server `notify_url` authentication/signature/replay contract sufficient for authoritative reconciliation.
 
 Therefore no status-network client or authoritative callback receiver is enabled.
 
@@ -152,22 +152,13 @@ The classifier:
 
 `src/domain/telebirrPreorderIntent.ts` and `src/server/telebirr-preorder-intent-persistence.ts` add a provider-independent persist-before-submit safety primitive.
 
-Before any future Telebirr preorder mutation may be wired, the intent store can atomically reserve:
-
-- Enawuga `transactionId`;
-- canonical `customerId`;
-- `idempotencyKey`;
-- Telebirr `merchantOrderId`;
-- Telebirr `nonce`;
-- timestamp/title;
-- ETB amount in integer minor units;
-- currency fixed to ETB.
+Before any future Telebirr preorder mutation may be wired, the intent store can atomically reserve Enawuga `transactionId`, canonical `customerId`, `idempotencyKey`, Telebirr `merchantOrderId`, Telebirr `nonce`, timestamp/title, ETB amount in integer minor units, and currency fixed to ETB.
 
 Controls:
 
 - identical idempotent reservation returns the existing intent;
-- same idempotency key with changed payload -> `IDEMPOTENCY_CONFLICT`;
-- same Enawuga transaction under a different key -> `TRANSACTION_REPLAY`;
+- changed payload under the same idempotency key -> `IDEMPOTENCY_CONFLICT`;
+- second reservation for the same Enawuga transaction -> `TRANSACTION_REPLAY`;
 - reused merchant-order ID -> `TELEBIRR_MERCHANT_ORDER_REPLAY`;
 - reused nonce -> `TELEBIRR_NONCE_REPLAY`;
 - reservation survives local synthetic restart;
@@ -181,20 +172,7 @@ This is a local synthetic-development reservation record only. It is not proof t
 
 ## Security requirements before payment initiation
 
-The direct Telebirr adapter MUST continue to:
-
-- keep app secret/private key/access token server-side only;
-- never expose key material or access tokens to browser code;
-- never disable TLS certificate/hostname verification;
-- use only the approved developer/test origin in sandbox mode;
-- fail closed on production/alternate origin or mode;
-- persist the provider-correlation intent before any provider mutation;
-- use unique Enawuga transaction, merchant-order ID and nonce;
-- treat timeout/network ambiguity as uncertain, never failure-by-inference;
-- distinguish order creation/payment initiation from provider-confirmed payment;
-- preserve `DIRECT_TELEBIRR` route provenance;
-- avoid real customer PII until a later approved partner/data gate;
-- reuse authenticated session, CSRF, object authorization, audit and reconciliation controls.
+The direct Telebirr adapter MUST continue to keep all provider secrets server-side, keep TLS verification enabled, pin sandbox origin/mode, persist T6 correlation intent before mutation, preserve unique transaction/order/nonce identifiers, treat ambiguous network outcomes as uncertain, separate order creation from payment finality, preserve `DIRECT_TELEBIRR` provenance, avoid real customer PII, and reuse authenticated session/CSRF/object-authorization/audit/reconciliation controls.
 
 ## Remaining contract gates before C2B payment network code
 
@@ -222,9 +200,9 @@ T6 code validation was green on GitHub Actions run `38298524544` at code head `9
 - Docker build: pass;
 - Chromium E2E: **13/13 pass**.
 
-T6 adds tests for restart durability, idempotency conflict, transaction replay, merchant-order replay, nonce replay, secret/signature exclusion from snapshots, malformed/duplicate persistence and unsafe identifier rejection.
+T6 tests cover restart durability, idempotency conflict, transaction replay, merchant-order replay, nonce replay, secret/signature exclusion from snapshots, malformed/duplicate persistence and unsafe identifier rejection.
 
-Current PR-head CI after this documentation update is the final evidence-chain check; no application code changes after the green T6 run above.
+The current PR head contains only documentation commits after that green T6 code head; normal CI on the current head remains the final evidence-chain check.
 
 Existing development/tooling findings remain 23 (2 low, 4 moderate, 17 high). The existing Vite >500 kB bundle advisory remains non-blocking.
 
