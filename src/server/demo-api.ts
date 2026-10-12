@@ -21,6 +21,10 @@ import {
   type PaymentGatewayAdapter,
 } from "../domain/paymentGateway";
 import {
+  PaymentGatewayReconciliationRequestSchema,
+  type PaymentGatewayReconciliationService,
+} from "../domain/paymentGatewayReconciliation";
+import {
   SyntheticAuthError,
   SyntheticAuthService,
   type SyntheticRole,
@@ -44,6 +48,7 @@ export interface DemoApiOptions {
   kycPendingPersistence?: KycPendingPersistence;
   auditPersistence?: SyntheticAuditPersistence;
   paymentGateway?: PaymentGatewayAdapter;
+  paymentGatewayReconciliation?: PaymentGatewayReconciliationService;
 }
 
 const roleSchema = z.enum(["AGENT", "SUPERVISOR", "PARTNER_ADMIN"]);
@@ -71,9 +76,6 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
     customer.kycStatus === "UNVERIFIED" ||
     customer.kycStatus === "PENDING"
   ) {
-    // Synthetic fixture bootstrap recovery only. When durable KYC state is
-    // enabled, start() returns the persisted pending challenge rather than
-    // silently creating another one.
     identity.start(customer.customerId);
     customer = identity.confirm(customer.customerId);
     if (customer.primaryPhone)
@@ -91,7 +93,12 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
       return res.status(415).json({ error: "JSON_REQUIRED" });
     const origin = req.get("origin");
     if (origin && origin !== `${req.protocol}://${req.get("host")}`) {
-      audit.record({ category: "AUTH", action: "CROSS_ORIGIN_DENIED", outcome: "DENY", actor: { userId: "anonymous", role: "NONE" } });
+      audit.record({
+        category: "AUTH",
+        action: "CROSS_ORIGIN_DENIED",
+        outcome: "DENY",
+        actor: { userId: "anonymous", role: "NONE" },
+      });
       return res.status(403).json({ error: "CROSS_ORIGIN_DISABLED" });
     }
     next();
@@ -114,11 +121,15 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
         .strict()
         .parse(req.body);
       if (role !== "AGENT" && !options.allowPrivilegedSyntheticRoles) {
-        audit.record({ category: "AUTH", action: "PRIVILEGED_ROLE_DENIED", outcome: "DENY", actor: { userId: "anonymous", role: "NONE" } });
+        audit.record({
+          category: "AUTH",
+          action: "PRIVILEGED_ROLE_DENIED",
+          outcome: "DENY",
+          actor: { userId: "anonymous", role: "NONE" },
+        });
         throw new SyntheticAuthError("PRIVILEGED_SYNTHETIC_ROLE_DISABLED", 403);
       }
-      const allowedCustomerIds = [fixtureId];
-      const session = auth.createSession(role as SyntheticRole, allowedCustomerIds);
+      const session = auth.createSession(role as SyntheticRole, [fixtureId]);
       auth.setSessionCookie(req, res, session);
       return auth.view(session);
     }),
@@ -173,9 +184,7 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
         "SUPERVISOR",
         "PARTNER_ADMIN",
       ]);
-      const resolved = customers.resolve(
-        z.enum(demoPhones).parse(req.query.phone),
-      );
+      const resolved = customers.resolve(z.enum(demoPhones).parse(req.query.phone));
       auth.requireCustomer(res.locals.syntheticSession, resolved.customerId);
       return resolved;
     }),
@@ -255,6 +264,7 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
       return partner.getAccountSummary(fixtureId);
     }),
   );
+
   app.post("/api/demo/transactions", (req, res) =>
     respond(res, () => {
       const session = res.locals.syntheticSession;
@@ -263,13 +273,25 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
       auth.requireCustomer(session, requestedCustomerId);
       if (requestedCustomerId !== fixtureId)
         throw new SyntheticAuthError("OBJECT_ACCESS_DENIED", 403);
-      audit.record({ category: "FINANCIAL", action: "PARTNER_TRANSACTION_SUBMITTED", outcome: "PENDING",
-        actor: { userId: session.userId, role: session.role }, customerId: requestedCustomerId });
+      audit.record({
+        category: "FINANCIAL",
+        action: "PARTNER_TRANSACTION_SUBMITTED",
+        outcome: "PENDING",
+        actor: { userId: session.userId, role: session.role },
+        customerId: requestedCustomerId,
+      });
       let result;
-      try { result = transactions.submit(req.body); }
-      catch (error) {
-        audit.record({ category: "FINANCIAL", action: "PARTNER_TRANSACTION_REJECTED", outcome: "FAIL",
-          actor: { userId: session.userId, role: session.role }, customerId: requestedCustomerId, code: "REQUEST_REJECTED" });
+      try {
+        result = transactions.submit(req.body);
+      } catch (error) {
+        audit.record({
+          category: "FINANCIAL",
+          action: "PARTNER_TRANSACTION_REJECTED",
+          outcome: "FAIL",
+          actor: { userId: session.userId, role: session.role },
+          customerId: requestedCustomerId,
+          code: "REQUEST_REJECTED",
+        });
         throw error;
       }
       audit.record({
@@ -368,6 +390,83 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
         error: recoveryRequired
           ? "PAYMENT_GATEWAY_RECONCILIATION_REQUIRED"
           : "PAYMENT_GATEWAY_REQUEST_REJECTED",
+        ...syntheticMetadata,
+      });
+    }
+  });
+
+  app.post("/api/demo/payments/arifpay/c2b/reconcile", async (req, res) => {
+    const session = res.locals.syntheticSession;
+    let request;
+    try {
+      auth.requireRole(session, ["SUPERVISOR", "PARTNER_ADMIN"]);
+      request = PaymentGatewayReconciliationRequestSchema.parse(req.body);
+      auth.requireCustomer(session, request.customerId);
+      if (request.customerId !== fixtureId)
+        throw new SyntheticAuthError("OBJECT_ACCESS_DENIED", 403);
+    } catch (error) {
+      if (error instanceof SyntheticAuthError)
+        return res.status(error.status).json({ error: error.code });
+      return res.status(400).json({ error: "DEMO_REQUEST_REJECTED" });
+    }
+
+    if (!options.paymentGatewayReconciliation) {
+      audit.record({
+        category: "RECONCILIATION",
+        action: "PAYMENT_GATEWAY_RECONCILIATION_REJECTED",
+        outcome: "FAIL",
+        actor: { userId: session.userId, role: session.role },
+        customerId: request.customerId,
+        transactionId: request.transactionId,
+        code: "GATEWAY_UNAVAILABLE",
+      });
+      return res.status(503).json({
+        error: "PAYMENT_GATEWAY_RECONCILIATION_UNAVAILABLE",
+        ...syntheticMetadata,
+      });
+    }
+
+    audit.record({
+      category: "RECONCILIATION",
+      action: "PAYMENT_GATEWAY_RECONCILIATION_QUERIED",
+      outcome: "PENDING",
+      actor: { userId: session.userId, role: session.role },
+      customerId: request.customerId,
+      transactionId: request.transactionId,
+    });
+
+    try {
+      const result = await options.paymentGatewayReconciliation.reconcile(request);
+      audit.record({
+        category: "RECONCILIATION",
+        action: "PAYMENT_GATEWAY_RECONCILIATION_RESULT",
+        outcome:
+          result.state === "GATEWAY_CONFIRMED"
+            ? "SUCCESS"
+            : result.state === "GATEWAY_FAILED" ||
+                result.state === "GATEWAY_CANCELED" ||
+                result.state === "GATEWAY_EXPIRED"
+              ? "FAIL"
+              : "PENDING",
+        actor: { userId: session.userId, role: session.role },
+        customerId: request.customerId,
+        transactionId: request.transactionId,
+        stateTo: result.state,
+        code: result.code,
+      });
+      return res.json({ ...result, ...syntheticMetadata });
+    } catch {
+      audit.record({
+        category: "RECONCILIATION",
+        action: "PAYMENT_GATEWAY_RECONCILIATION_REJECTED",
+        outcome: "FAIL",
+        actor: { userId: session.userId, role: session.role },
+        customerId: request.customerId,
+        transactionId: request.transactionId,
+        code: "REQUEST_REJECTED",
+      });
+      return res.status(400).json({
+        error: "PAYMENT_GATEWAY_RECONCILIATION_REJECTED",
         ...syntheticMetadata,
       });
     }
