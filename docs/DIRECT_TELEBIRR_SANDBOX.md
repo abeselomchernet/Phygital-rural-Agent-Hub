@@ -122,37 +122,21 @@ It does **not** create an order, initiate payment, query status, receive callbac
 
 `buildTelebirrPreorderRequest` constructs but does **not submit** a C2B request.
 
-It:
-
-- accepts unique alphanumeric merchant order ID + nonce;
-- uses explicit timestamp/title and integer ETB minor units;
-- converts minor units without floating-point arithmetic;
-- includes only currently pinned public request fields;
-- excludes unresolved historical/demo-only `business_type`, `redirect_url`, `callback_info` and payee fields;
-- signs server-side;
-- exports `/payment/v1/merchant/preOrder` only as a future client path constant.
+It accepts a unique alphanumeric merchant order ID and nonce, explicit timestamp/title, and integer ETB minor units; converts minor units without floating-point arithmetic; includes only currently pinned request fields; excludes unresolved historical/demo-only fields; signs server-side; and exports `/payment/v1/merchant/preOrder` only as a future client path constant.
 
 ## Implemented — T5 bounded preorder-response classification
 
 `src/domain/telebirrPreorderResponse.ts` adds local classification without provider networking.
 
-The classifier:
+It recognizes explicit provider rejection, requires non-empty `prepay_id` plus exact alphanumeric `merch_order_id` binding for `ORDER_CREATED`, rejects mismatched/normalized identifiers, treats missing/malformed binding as unverified, keeps `paymentConfirmed=false` and `settlementConfirmed=false` for every state, and does not claim response-signature verification until the active contract is pinned.
 
-- recognizes explicit provider rejection separately from malformed/unverified responses;
-- requires non-empty `prepay_id` plus **exact** alphanumeric `merch_order_id` binding for `ORDER_CREATED`;
-- returns `RESPONSE_BINDING_MISMATCH` for a different order ID;
-- never trims/normalizes provider identifiers into a match;
-- returns `RESPONSE_UNVERIFIED` for missing/malformed binding;
-- keeps `paymentConfirmed=false` and `settlementConfirmed=false` for every state;
-- does not claim provider response-signature verification until the active response-signature/public-key contract is pinned.
-
-`ORDER_CREATED` means only that the bounded response contains a prepay reference bound to the exact merchant-order identifier. It is not payment confirmation.
+`ORDER_CREATED` is not payment confirmation.
 
 ## Implemented — T6 durable pre-submit correlation intent
 
 `src/domain/telebirrPreorderIntent.ts` and `src/server/telebirr-preorder-intent-persistence.ts` add a provider-independent persist-before-submit safety primitive.
 
-Before any future Telebirr preorder mutation may be wired, the intent store can atomically reserve Enawuga `transactionId`, canonical `customerId`, `idempotencyKey`, Telebirr `merchantOrderId`, Telebirr `nonce`, timestamp/title, ETB amount in integer minor units, and currency fixed to ETB.
+Before any future Telebirr preorder mutation may be wired, the intent store atomically reserves Enawuga `transactionId`, canonical `customerId`, `idempotencyKey`, Telebirr `merchantOrderId`, Telebirr `nonce`, timestamp/title, ETB amount in integer minor units, and currency fixed to ETB.
 
 Controls:
 
@@ -164,15 +148,15 @@ Controls:
 - reservation survives local synthetic restart;
 - malformed or duplicated persisted state fails closed;
 - lookup by Enawuga transaction ID or merchant-order ID supports future reconciliation binding;
-- snapshot is versioned and atomically replaced using the existing bounded synthetic persistence pattern.
+- snapshot is versioned and atomically replaced.
 
-The snapshot deliberately stores **no app secret, private key, access token, request signature, callback payload or provider payment state**.
+The snapshot stores **no app secret, private key, access token, request signature, callback payload or provider payment state**.
 
 This is a local synthetic-development reservation record only. It is not proof that Telebirr received an order, not a payment ledger, not an exactly-once production outbox and not Ethiopia-residency evidence.
 
 ## Security requirements before payment initiation
 
-The direct Telebirr adapter MUST continue to keep all provider secrets server-side, keep TLS verification enabled, pin sandbox origin/mode, persist T6 correlation intent before mutation, preserve unique transaction/order/nonce identifiers, treat ambiguous network outcomes as uncertain, separate order creation from payment finality, preserve `DIRECT_TELEBIRR` provenance, avoid real customer PII, and reuse authenticated session/CSRF/object-authorization/audit/reconciliation controls.
+The direct Telebirr adapter MUST keep provider secrets server-side, keep TLS verification enabled, pin sandbox origin/mode, persist T6 correlation intent before mutation, preserve unique transaction/order/nonce identifiers, treat ambiguous network outcomes as uncertain, separate order creation from payment finality, preserve `DIRECT_TELEBIRR` provenance, avoid real customer PII, and reuse authenticated session/CSRF/object-authorization/audit/reconciliation controls.
 
 ## Remaining contract gates before C2B payment network code
 
@@ -202,7 +186,7 @@ T6 code validation was green on GitHub Actions run `38298524544` at code head `9
 
 T6 tests cover restart durability, idempotency conflict, transaction replay, merchant-order replay, nonce replay, secret/signature exclusion from snapshots, malformed/duplicate persistence and unsafe identifier rejection.
 
-The current PR head contains only documentation commits after that green T6 code head; normal CI on the current head remains the final evidence-chain check.
+Only documentation changed after the green T6 code head. Normal CI on the final documentation head closes the evidence chain.
 
 Existing development/tooling findings remain 23 (2 low, 4 moderate, 17 high). The existing Vite >500 kB bundle advisory remains non-blocking.
 
