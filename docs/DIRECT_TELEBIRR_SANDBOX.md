@@ -224,7 +224,7 @@ T6 code validation was green on GitHub Actions run `38298524544` at code head `9
 
 T6 adds tests for restart durability, idempotency conflict, transaction replay, merchant-order replay, nonce replay, secret/signature exclusion from snapshots, malformed/duplicate persistence and unsafe identifier rejection.
 
-A docs-only follow-up records this milestone; the current PR head must also pass the same normal CI before the evidence chain is considered closed.
+Current PR-head CI after this documentation update is the final evidence-chain check; no application code changes after the green T6 run above.
 
 Existing development/tooling findings remain 23 (2 low, 4 moderate, 17 high). The existing Vite >500 kB bundle advisory remains non-blocking.
 
