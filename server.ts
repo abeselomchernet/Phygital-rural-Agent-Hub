@@ -26,6 +26,8 @@ import { AtomicJsonPaymentGatewayReconciliationPersistence } from "./src/server/
 
 validateDataConfig(process.env);
 const syntheticStateDir = process.env.SYNTHETIC_STATE_DIR;
+const allowPrivilegedSyntheticRoles =
+  process.env.ALLOW_PRIVILEGED_SYNTHETIC_ROLES === "true";
 
 let paymentGateway: PaymentGatewayAdapter | undefined;
 let paymentGatewayReconciliation: PaymentGatewayReconciliationService | undefined;
@@ -53,6 +55,7 @@ if (process.env.ARIFPAY_MODE !== undefined) {
 }
 
 const app = createApp({
+  allowPrivilegedSyntheticRoles,
   ...(syntheticStateDir
     ? {
         customerPersistence: new AtomicJsonCustomerPersistence(
@@ -89,6 +92,6 @@ const host = process.env.HOST || "127.0.0.1";
 const port = Number(process.env.PORT || 3000);
 app.listen(port, host, () =>
   console.log(
-    `Synthetic demo listening on ${host}:${port}${syntheticStateDir ? " with local synthetic durable state" : ""}${paymentGateway ? " with guarded ArifPay sandbox adapter and status reconciliation" : ""}`,
+    `Synthetic demo listening on ${host}:${port}${syntheticStateDir ? " with local synthetic durable state" : ""}${paymentGateway ? " with guarded ArifPay sandbox adapter and status reconciliation" : ""}${allowPrivilegedSyntheticRoles ? " with explicitly enabled privileged synthetic roles" : ""}`,
   ),
 );
