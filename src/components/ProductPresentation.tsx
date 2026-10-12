@@ -208,7 +208,7 @@ export function InventoryDemo() {
           max="20"
           value={quantity}
           onChange={(e) => {
-            setQuantity(Math.max(1, Math.min(20, Number(e.target.value) || 1));
+            setQuantity(Math.max(1, Math.min(20, Number(e.target.value) || 1)));
             setDraft(false);
           }}
         />
