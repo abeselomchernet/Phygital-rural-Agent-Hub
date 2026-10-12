@@ -7,7 +7,10 @@ import {
 
 export const TelebirrRawRequestInputSchema = z
   .object({
-    prepayId: z.string().min(1).max(256).refine((value) => value === value.trim()),
+    prepayId: z
+      .string()
+      .regex(/^[A-Za-z0-9._~-]+$/)
+      .max(256),
     nonce: z.string().regex(/^[A-Za-z0-9]+$/).max(64),
     timestamp: z.string().regex(/^\d{10,13}$/),
   })
@@ -41,7 +44,9 @@ export function buildTelebirrRawRequest(
   const sign = signTelebirrRequest(unsigned, safeConfig.privateKey);
 
   // Preserve the field order shown in Ethio telecom's H5 demo. The signature
-  // itself is generated from the canonical sorted representation.
+  // itself is generated from the canonical sorted representation. Provider
+  // identifiers are restricted above so no unescaped '&'/'=' delimiters can
+  // be injected into this legacy rawRequest format.
   return [
     `appid=${unsigned.appid}`,
     `merch_code=${unsigned.merch_code}`,
