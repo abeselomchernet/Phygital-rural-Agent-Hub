@@ -28,7 +28,7 @@ Remaining gates before C2B payment networking:
 
 Until those gates are satisfied, **no direct Telebirr payment initiation is enabled**.
 
-Exact commit/run validation evidence is maintained in PR #6 metadata rather than this branch document so updating evidence does not create a self-referential validation loop.
+Exact commit/run validation evidence is maintained in PR #6 metadata. The stable validation requirement is: production dependency audit 0, TypeScript pass, all unit/domain/API tests pass, production build pass, Docker pass, and Chromium E2E pass on the exact PR head before review or merge.
 
 Existing development/tooling findings remain 23 (2 low, 4 moderate, 17 high); the >500 kB Vite advisory remains non-blocking.
 
