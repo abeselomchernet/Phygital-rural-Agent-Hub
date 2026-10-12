@@ -5,7 +5,12 @@ import {
   CustomerStore,
   type CustomerStorePersistence,
 } from "../domain/customer";
-import { KycService, MockFaydaAdapter } from "../domain/identity";
+import {
+  KycService,
+  MockFaydaAdapter,
+  type KycPendingPersistence,
+  type MockIdentityProviderPersistence,
+} from "../domain/identity";
 import {
   MockPartnerFI,
   TransactionService,
@@ -27,6 +32,8 @@ export interface DemoApiOptions {
   allowPrivilegedSyntheticRoles?: boolean;
   customerPersistence?: CustomerStorePersistence;
   partnerLedgerPersistence?: PartnerLedgerPersistence;
+  identityProviderPersistence?: MockIdentityProviderPersistence;
+  kycPendingPersistence?: KycPendingPersistence;
 }
 
 const roleSchema = z.enum(["AGENT", "SUPERVISOR", "PARTNER_ADMIN"]);
@@ -35,7 +42,8 @@ const demoPhoneSet = new Set<string>(demoPhones);
 
 export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
   const customers = new CustomerStore(options.customerPersistence),
-    identity = new KycService(customers, new MockFaydaAdapter()),
+    provider = new MockFaydaAdapter(options.identityProviderPersistence),
+    identity = new KycService(customers, provider, options.kycPendingPersistence),
     partner = new MockPartnerFI("accept", options.partnerLedgerPersistence),
     transactions = new TransactionService(customers, partner),
     auth = new SyntheticAuthService();
@@ -52,8 +60,9 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
     customer.kycStatus === "UNVERIFIED" ||
     customer.kycStatus === "PENDING"
   ) {
-    // Synthetic fixture bootstrap recovery only. This does not recover or
-    // override a suspended/re-verification-required regulated decision.
+    // Synthetic fixture bootstrap recovery only. When durable KYC state is
+    // enabled, start() returns the persisted pending challenge rather than
+    // silently creating another one.
     identity.start(customer.customerId);
     customer = identity.confirm(customer.customerId);
     if (customer.primaryPhone)
