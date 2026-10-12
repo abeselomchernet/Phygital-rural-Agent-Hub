@@ -6,9 +6,9 @@ repository:
   default_branch: "main"
   baseline_sha: "cd48c377e4398b77f2cd725eb2bd5706774d2817"
 program:
-  current_stage: "STAGE_1_WORKSPACE_REBASELINE_AND_P0_CLOSURE"
-  previous_completed_stage: "STAGE_0_BOUNDED_SYNTHETIC_BASELINE"
-  next_substantive_stage: "STAGE_2_ARIFPAY_SANDBOX_INTEGRATION"
+  current_stage: "STAGE_2_ARIFPAY_SANDBOX_INTEGRATION"
+  previous_completed_stage: "STAGE_1_WORKSPACE_REBASELINE_AND_P0_CLOSURE"
+  next_substantive_stage: "STAGE_3_PARTNER_ECOSYSTEM_AND_NETWORK_LIQUIDITY"
   evidence_model: "gate_based_not_calendar_based"
 current_boundaries:
   real_customer_pii: false
@@ -25,21 +25,50 @@ completed:
   - "bounded auth/durability/reconciliation/audit controls"
   - "ET staging evidence checklist"
   - "UI claims review"
+  - "Stage 1 clean environment re-validation completed"
+  - "Stage 1 post-P0-B closure recorded"
+  - "P0 backlog synchronized to distinguish bounded implementation from remaining external/production gates"
+stage_1_evidence:
+  workflow_name: "Synthetic prototype validation"
+  workflow_run_number: 97
+  workflow_run_id: 38261103443
+  node: "v24.21.0"
+  npm: "11.19.0"
+  npm_ci: "PASS_576_PACKAGES"
+  production_audit: "PASS_0_VULNERABILITIES"
+  lint: "PASS"
+  unit_domain_api_tests: "PASS_59_OF_59"
+  build: "PASS"
+  docker_build: "PASS"
+  chromium_e2e: "PASS_12_OF_12"
+  data_mode: "synthetic"
+  external_telemetry: false
+  non_blocking_observations:
+    - "development/tooling graph: 23 findings (2 low, 4 moderate, 17 high)"
+    - "existing Vite >500kB chunk advisory"
 immediate_actions:
-  - id: "S1-A"
-    action: "Re-baseline private cloud coding environment against main"
-    mutation_allowed: false
-  - id: "S1-B"
-    action: "Run clean install, production audit, lint, tests, build and E2E"
-    mutation_allowed: false
-  - id: "S1-C"
-    action: "Create post-P0-B closure/document synchronization PR"
-    mutation_allowed: true
   - id: "S2-A"
-    action: "Create separate ArifPay sandbox adapter branch after closure"
+    action: "Re-verify current official ArifPay sandbox documentation before implementation"
+    mutation_allowed: false
+  - id: "S2-B"
+    action: "Create a separate ArifPay sandbox integration branch after governance PR closure"
+    mutation_allowed: true
+  - id: "S2-C"
+    action: "Implement PaymentGatewayAdapter and ArifPaySandboxAdapter with hard sandbox guard"
+    mutation_allowed: true
+  - id: "S2-D"
+    action: "Implement one narrow C2B sandbox flow using synthetic customers and amounts"
+    mutation_allowed: true
+  - id: "S2-E"
+    action: "Integrate callback/status reconciliation with existing P0-B state model and replay protections"
+    mutation_allowed: true
+  - id: "S2-F"
+    action: "Add sandbox Operations/Reconciliation UX and validation evidence"
     mutation_allowed: true
 stop_conditions:
   - "production credential encountered during sandbox stage"
+  - "production host or endpoint enabled during sandbox stage"
   - "real customer data requested before data/residency gate"
   - "provider acceptance mapped directly to settlement without contract"
   - "cash movement requested without approved custody/authority model"
+  - "ArifPay treated as PartnerFI rather than payment-gateway/rail integration"
