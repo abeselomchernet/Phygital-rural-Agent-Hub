@@ -13,49 +13,15 @@ This workstream adds a **direct Ethio telecom Telebirr adapter** behind Enawuga'
 
 No Telebirr sandbox credential, app secret, merchant private key, short code or account-specific identifier is committed to Git, browser code, documentation examples or CI output.
 
-## Evidence hierarchy and contract status — 2026-10-12
+## Current contract boundary — 2026-10-12
 
-### Current public Ethio telecom evidence
+Current Ethio telecom material establishes the Telebirr Payment/TestBed tooling, `/payment/v1/token`, the `/payment/v1/merchant/preOrder` family, `payment.preorder`, ETB Checkout signing fields, RSA SHA-256/MGF1 request signing, merchant-side private-key custody, and account/product subscription requirements.
 
-The current developer portal exposes Telebirr Payment tooling including developer credentials, Payment APIs/integration guidance, TestBed, Sign Tool, language demos, B2B/C2B Web Checkout demos and MiniApp/SuperApp payment guidance.
+Current H5/MiniApp documentation says a merchant backend supplies a `rawRequest` to the SuperApp start-pay API and demonstrates a client callback. Enawuga does **not** treat that client callback as authoritative payment or settlement evidence.
 
-Current portal material establishes:
+The exact active-account `queryOrder` endpoint/request/response lifecycle and terminal states have not been pinned from authoritative current text, and reviewed public material does not establish a server-to-server `notify_url` authentication/signature/replay contract sufficient for authoritative reconciliation. No status-network client or authoritative callback receiver is enabled.
 
-- fabric-token path `/payment/v1/token` with app secret in the request body;
-- C2B preorder path family `/payment/v1/merchant/preOrder`;
-- `payment.preorder`, `version=1.0`, `trade_type=Checkout`, ETB and the current signing-field family;
-- RSA signing with SHA-256/RSA-MGF1 semantics;
-- merchant private key remains merchant-side;
-- `merch_order_id` must be non-null, unique and alphanumeric;
-- API/product subscription is required before the account may invoke the create-order interface.
-
-Current H5/MiniApp checkout documentation says the merchant backend produces a `rawRequest`, which the frontend passes to the SuperApp start-pay API. It also shows a client-side callback after the payment interaction. Enawuga does **not** treat that client callback as authoritative payment or settlement evidence.
-
-The exact active-account `queryOrder` endpoint/request/response lifecycle and terminal-status contract have **not** been captured from authoritative current Ethio telecom text. Public material reviewed on 2026-10-12 also does not establish a server-to-server `notify_url` authentication/signature/replay contract sufficient for authoritative reconciliation.
-
-Therefore no status-network client or authoritative callback receiver is enabled.
-
-### Project account-export evidence
-
-The project-supplied Telebirr developer-portal export records the developer/test gateway as:
-
-`https://developerportal.ethiotelebirr.et:38443/apiaccess/payment/gateway`
-
-and shows token acquisition using:
-
-- `POST <base>/payment/v1/token`;
-- `Content-Type: application/json`;
-- `X-APP-Key: <fabric app id>`;
-- JSON body `{ "appSecret": "..." }`;
-- response fields including `token`, `effectiveDate`, and `expirationDate`.
-
-The export also shows an older create-order compatibility flow where a successful response supplies `biz_content.prepay_id`, while failure examples may contain null `merch_order_id` / `prepay_id`. That evidence supports bounded local response classification but does **not** establish the current `/payment/v1/merchant/preOrder` network response/checkout contract or authoritative `queryOrder` lifecycle.
-
-The export contains sandbox credential/private-key material. Those values remain secrets and are excluded from Git, docs examples and CI. The historical demo also disables TLS verification; Enawuga **does not copy that behavior**.
-
-### Compatibility evidence only
-
-Older account/demo code and community libraries may expose names such as `queryOrder` or historical raw-request assembly, but they do not override current Ethio telecom documentation or the active-account contract. Raw IP examples, old `/payment/v1/inapp/createOrder` routing, guessed status mappings and disabled-TLS snippets are not authoritative configuration.
+Project account-export evidence pins the developer/test gateway and token header/body shape. Its older create-order flow and `prepay_id` behavior are compatibility evidence only. Sandbox credentials/private-key material remain outside Git. Historical disabled-TLS examples are not copied.
 
 ## Architecture
 
@@ -65,115 +31,64 @@ PaymentGatewayAdapter
 └── TelebirrSandboxAdapter
 ```
 
-Route provenance MUST distinguish:
+Direct-route provenance remains `provider=TELEBIRR / route=DIRECT_TELEBIRR`, distinct from `provider=TELEBIRR / route=ARIFPAY`.
 
-```text
-provider = TELEBIRR
-route = DIRECT_TELEBIRR
-```
+## Implemented controls
 
-from:
+### T1 — sandbox configuration guard
 
-```text
-provider = TELEBIRR
-route = ARIFPAY
-```
+Sandbox-only mode, networking false by default, HTTPS mandatory, developer/test gateway pinned, alternate/production gateway rejected, URL credentials forbidden, provider secrets server-side only, and placeholders only in `.env.example`.
 
-## Implemented — T1 sandbox configuration guard
+### T2 — canonical request signing
 
-`src/domain/telebirrSandbox.ts` defines strict sandbox configuration:
+One-level business-content flattening, deterministic alphabetical `key=value` canonicalization, RSA-PSS/SHA-256 MGF1 signing, base64 output, and generated synthetic CI keys only.
 
-- `mode=sandbox` only;
-- provider networking false unless explicitly enabled;
-- HTTPS mandatory;
-- developer/test gateway pinned to account-export evidence;
-- alternate/production gateway rejected;
-- URL credentials forbidden;
-- Fabric App ID, app secret, merchant app ID/code and private key server-side only;
-- PEM or bare PKCS#8 private-key input supported without logging/persistence;
-- unresolved redirect/H5 parameters omitted until their current contract is pinned.
+### T3 — guarded fabric-token client
 
-`.env.example` contains placeholders only.
+Server-side token acquisition through `/payment/v1/token`, `X-APP-Key`, JSON `appSecret`, explicit network opt-in, controlled errors, and no token logging/persistence/browser exposure. It does not create an order or payment.
 
-## Implemented — T2 canonical request signing
+### T4 — pure signed preorder builder
 
-- excludes `sign` / `sign_type` from canonical input;
-- flattens one-level `biz_content`;
-- deterministic alphabetical key ordering;
-- `key=value` joined with `&`;
-- RSA-PSS / SHA-256 with MGF1 semantics and 32-byte salt;
-- base64 signature output only;
-- CI uses generated synthetic RSA keys, never project key material.
+Builds but does not submit a signed `payment.preorder` request using unique merchant-order ID/nonce, integer ETB minor units and only pinned request fields. `/payment/v1/merchant/preOrder` is exported as a future client path constant only.
 
-## Implemented — T3 guarded fabric-token client
+### T5 — bounded preorder-response classification
 
-`TelebirrSandboxTokenClient` implements credential bootstrap only:
+Local-only classification. `ORDER_CREATED` requires a non-empty `prepay_id` exactly bound to the submitted alphanumeric merchant-order ID. Binding mismatch/malformed responses fail closed. All states keep `paymentConfirmed=false` and `settlementConfirmed=false`. Provider response signatures remain non-authoritative until their current verification contract is pinned.
 
-- `POST <sandbox base>/payment/v1/token`;
-- `X-APP-Key` contains Fabric App ID;
-- body contains only `appSecret`;
-- networking blocked unless explicitly enabled;
-- controlled auth/provider/network/malformed errors;
-- token remains server-side and is not logged/persisted/exposed to browser code.
+### T6 — durable pre-submit correlation intent
 
-It does **not** create an order, initiate payment, query status, receive callbacks or change financial state.
+`src/domain/telebirrPreorderIntent.ts` and `src/server/telebirr-preorder-intent-persistence.ts` provide a provider-independent persist-before-submit reservation.
 
-## Implemented — T4 pure signed `payment.preorder` builder
+The reservation binds Enawuga `transactionId`, canonical `customerId`, `idempotencyKey`, Telebirr `merchantOrderId`, Telebirr `nonce`, timestamp/title, ETB amount in integer minor units and ETB currency.
 
-`buildTelebirrPreorderRequest` constructs but does **not submit** a C2B request.
+It provides:
 
-It accepts a unique alphanumeric merchant order ID and nonce, explicit timestamp/title, and integer ETB minor units; converts minor units without floating-point arithmetic; includes only currently pinned request fields; excludes unresolved historical/demo-only fields; signs server-side; and exports `/payment/v1/merchant/preOrder` only as a future client path constant.
+- identical idempotent replay -> existing reservation;
+- changed payload under the same key -> `IDEMPOTENCY_CONFLICT`;
+- repeated Enawuga transaction -> `TRANSACTION_REPLAY`;
+- repeated merchant-order ID -> `TELEBIRR_MERCHANT_ORDER_REPLAY`;
+- repeated nonce -> `TELEBIRR_NONCE_REPLAY`;
+- restart durability;
+- malformed/duplicate persisted-state rejection;
+- lookup by Enawuga transaction ID or merchant-order ID;
+- atomic versioned local JSON replacement.
 
-## Implemented — T5 bounded preorder-response classification
+The snapshot deliberately stores **no app secret, private key, access token, request signature, callback payload or provider payment state**. It is a bounded synthetic reservation record, not a payment ledger, production outbox or residency evidence.
 
-`src/domain/telebirrPreorderResponse.ts` adds local classification without provider networking.
+## Remaining gates before any C2B payment network mutation
 
-It recognizes explicit provider rejection, requires non-empty `prepay_id` plus exact alphanumeric `merch_order_id` binding for `ORDER_CREATED`, rejects mismatched/normalized identifiers, treats missing/malformed binding as unverified, keeps `paymentConfirmed=false` and `settlementConfirmed=false` for every state, and does not claim response-signature verification until the active contract is pinned.
+1. Verify the active developer account's C2B Web Checkout subscription/scope.
+2. Pin the current `preOrder` response and checkout/raw-request assembly contract.
+3. Pin any account-specific required request fields.
+4. Pin authoritative current `queryOrder` endpoint/request/response/status lifecycle.
+5. Establish authoritative server-to-server `notify_url` authentication/signature/replay rules.
+6. Confirm TestBed synthetic consumer/account identifiers.
 
-`ORDER_CREATED` is not payment confirmation.
-
-## Implemented — T6 durable pre-submit correlation intent
-
-`src/domain/telebirrPreorderIntent.ts` and `src/server/telebirr-preorder-intent-persistence.ts` add a provider-independent persist-before-submit safety primitive.
-
-Before any future Telebirr preorder mutation may be wired, the intent store atomically reserves Enawuga `transactionId`, canonical `customerId`, `idempotencyKey`, Telebirr `merchantOrderId`, Telebirr `nonce`, timestamp/title, ETB amount in integer minor units, and currency fixed to ETB.
-
-Controls:
-
-- identical idempotent reservation returns the existing intent;
-- changed payload under the same idempotency key -> `IDEMPOTENCY_CONFLICT`;
-- second reservation for the same Enawuga transaction -> `TRANSACTION_REPLAY`;
-- reused merchant-order ID -> `TELEBIRR_MERCHANT_ORDER_REPLAY`;
-- reused nonce -> `TELEBIRR_NONCE_REPLAY`;
-- reservation survives local synthetic restart;
-- malformed or duplicated persisted state fails closed;
-- lookup by Enawuga transaction ID or merchant-order ID supports future reconciliation binding;
-- snapshot is versioned and atomically replaced.
-
-The snapshot stores **no app secret, private key, access token, request signature, callback payload or provider payment state**.
-
-This is a local synthetic-development reservation record only. It is not proof that Telebirr received an order, not a payment ledger, not an exactly-once production outbox and not Ethiopia-residency evidence.
-
-## Security requirements before payment initiation
-
-The direct Telebirr adapter MUST keep provider secrets server-side, keep TLS verification enabled, pin sandbox origin/mode, persist T6 correlation intent before mutation, preserve unique transaction/order/nonce identifiers, treat ambiguous network outcomes as uncertain, separate order creation from payment finality, preserve `DIRECT_TELEBIRR` provenance, avoid real customer PII, and reuse authenticated session/CSRF/object-authorization/audit/reconciliation controls.
-
-## Remaining contract gates before C2B payment network code
-
-1. Confirm this developer account is subscribed/authorized for the intended C2B Web Checkout API scope.
-2. Confirm the current `preOrder` response and checkout/raw-request assembly contract for that subscribed product.
-3. Confirm any account-specific required request fields beyond the public signing example.
-4. Capture authoritative current `queryOrder` endpoint, request shape, response lifecycle and terminal statuses.
-5. Establish server-to-server `notify_url` callback authentication/signature and replay rules before treating callbacks as authoritative.
-6. Confirm TestBed synthetic consumer/account identifiers for a network smoke test.
-
-Until these gates are satisfied, **no direct Telebirr payment initiation network code is enabled**.
+Until those gates are satisfied, **no direct Telebirr payment initiation is enabled**.
 
 ## Validation evidence
 
-T5 exact-head validation was green at `df3db0026e6a6b5b1138b9cc1ab26c2ff66d9fe0`: 98/98 unit/domain/API tests and 13/13 Chromium E2E.
-
-T6 code validation was green on GitHub Actions run `38298524544` at code head `93819d53a82caa369493edc62453d72d11c181c7`:
+T6 code validation — GitHub Actions run `38298524544`, code head `93819d53a82caa369493edc62453d72d11c181c7`:
 
 - Node 24.21.0 / npm 11.19.0;
 - `npm ci`: pass — 576 packages;
@@ -186,20 +101,12 @@ T6 code validation was green on GitHub Actions run `38298524544` at code head `9
 
 T6 tests cover restart durability, idempotency conflict, transaction replay, merchant-order replay, nonce replay, secret/signature exclusion from snapshots, malformed/duplicate persistence and unsafe identifier rejection.
 
-Only documentation changed after the green T6 code head. Normal CI on the final documentation head closes the evidence chain.
+Only documentation changed after the green T6 code head. Normal CI on the final documentation head closes the evidence chain. Existing development/tooling findings remain 23 (2 low, 4 moderate, 17 high); the existing >500 kB Vite bundle advisory remains non-blocking.
 
-Existing development/tooling findings remain 23 (2 low, 4 moderate, 17 high). The existing Vite >500 kB bundle advisory remains non-blocking.
+## Next implementation after provider-contract pinning
 
-## Next implementation slice after contract pinning
-
-1. provider-network C2B `preOrder` client only after active-account subscription/scope and response/checkout contract verification;
-2. require the T6 durable reservation before the first provider mutation;
-3. map provider result to gateway-scoped states only;
-4. authenticated AGENT/customer route with no provider secret/reference exposure;
-5. read-only `queryOrder` reconciliation only after authoritative status contract capture;
-6. rejection, timeout/uncertainty, replay and restart tests;
-7. callback handling only after authenticity is verifiable.
+Add the provider-network preorder client only after subscription/scope and response/checkout verification; require T6 reservation before mutation; map provider result only to gateway-scoped states; expose through authenticated AGENT/customer controls without secrets/provider references; add read-only `queryOrder` reconciliation only after authoritative status-contract capture; test uncertainty/replay/restart; and add callbacks only after authenticity is verifiable.
 
 ## Claim boundary
 
-> This workstream currently implements direct Telebirr developer/test configuration, request signing, fabric-token acquisition, local construction of signed C2B preorder requests, bounded local preorder-response classification, and durable pre-submit provider-correlation reservation using synthetic test evidence. It does not submit a Telebirr preorder, initiate or confirm a Telebirr payment, represent production connectivity, move live funds, create PartnerFI settlement, expose Wishland as a regulated principal, or authorize physical cash activity.
+> This workstream implements direct Telebirr developer/test configuration, request signing, token acquisition, local signed preorder construction, bounded preorder-response classification and durable pre-submit correlation reservation using synthetic test evidence. It does not submit a Telebirr preorder, initiate or confirm a Telebirr payment, represent production connectivity, move live funds, create PartnerFI settlement, expose Wishland as a regulated principal, or authorize physical cash activity.
