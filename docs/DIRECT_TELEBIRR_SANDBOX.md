@@ -28,7 +28,7 @@ Remaining gates before C2B payment networking:
 
 Until those gates are satisfied, **no direct Telebirr payment initiation is enabled**.
 
-Validation baseline: Node 24.21.0/npm 11.19.0, `npm ci` pass (576 packages), production audit **0 vulnerabilities**, TypeScript pass, **106/106 tests**, production build pass, Docker pass, **13/13 Chromium E2E**. Exact commit/run identifiers are recorded in the pull-request evidence so this file does not create a self-referential validation cycle.
+Exact commit/run validation evidence is maintained in PR #6 metadata rather than this branch document so updating evidence does not create a self-referential validation loop.
 
 Existing development/tooling findings remain 23 (2 low, 4 moderate, 17 high); the >500 kB Vite advisory remains non-blocking.
 
