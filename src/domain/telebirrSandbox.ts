@@ -17,7 +17,6 @@ export const TelebirrSandboxConfigSchema = z
     merchantCode: z.string().min(1).max(64),
     privateKey: z.string().min(64).max(16_384),
     notifyUrl: z.string().url(),
-    redirectUrl: z.string().url(),
     timeoutMs: z.number().int().min(100).max(120_000).default(15_000),
   })
   .strict();
@@ -85,7 +84,6 @@ export function telebirrSandboxConfigFromEnv(
     merchantCode: env.TELEBIRR_MERCHANT_CODE,
     privateKey: env.TELEBIRR_PRIVATE_KEY,
     notifyUrl: env.TELEBIRR_NOTIFY_URL,
-    redirectUrl: env.TELEBIRR_REDIRECT_URL,
     timeoutMs: env.TELEBIRR_SANDBOX_TIMEOUT_MS
       ? Number(env.TELEBIRR_SANDBOX_TIMEOUT_MS)
       : 15_000,
