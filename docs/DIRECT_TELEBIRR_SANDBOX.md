@@ -28,7 +28,9 @@ Remaining gates before C2B payment networking:
 
 Until those gates are satisfied, **no direct Telebirr payment initiation is enabled**.
 
-Cleaned T1–T6 validation — GitHub Actions run `38300946875`, code head `bde509523afdd5f4969bb13188ae8df396588000`: Node 24.21.0/npm 11.19.0, `npm ci` pass (576 packages), production audit **0 vulnerabilities**, TypeScript pass, **106/106 tests**, production build pass, Docker pass, **13/13 Chromium E2E**.
+Cleaned T1–T6 code validation — GitHub Actions run `38300946875`, code head `bde509523afdd5f4969bb13188ae8df396588000`: Node 24.21.0/npm 11.19.0, `npm ci` pass (576 packages), production audit **0 vulnerabilities**, TypeScript pass, **106/106 tests**, production build pass, Docker pass, **13/13 Chromium E2E**.
+
+The final documentation-only head is `39468bd99bb7f532eed6dc5a1aefa5da1d33158a`; its CI run closes the exact-head evidence chain without changing runtime behavior.
 
 Existing development/tooling findings remain 23 (2 low, 4 moderate, 17 high); the >500 kB Vite advisory remains non-blocking.
 
