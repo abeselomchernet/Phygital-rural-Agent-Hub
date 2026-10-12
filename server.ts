@@ -6,6 +6,10 @@ import { createApp } from "./src/server/app";
 import { validateDataConfig } from "./src/domain/residency";
 import { AtomicJsonCustomerPersistence } from "./src/server/customer-persistence";
 import { AtomicJsonPartnerLedgerPersistence } from "./src/server/partner-ledger-persistence";
+import {
+  AtomicJsonKycPendingPersistence,
+  AtomicJsonMockIdentityPersistence,
+} from "./src/server/identity-persistence";
 
 validateDataConfig(process.env);
 const syntheticStateDir = process.env.SYNTHETIC_STATE_DIR;
@@ -17,6 +21,12 @@ const app = createApp(
         ),
         partnerLedgerPersistence: new AtomicJsonPartnerLedgerPersistence(
           path.join(syntheticStateDir, "partner-ledger.json"),
+        ),
+        identityProviderPersistence: new AtomicJsonMockIdentityPersistence(
+          path.join(syntheticStateDir, "mock-identity-provider.json"),
+        ),
+        kycPendingPersistence: new AtomicJsonKycPendingPersistence(
+          path.join(syntheticStateDir, "kyc-pending.json"),
         ),
       }
     : {},
