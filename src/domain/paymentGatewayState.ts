@@ -126,6 +126,17 @@ export class DurablePaymentGatewayAdapter implements PaymentGatewayAdapter {
     return structuredClone(record.result ?? undefined);
   }
 
+  getRecordedResultByTransactionId(transactionId: string) {
+    const id = z.string().uuid().parse(transactionId),
+      key = this.transactionKeys.get(id);
+    if (!key) return undefined;
+    const record = this.records.get(key);
+    if (!record) throw new Error("GATEWAY_PERSISTED_INDEX_CONFLICT");
+    if (record.status === "SUBMISSION_INTENT_RECORDED")
+      throw new Error("GATEWAY_RECOVERY_RECONCILIATION_REQUIRED");
+    return structuredClone(record.result ?? undefined);
+  }
+
   async createC2BCheckout(
     input: PaymentGatewayC2BRequest,
   ): Promise<PaymentGatewayResult> {
