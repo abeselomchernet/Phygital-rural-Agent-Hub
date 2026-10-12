@@ -14,13 +14,13 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - name: Probe documented production verification paths on sandbox host
+      - name: Probe sandbox session-read route and transfer response shape
         shell: bash
         run: |
           set -euo pipefail
           base='https://gateway.arifpay.org'
           key='arif-sandbox-portal-key'
-          nonce="enawuga_probe_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}_$(date +%s)"
+          nonce="enawuga_readprobe_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}_$(date +%s)"
 
           jq -n --arg nonce "$nonce" '{
             cancelUrl: "https://payment.arifpay.org/Cancel",
@@ -32,7 +32,7 @@ jobs:
             successUrl: "https://payment.arifpay.org/success",
             expireDate: "2027-12-31T23:59:00",
             amount: 10,
-            items: [{name:"Enawuga reconciliation probe",quantity:1,price:10,description:"Synthetic sandbox verification"}],
+            items: [{name:"Enawuga sandbox read probe",quantity:1,price:10,description:"Synthetic sandbox verification"}],
             lang: "EN"
           }' > create.json
 
@@ -47,7 +47,16 @@ jobs:
           sid=$(jq -r '.data.sessionId // .data.uuid // .sessionId // empty' create-response.json)
           test "$create_code" = '200'
           test -n "$sid"
-          echo "create_http=$create_code create_ok=true"
+          echo "create_http=$create_code"
+
+          before_code=$(curl --silent --show-error --connect-timeout 15 --max-time 30 \
+            --output before.json --write-out '%{http_code}' \
+            -H 'Content-Type: application/json' -H "x-arifpay-key: $key" \
+            "$base/api/sandbox/c2b/session/$sid" || true)
+          before_error=$(jq -r '.error // "unknown"' before.json 2>/dev/null || echo nonjson)
+          before_status=$(jq -r '.data.transactionStatus // .data.status // .transactionStatus // .status // ""' before.json 2>/dev/null || true)
+          before_msg=$(jq -r '.msg // ""' before.json 2>/dev/null || true)
+          echo "sandbox_session_before http=$before_code error=$before_error status=${before_status:-none} msg=${before_msg:0:80}"
 
           jq -n --arg sid "$sid" '{sessionId:$sid,phoneNumber:"251900000000"}' > transfer.json
           transfer_code=$(curl --silent --show-error --connect-timeout 15 --max-time 30 \
@@ -58,35 +67,20 @@ jobs:
             -H 'x-arifpay-sim-mode: SUCCESS' \
             -H 'x-arifpay-fee-source: MERCHANT' \
             --data @transfer.json)
-          txn=$(jq -r '.data.transaction.transactionId // .data.transactionId // .transactionId // empty' transfer-response.json 2>/dev/null || true)
-          echo "telebirr_transfer_http=$transfer_code response_error=$(jq -r '.error // "unknown"' transfer-response.json 2>/dev/null || echo nonjson) transaction_reference_present=$([ -n "$txn" ] && echo true || echo false)"
+          transfer_error=$(jq -r '.error // "unknown"' transfer-response.json 2>/dev/null || echo nonjson)
+          transfer_status=$(jq -r '.data.transaction.transactionStatus // .data.transactionStatus // .transaction.transactionStatus // .transactionStatus // .status // ""' transfer-response.json 2>/dev/null || true)
+          txn_present=$(jq -r '((.data.transaction.transactionId // .data.transactionId // .transaction.transactionId // .transactionId // null) != null)' transfer-response.json 2>/dev/null || echo false)
+          top_keys=$(jq -r 'keys|join(",")' transfer-response.json 2>/dev/null || echo nonjson)
+          data_keys=$(jq -r 'if (.data|type)=="object" then (.data|keys|join(",")) else "none" end' transfer-response.json 2>/dev/null || echo nonjson)
+          echo "telebirr_transfer http=$transfer_code error=$transfer_error status=${transfer_status:-none} txn_present=$txn_present top_keys=$top_keys data_keys=$data_keys"
 
-          probe_get() {
-            label="$1"; url="$2"; outfile="$3"
-            code=$(curl --silent --show-error --connect-timeout 15 --max-time 30 \
-              --output "$outfile" --write-out '%{http_code}' \
-              -H 'Content-Type: application/json' -H "x-arifpay-key: $key" "$url" || true)
-            err=$(jq -r '.error // "unknown"' "$outfile" 2>/dev/null || echo nonjson)
-            msg=$(jq -r '.msg // ""' "$outfile" 2>/dev/null || true)
-            data_present=$(jq -r 'if has("data") and .data != null then "true" else "false" end' "$outfile" 2>/dev/null || echo false)
-            echo "$label http=$code error=$err data_present=$data_present msg=${msg:0:80}"
-          }
-
-          probe_get verify_by_session "$base/api/verify/transaction?uuid=$sid" verify-session.json
-          probe_get get_session_by_nonce "$base/api/checkout/getSessionByNonce/$nonce" verify-nonce.json
-          probe_get get_checkout_session "$base/api/checkout/session/$sid" get-session.json
-
-          if [ -n "$txn" ]; then
-            jq -n --arg txn "$txn" '{transactionId:$txn,paymentType:"TELEBIRR_USSD"}' > verify-txn.json
-            code=$(curl --silent --show-error --connect-timeout 15 --max-time 30 \
-              --output verify-txn-response.json --write-out '%{http_code}' \
-              -X POST "$base/api/checkout/getSessionByTransactionId" \
-              -H 'Content-Type: application/json' -H "x-arifpay-key: $key" \
-              --data @verify-txn.json || true)
-            err=$(jq -r '.error // "unknown"' verify-txn-response.json 2>/dev/null || echo nonjson)
-            data_present=$(jq -r 'if has("data") and .data != null then "true" else "false" end' verify-txn-response.json 2>/dev/null || echo false)
-            msg=$(jq -r '.msg // ""' verify-txn-response.json 2>/dev/null || true)
-            echo "verify_by_transaction http=$code error=$err data_present=$data_present msg=${msg:0:80}"
-          else
-            echo 'verify_by_transaction skipped_no_transaction_reference'
-          fi
+          after_code=$(curl --silent --show-error --connect-timeout 15 --max-time 30 \
+            --output after.json --write-out '%{http_code}' \
+            -H 'Content-Type: application/json' -H "x-arifpay-key: $key" \
+            "$base/api/sandbox/c2b/session/$sid" || true)
+          after_error=$(jq -r '.error // "unknown"' after.json 2>/dev/null || echo nonjson)
+          after_status=$(jq -r '.data.transactionStatus // .data.status // .transactionStatus // .status // .data.transaction.transactionStatus // ""' after.json 2>/dev/null || true)
+          after_msg=$(jq -r '.msg // ""' after.json 2>/dev/null || true)
+          after_top_keys=$(jq -r 'keys|join(",")' after.json 2>/dev/null || echo nonjson)
+          after_data_keys=$(jq -r 'if (.data|type)=="object" then (.data|keys|join(",")) else "none" end' after.json 2>/dev/null || echo nonjson)
+          echo "sandbox_session_after http=$after_code error=$after_error status=${after_status:-none} msg=${after_msg:0:80} top_keys=$after_top_keys data_keys=$after_data_keys"
