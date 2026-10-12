@@ -1,35 +1,67 @@
 # Direct Telebirr sandbox workstream
 
-**Status:** T1–T6 bounded sandbox controls implemented; payment initiation remains blocked by provider-contract gate  
-**Branch:** `feat/telebirr-sandbox-adapter`  
-**Baseline:** `023a0919a44a28241711331a2dfc115e530d2294`  
-**Environment:** Telebirr developer/test environment only  
-**Data:** synthetic only  
-**Live funds / production authority:** not enabled
+Status: Draft / sandbox-only / synthetic data only.
 
-Direct Ethio telecom Telebirr integration remains separate from ArifPay. Current provider evidence supports sandbox configuration, token acquisition, request signing, preorder construction, and a SuperApp `rawRequest`/start-pay handoff. It still does not provide enough authoritative active-account detail for direct payment submission or server-side reconciliation.
+This workstream is separate from Telebirr routed through ArifPay. Provider provenance must remain explicit.
 
-Implemented T1–T6 controls include sandbox-only fail-closed configuration, deterministic RSA-PSS/SHA-256 signing, guarded server-side token acquisition, pure signed preorder construction, bounded preorder-response classification with no payment/settlement promotion, and durable pre-submit provider-correlation reservation with restart/idempotency/transaction/order/nonce replay controls.
+## Implemented safety foundation
 
-T6 snapshots store **no app secret, private key, access token, request signature, callback payload or provider payment state**. They are bounded synthetic reservation records, not payment ledgers, production outboxes or residency evidence.
+T1 — strict sandbox configuration and HTTPS/TestBed guard.
 
-The canonical T6 implementation is `src/domain/telebirrPreorderIntent.ts` with `src/server/telebirr-preorder-intent-persistence.ts`. A duplicate experimental durability layer was removed during final review so PR #6 has one Telebirr pre-submit source of truth.
+T2 — deterministic RSA-PSS/SHA-256 signing using the current Ethio telecom request-signature process.
 
-Current Ethio telecom documentation confirms that the front end receives a backend-produced `rawRequest` and invokes the SuperApp start-pay API. The documented client callback is **not** treated by Enawuga as authoritative payment, settlement, or reconciliation evidence. Current public material still does not provide a complete authoritative `queryOrder`/server-callback contract suitable for implementation without inference.
+T3 — guarded fabric-token client for `/payment/v1/token`, network-disabled by default.
 
-Remaining gates before C2B payment networking:
+T4 — pure signed `payment.preorder` request construction for `/payment/v1/merchant/preOrder`; no provider mutation.
 
-1. active developer-account C2B Web Checkout subscription/scope;
-2. current `preOrder` response and checkout/raw-request assembly contract for that subscribed product;
-3. account-specific required request fields;
-4. authoritative `queryOrder` endpoint/request/response/status lifecycle;
-5. authoritative server-side `notify_url` authentication/signature/replay rules;
-6. TestBed synthetic consumer/account identifiers.
+T5 — bounded preorder-response classification. `ORDER_CREATED` is not payment or settlement.
 
-Until those gates are satisfied, **no direct Telebirr payment initiation is enabled**.
+T6 — durable pre-submit correlation intent with idempotency, transaction, merchant-order and nonce replay protection. One canonical persistence implementation only.
 
-Exact commit/run validation evidence is maintained in PR #6 metadata. The stable validation requirement is: production dependency audit 0, TypeScript pass, all unit/domain/API tests pass, production build pass, Docker pass, and Chromium E2E pass on the exact PR head before review or merge.
+T7 — merchant-side read-only `payment.queryorder` request construction and sandbox query client for `/payment/v1/merchant/queryOrder`. The client returns transport/provider payload evidence only and deliberately does not map provider status fields to payment or settlement until the authoritative status-value contract is pinned.
 
-Existing development/tooling findings remain 23 (2 low, 4 moderate, 17 high); the >500 kB Vite advisory remains non-blocking.
+## Evidence basis
 
-> This workstream implements direct Telebirr developer/test configuration, request signing, token acquisition, local signed preorder construction, bounded preorder-response classification and durable pre-submit correlation reservation using synthetic test evidence. It does not submit a Telebirr preorder, initiate or confirm a Telebirr payment, represent production connectivity, move live funds, create PartnerFI settlement, expose Wishland as a regulated principal, or authorize physical cash activity.
+Current Ethio telecom developer-portal documentation confirms:
+
+- Telebirr payment products are registered/subscribed through the developer portal;
+- the current H5/MiniApp checkout flow obtains a backend `rawRequest` and hands it to the Telebirr SuperApp `startPay` capability;
+- SuperApp/client callbacks are presentation/client completion signals and are not sufficient server-side reconciliation authority;
+- outbound payment requests use RSA request signing and the merchant keeps its private key while sharing the public key with the service provider;
+- payment API scope/subscription is provider-controlled.
+
+The project-supplied Telebirr demo confirms the historical/current family of token → create order → `prepay_id` → raw-request assembly. Its sample disables TLS verification; Enawuga does not copy that behavior.
+
+The project-supplied Postman collection/environment adds account/TestBed evidence without being copied into GitHub:
+
+- a TestBed base URL/environment;
+- merchant/application variables and synthetic consumer variables;
+- `POST /payment/v1/token`;
+- `POST /payment/v1/merchant/preOrder`;
+- `POST /payment/v1/merchant/queryOrder` using method `payment.queryorder` and merchant-order identity only;
+- app-side `checkout`, `payOrder` and `checkOrder` requests, which remain outside the current server-side reconciliation slice.
+
+Secrets, private keys, app secrets, consumer PINs, tokens and account-specific identifiers from the supplied material are not stored in this repository.
+
+## Product-contract distinctions
+
+The supplied Postman `CreateOrder` example is an InApp/OpenAPI-style flow with additional payee fields. The current public H5/C2B documentation uses the Checkout preorder shape. Enawuga does not blend those product contracts.
+
+T7 therefore uses only the merchant `queryOrder` contract for server-side reconciliation. It does not use app-side payer identifiers/PINs or client callback state.
+
+## Remaining provider gates
+
+Before enabling the first direct Telebirr sandbox preorder network mutation:
+
+1. confirm this account's exact C2B/Web Checkout subscription/scope;
+2. confirm which supplied TestBed gateway form is authoritative in the execution environment and presents a valid TLS certificate — no insecure-TLS bypass is permitted;
+3. pin the exact current C2B `preOrder` response/checkout raw-request contract for the subscribed product;
+4. pin authoritative `queryOrder` response fields and status-value meanings before mapping any provider status to an Enawuga payment state;
+5. establish authoritative server-side `notify_url` authentication/signature, replay and retry behavior before treating callbacks as trusted authority;
+6. use only official TestBed synthetic consumer/account data for any controlled end-to-end payment test.
+
+Until those gates are satisfied, direct Telebirr payment initiation remains disabled.
+
+## Boundary
+
+This branch contains sandbox integration safety primitives and read-only query transport support. It does not prove a live payment, customer-funds authority, PartnerFI settlement, Wishland-held funds, physical cash authority, production IAM, or regulated production deployment.
