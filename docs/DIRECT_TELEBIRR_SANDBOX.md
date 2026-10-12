@@ -15,7 +15,7 @@ No Telebirr sandbox credential, app secret, merchant private key, short code or 
 
 ## Current contract boundary — 2026-10-12
 
-Current Ethio telecom material establishes the Telebirr Payment/TestBed tooling, `/payment/v1/token`, the `/payment/v1/merchant/preOrder` family, `payment.preorder`, ETB Checkout signing fields, RSA SHA-256/MGF1 request signing, merchant-side private-key custody, and account/product subscription requirements.
+Current Ethio telecom material establishes Telebirr Payment/TestBed tooling, `/payment/v1/token`, the `/payment/v1/merchant/preOrder` family, `payment.preorder`, ETB Checkout signing fields, RSA SHA-256/MGF1 signing, merchant-side private-key custody, and account/product subscription requirements.
 
 Current H5/MiniApp documentation says a merchant backend supplies a `rawRequest` to the SuperApp start-pay API and demonstrates a client callback. Enawuga does **not** treat that client callback as authoritative payment or settlement evidence.
 
@@ -36,42 +36,26 @@ Direct-route provenance remains `provider=TELEBIRR / route=DIRECT_TELEBIRR`, dis
 ## Implemented controls
 
 ### T1 — sandbox configuration guard
-
 Sandbox-only mode, networking false by default, HTTPS mandatory, developer/test gateway pinned, alternate/production gateway rejected, URL credentials forbidden, provider secrets server-side only, and placeholders only in `.env.example`.
 
 ### T2 — canonical request signing
-
 One-level business-content flattening, deterministic alphabetical `key=value` canonicalization, RSA-PSS/SHA-256 MGF1 signing, base64 output, and generated synthetic CI keys only.
 
 ### T3 — guarded fabric-token client
-
 Server-side token acquisition through `/payment/v1/token`, `X-APP-Key`, JSON `appSecret`, explicit network opt-in, controlled errors, and no token logging/persistence/browser exposure. It does not create an order or payment.
 
 ### T4 — pure signed preorder builder
-
 Builds but does not submit a signed `payment.preorder` request using unique merchant-order ID/nonce, integer ETB minor units and only pinned request fields. `/payment/v1/merchant/preOrder` is exported as a future client path constant only.
 
 ### T5 — bounded preorder-response classification
-
 Local-only classification. `ORDER_CREATED` requires a non-empty `prepay_id` exactly bound to the submitted alphanumeric merchant-order ID. Binding mismatch/malformed responses fail closed. All states keep `paymentConfirmed=false` and `settlementConfirmed=false`. Provider response signatures remain non-authoritative until their current verification contract is pinned.
 
 ### T6 — durable pre-submit correlation intent
-
 `src/domain/telebirrPreorderIntent.ts` and `src/server/telebirr-preorder-intent-persistence.ts` provide a provider-independent persist-before-submit reservation.
 
 The reservation binds Enawuga `transactionId`, canonical `customerId`, `idempotencyKey`, Telebirr `merchantOrderId`, Telebirr `nonce`, timestamp/title, ETB amount in integer minor units and ETB currency.
 
-It provides:
-
-- identical idempotent replay -> existing reservation;
-- changed payload under the same key -> `IDEMPOTENCY_CONFLICT`;
-- repeated Enawuga transaction -> `TRANSACTION_REPLAY`;
-- repeated merchant-order ID -> `TELEBIRR_MERCHANT_ORDER_REPLAY`;
-- repeated nonce -> `TELEBIRR_NONCE_REPLAY`;
-- restart durability;
-- malformed/duplicate persisted-state rejection;
-- lookup by Enawuga transaction ID or merchant-order ID;
-- atomic versioned local JSON replacement.
+It provides identical-idempotent replay, fail-closed changed-payload conflict, transaction replay protection, merchant-order replay protection, nonce replay protection, restart durability, malformed/duplicate persisted-state rejection, lookup by Enawuga transaction ID or merchant-order ID, and atomic versioned local JSON replacement.
 
 The snapshot deliberately stores **no app secret, private key, access token, request signature, callback payload or provider payment state**. It is a bounded synthetic reservation record, not a payment ledger, production outbox or residency evidence.
 
