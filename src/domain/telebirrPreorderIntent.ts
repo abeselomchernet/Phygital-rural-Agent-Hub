@@ -105,11 +105,23 @@ export class DurableTelebirrPreorderIntentStore {
       status: "PREORDER_INTENT_RECORDED",
       request: structuredClone(request),
     };
+
+    // Durability is the gate: do not make this reservation observable in
+    // memory until the atomic persistence layer has accepted the candidate
+    // snapshot. If save throws, a same-process retry must still perform the
+    // durable write rather than returning a phantom in-memory reservation.
+    this.persistence.save({
+      version: 1,
+      records: [
+        ...this.records.values(),
+        record,
+      ].map((entry) => structuredClone(entry)),
+    });
+
     this.records.set(request.idempotencyKey, record);
     this.transactionKeys.set(request.transactionId, request.idempotencyKey);
     this.merchantOrderKeys.set(request.merchantOrderId, request.idempotencyKey);
     this.nonceKeys.set(request.nonce, request.idempotencyKey);
-    this.persist();
     return structuredClone(record);
   }
 
@@ -129,12 +141,5 @@ export class DurableTelebirrPreorderIntentStore {
     const record = this.records.get(key);
     if (!record) throw new Error("TELEBIRR_PERSISTED_INDEX_CONFLICT");
     return structuredClone(record);
-  }
-
-  private persist() {
-    this.persistence.save({
-      version: 1,
-      records: [...this.records.values()].map((record) => structuredClone(record)),
-    });
   }
 }
