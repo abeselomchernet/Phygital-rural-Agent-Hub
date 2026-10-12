@@ -1,10 +1,19 @@
 # P0-B — Authenticated, durable staging foundation
 
-Status: **PLANNED / SYNTHETIC-ONLY IMPLEMENTATION PHASE**
+Status: **IN PROGRESS / SYNTHETIC-ONLY**
 
 Base: merged P0-A `main` at `6901e5cfbd13b109c0e308c9e9780ea1bb21b574`.
 
 P0-B starts from the P0-A boundary model and must not weaken it. Wishland Networking PLC remains the technology/software/orchestration provider. A future licensed PartnerFI remains the regulated financial principal for customer accounts, funds, authorization, settlement and regulated KYC policy. GhostSync remains transport/reconciliation infrastructure and never becomes settlement authority.
+
+## Progress
+
+- **B1 — implemented and validated:** server-side synthetic sessions, AGENT/SUPERVISOR/PARTNER_ADMIN domain roles, role/object authorization, CSRF, expiry/revocation, rate limiting and redacted auth audit events. Normal runtime cannot self-select a privileged synthetic role; privileged role issuance is test-only.
+- **B2 — core implementation complete:** durable storage contracts and local synthetic atomic JSON adapters cover customer/alias state, mock identity-provider requests, pending KYC challenges, PartnerFI transaction/idempotency state, and test-only GhostSync replay/sequence/tombstone state. Identical transaction retries recover recorded results before mutable KYC/risk is re-evaluated; changed payloads conflict. Optional API state persists across server restart when `SYNTHETIC_STATE_DIR` is explicitly configured.
+- **B3 — next:** explicit uncertain PartnerFI operation lifecycle plus authenticated mock callback/status-query reconciliation.
+- B4–B7 remain planned.
+
+The local JSON adapters are development evidence only. They are not encrypted edge storage, a production database, an Ethiopia-residency claim, or authorization to persist real customer data. The HTTP GhostSync receiver remains closed.
 
 ## Non-negotiable boundaries
 
@@ -21,36 +30,31 @@ P0-B starts from the P0-A boundary model and must not weaken it. Wishland Networ
 
 ## P0-B workstreams
 
-### B1. Server authentication and authorization foundation
+### B1. Server authentication and authorization foundation — IMPLEMENTED
 
-Implement server-verified sessions for synthetic users only, with explicit roles such as agent submitter, supervisor and partner-admin test authority. Add route authorization, customer/object-level authorization, CSRF/session protections, rate limiting, session expiry/revocation and redacted security audit events.
+The branch now has server-verified synthetic sessions, explicit roles, route/customer-object authorization, CSRF protection, session expiry/revocation, rate limiting and redacted security audit events. The UI labels this as local development authentication, not PartnerFI SSO, Fayda authentication or production identity.
 
-The synthetic login mechanism must be visibly labelled as local development authentication. It must not be presented as PartnerFI SSO, Fayda authentication or production identity.
+Acceptance evidence includes unauthenticated failure, wrong-role/wrong-object failure, AGENT customer scope, privileged-role fail-closed behavior, CSRF rejection, session expiry/revocation, rate limiting and audit-secret redaction.
 
-Acceptance gate:
+### B2. Durable domain persistence and transaction idempotency — CORE IMPLEMENTED
 
-- unauthenticated mutation requests fail closed;
-- wrong-role and wrong-object requests fail closed;
-- synthetic agent access is scoped to permitted customer/agent objects;
-- partner-admin-only recovery remains unreachable to ordinary agents;
-- browser and API tests cover session expiry, CSRF, replay and authorization failures.
+Storage interfaces preserve domain boundaries while local synthetic atomic JSON adapters provide restart-safe development evidence for canonical customer/phone/partner references, mock identity requests and pending KYC challenges, PartnerFI balances/results/idempotency keys, and test-only GhostSync event receipts/sequences/tombstones.
 
-### B2. Durable domain persistence and transaction idempotency
+Implemented acceptance evidence:
 
-Replace process-memory Maps used for authoritative server state with storage interfaces and a durable development implementation. Preserve current domain contracts while adding atomic uniqueness for canonical customer IDs, phone aliases, partner customer references, transaction IDs, idempotency keys, transport event IDs and per-device/per-customer sequence policy.
+- restart preserves accepted synthetic transaction/idempotency records and account simulation state;
+- duplicate identical transaction submissions return the recorded prior result without double mutation;
+- changed payload under the same idempotency key fails as conflict;
+- phone alias and PartnerFI reference uniqueness are rebuilt and checked on restore;
+- transaction retry can recover a recorded result even if KYC/risk changed after the first accepted attempt;
+- pending synthetic KYC re-verification can continue after server restart without silently issuing a replacement challenge;
+- GhostSync mock-receiver event IDs, per-customer sequence state and replay receipts survive receiver restart;
+- old transport receipts become replay tombstones, so retention does not turn an old event into a new financial submission;
+- malformed persisted state fails closed.
 
-Use synthetic data only. The first implementation may use an isolated local/test database, but it must not be described as Ethiopia-approved regulated storage.
+Remaining production-grade work is intentionally not claimed: transactional multi-process database semantics, encrypted storage, HA/concurrency controls, approved retention, Ethiopia-resident deployment, and authenticated remote GhostSync remain future evidence/implementation gates.
 
-Acceptance gate:
-
-- restart does not lose accepted synthetic transaction/idempotency records;
-- duplicate identical submissions return the recorded prior result;
-- changed payload under the same idempotency key fails as replay/conflict;
-- phone alias updates are atomic and collision-safe;
-- transaction retry can recover a previously recorded result even if mutable KYC/risk state changed after the first accepted attempt;
-- tombstone/replay-window behavior is tested.
-
-### B3. Partner result reconciliation contract
+### B3. Partner result reconciliation contract — NEXT
 
 Add a durable partner-operation state model for uncertain outcomes and authenticated mock callback/status-query handling. Preserve `PARTNER_ACCEPTED != SETTLED` and prohibit local transport state from creating a settled financial outcome.
 
@@ -92,15 +96,15 @@ Absence of these items must keep real-data and regulated modes disabled regardle
 
 ## Implementation order
 
-1. B1 authentication/authorization foundation.
-2. B2 durable storage/idempotency and restart-safe tests.
-3. B3 uncertain partner-result reconciliation.
+1. B1 authentication/authorization foundation — implemented.
+2. B2 durable storage/idempotency and restart-safe tests — core implemented.
+3. B3 uncertain partner-result reconciliation — next.
 4. B4 audit/recovery controls.
 5. B5 encrypted-edge interface/threat model.
 6. B6 staging architecture evidence package.
 7. B7 final UI/claims review.
 
-Each increment should land in this P0-B branch through small reviewed commits and must keep the full P0-A validation suite green.
+Each increment must keep the full P0-A validation suite green.
 
 ## Required continuous validation
 
