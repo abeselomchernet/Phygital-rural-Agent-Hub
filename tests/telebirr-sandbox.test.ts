@@ -7,10 +7,12 @@ import {
 } from "node:crypto";
 import test from "node:test";
 import {
+  TELEBIRR_PREORDER_PATH,
   TELEBIRR_SANDBOX_BASE_URL,
   TELEBIRR_TOKEN_PATH,
   TelebirrSandboxTokenClient,
   assertTelebirrSandboxConfig,
+  buildTelebirrPreorderRequest,
   canonicalizeTelebirrRequest,
   normalizeTelebirrPrivateKey,
   signTelebirrRequest,
@@ -39,7 +41,6 @@ function config(
     merchantCode: "100001",
     privateKey: keyPair().privateKey,
     notifyUrl: "https://example.invalid/telebirr/notify",
-    redirectUrl: "https://example.invalid/telebirr/return",
     timeoutMs: 1_000,
     ...overrides,
   };
@@ -97,7 +98,6 @@ test("environment loader is sandbox-only and network-off by default", () => {
     TELEBIRR_MERCHANT_CODE: "100001",
     TELEBIRR_PRIVATE_KEY: pair.privateKey,
     TELEBIRR_NOTIFY_URL: "https://example.invalid/notify",
-    TELEBIRR_REDIRECT_URL: "https://example.invalid/return",
   });
   assert.equal(loaded.mode, "sandbox");
   assert.equal(loaded.networkEnabled, false);
@@ -112,7 +112,6 @@ test("environment loader is sandbox-only and network-off by default", () => {
         TELEBIRR_MERCHANT_CODE: "100001",
         TELEBIRR_PRIVATE_KEY: pair.privateKey,
         TELEBIRR_NOTIFY_URL: "https://example.invalid/notify",
-        TELEBIRR_REDIRECT_URL: "https://example.invalid/return",
       }),
   );
 });
@@ -155,7 +154,7 @@ test("request signing uses RSA-PSS SHA-256 and accepts PEM or bare PKCS8 base64"
       notify_url: "https://example.invalid/notify",
       appid: "synthetic-merchant",
       merch_code: "100001",
-      merch_order_id: "synthetic-order-1",
+      merch_order_id: "syntheticorder1",
       trade_type: "Checkout",
       title: "Synthetic item",
       total_amount: "1.5",
@@ -185,6 +184,91 @@ test("request signing uses RSA-PSS SHA-256 and accepts PEM or bare PKCS8 base64"
     .toString("base64");
   assert.match(normalizeTelebirrPrivateKey(bare), /BEGIN PRIVATE KEY/);
   assert.doesNotThrow(() => signTelebirrRequest(payload, bare));
+});
+
+test("pure preorder builder emits only pinned C2B fields and a verifiable signature", () => {
+  const pair = keyPair();
+  const request = buildTelebirrPreorderRequest(
+    config({
+      privateKey: pair.privateKey,
+      merchantAppId: "merchantapp123",
+      merchantCode: "101011",
+      notifyUrl: "https://example.invalid/notify",
+    }),
+    {
+      merchantOrderId: "ORDER123456",
+      nonce: "NONCE123456789",
+      timestamp: "1755866911",
+      title: "Synthetic item",
+      amountMinor: 150,
+    },
+  );
+
+  assert.equal(TELEBIRR_PREORDER_PATH, "/payment/v1/merchant/preOrder");
+  assert.deepEqual(request.biz_content, {
+    notify_url: "https://example.invalid/notify",
+    appid: "merchantapp123",
+    merch_code: "101011",
+    merch_order_id: "ORDER123456",
+    trade_type: "Checkout",
+    title: "Synthetic item",
+    total_amount: "1.5",
+    trans_currency: "ETB",
+    timeout_express: "120m",
+  });
+  assert.equal(request.method, "payment.preorder");
+  assert.equal(request.version, "1.0");
+  assert.equal(request.sign_type, "SHA256WithRSA");
+  assert.equal("business_type" in request.biz_content, false);
+  assert.equal("redirect_url" in request.biz_content, false);
+  assert.equal("payee_identifier" in request.biz_content, false);
+  assert.equal(
+    cryptoVerify(
+      "sha256",
+      Buffer.from(canonicalizeTelebirrRequest(request)),
+      {
+        key: createPublicKey(pair.publicKey),
+        padding: constants.RSA_PKCS1_PSS_PADDING,
+        saltLength: 32,
+      },
+      Buffer.from(request.sign, "base64"),
+    ),
+    true,
+  );
+});
+
+test("preorder builder preserves ETB minor units without floating-point arithmetic and rejects unsafe identifiers", () => {
+  const safeConfig = config();
+  const base = {
+    merchantOrderId: "ORDER001",
+    nonce: "NONCE001",
+    timestamp: "1755866911",
+    title: "Synthetic item",
+  };
+  assert.equal(
+    buildTelebirrPreorderRequest(safeConfig, { ...base, amountMinor: 105 })
+      .biz_content.total_amount,
+    "1.05",
+  );
+  assert.equal(
+    buildTelebirrPreorderRequest(safeConfig, { ...base, amountMinor: 100 })
+      .biz_content.total_amount,
+    "1",
+  );
+  assert.throws(() =>
+    buildTelebirrPreorderRequest(safeConfig, {
+      ...base,
+      merchantOrderId: "ORDER-UNSAFE",
+      amountMinor: 100,
+    }),
+  );
+  assert.throws(() =>
+    buildTelebirrPreorderRequest(safeConfig, {
+      ...base,
+      nonce: "nonce with spaces",
+      amountMinor: 100,
+    }),
+  );
 });
 
 test("token client is fail-closed until networking is explicitly enabled", async () => {
