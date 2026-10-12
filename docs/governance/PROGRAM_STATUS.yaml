@@ -1,0 +1,45 @@
+version: "1.0"
+as_of: "2026-10-12"
+repository:
+  full_name: "abeselomchernet/Phygital-rural-Agent-Hub"
+  visibility: "private"
+  default_branch: "main"
+  baseline_sha: "cd48c377e4398b77f2cd725eb2bd5706774d2817"
+program:
+  current_stage: "STAGE_1_WORKSPACE_REBASELINE_AND_P0_CLOSURE"
+  previous_completed_stage: "STAGE_0_BOUNDED_SYNTHETIC_BASELINE"
+  next_substantive_stage: "STAGE_2_ARIFPAY_SANDBOX_INTEGRATION"
+  evidence_model: "gate_based_not_calendar_based"
+current_boundaries:
+  real_customer_pii: false
+  real_funds: false
+  live_cash_custody: false
+  production_provider_credentials: false
+  live_partnerfi_posting: false
+  live_identity_provider: false
+  regulated_mode: false
+  remote_ghostsync_for_real_data: false
+completed:
+  - "P0-A merged"
+  - "P0-B merged"
+  - "bounded auth/durability/reconciliation/audit controls"
+  - "ET staging evidence checklist"
+  - "UI claims review"
+immediate_actions:
+  - id: "S1-A"
+    action: "Re-baseline private cloud coding environment against main"
+    mutation_allowed: false
+  - id: "S1-B"
+    action: "Run clean install, production audit, lint, tests, build and E2E"
+    mutation_allowed: false
+  - id: "S1-C"
+    action: "Create post-P0-B closure/document synchronization PR"
+    mutation_allowed: true
+  - id: "S2-A"
+    action: "Create separate ArifPay sandbox adapter branch after closure"
+    mutation_allowed: true
+stop_conditions:
+  - "production credential encountered during sandbox stage"
+  - "real customer data requested before data/residency gate"
+  - "provider acceptance mapped directly to settlement without contract"
+  - "cash movement requested without approved custody/authority model"

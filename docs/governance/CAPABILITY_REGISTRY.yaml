@@ -1,0 +1,52 @@
+version: "1.0"
+as_of: "2026-10-12"
+capabilities:
+  - id: "customer_identity_core"
+    current: "synthetic_implemented"
+    target: "production_authorized"
+    unlock_requires: ["approved_identity_integration", "data_controls", "partner_policy"]
+  - id: "partnerfi_adapter"
+    current: "mock_implemented"
+    target: "production_authorized"
+    unlock_requires: ["partnerfi_contract", "staging_api", "reconciliation_contract", "production_credentials"]
+  - id: "arifpay_gateway"
+    current: "proposed"
+    next: "sandbox"
+    target: "production_authorized"
+    unlock_requires: ["sandbox_validation", "security_review", "production_agreement", "production_credentials"]
+  - id: "ghostsync_remote"
+    current: "disabled_for_real_data"
+    target: "authorized_secure_transport"
+    unlock_requires: ["encrypted_edge", "authenticated_receiver", "residency_evidence", "migration_policy"]
+  - id: "network_liquidity_coverage"
+    current: "synthetic_concept"
+    next: "synthetic_implemented"
+    target: "operational_decision_support"
+    unlock_requires: ["metric_definition", "partner_calibration", "approved_data_feeds"]
+  - id: "cash_fleet_planning"
+    current: "synthetic_concept"
+    next: "synthetic_implemented"
+    target: "operational_dispatch"
+    unlock_requires: ["fleet_roles", "custody_policy", "limits", "security_process", "reconciliation"]
+  - id: "cash_fleet_live_handover"
+    current: "disabled"
+    target: "pilot_authorized"
+    unlock_requires: ["cash_owner", "custody_contract", "authorized_handlers", "handover_evidence", "incident_policy", "accounting_reconciliation"]
+  - id: "fmcg_commerce"
+    current: "proposed"
+    next: "synthetic"
+    target: "partner_operational"
+    unlock_requires: ["partner_contract", "catalog_scope", "data_scope", "commercial_settlement_model"]
+  - id: "fmcg_liquidity_matching"
+    current: "simulation_only"
+    target: "pilot_authorized"
+    unlock_requires: ["eligible_partner_model", "cash_custody_authority", "regulated_digital_posting", "dual_reconciliation"]
+  - id: "mobile_money_routes"
+    current: "proposed"
+    next: "via_arifpay_sandbox_where_supported"
+    target: "production_authorized"
+    unlock_requires: ["route_provenance", "gateway_or_direct_contract", "provider_scope", "production_approval"]
+  - id: "agent_cash_in_cash_out"
+    current: "synthetic_request_only"
+    target: "pilot_authorized"
+    unlock_requires: ["partnerfi_authority", "agent_approval", "limits", "liquidity_controls", "cash_custody", "reconciliation"]
