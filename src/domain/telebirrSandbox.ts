@@ -4,6 +4,7 @@ import { z } from "zod";
 export const TELEBIRR_SANDBOX_BASE_URL =
   "https://developerportal.ethiotelebirr.et:38443/apiaccess/payment/gateway";
 export const TELEBIRR_TOKEN_PATH = "/payment/v1/token";
+export const TELEBIRR_PREORDER_PATH = "/payment/v1/merchant/preOrder";
 
 export const TelebirrSandboxConfigSchema = z
   .object({
@@ -31,9 +32,40 @@ export const TelebirrTokenResponseSchema = z
   .passthrough();
 export type TelebirrTokenResponse = z.infer<typeof TelebirrTokenResponseSchema>;
 
+export const TelebirrPreorderInputSchema = z
+  .object({
+    merchantOrderId: z.string().regex(/^[A-Za-z0-9]+$/).max(64),
+    nonce: z.string().regex(/^[A-Za-z0-9]+$/).max(64),
+    timestamp: z.string().regex(/^\d{10,13}$/),
+    title: z.string().trim().min(1).max(128),
+    amountMinor: z.number().int().positive().max(100_000_000),
+  })
+  .strict();
+export type TelebirrPreorderInput = z.infer<typeof TelebirrPreorderInputSchema>;
+
 type SignablePrimitive = string | number | boolean;
 type SignableValue = SignablePrimitive | Record<string, SignablePrimitive>;
 export type TelebirrSignableRequest = Record<string, SignableValue | undefined>;
+
+export interface TelebirrPreorderRequest extends TelebirrSignableRequest {
+  timestamp: string;
+  nonce_str: string;
+  method: "payment.preorder";
+  version: "1.0";
+  biz_content: {
+    notify_url: string;
+    appid: string;
+    merch_code: string;
+    merch_order_id: string;
+    trade_type: "Checkout";
+    title: string;
+    total_amount: string;
+    trans_currency: "ETB";
+    timeout_express: "120m";
+  };
+  sign: string;
+  sign_type: "SHA256WithRSA";
+}
 
 function normalizedGatewayBase(input: string) {
   const parsed = new URL(input);
@@ -126,6 +158,50 @@ export function signTelebirrRequest(
     padding: constants.RSA_PKCS1_PSS_PADDING,
     saltLength: 32,
   }).toString("base64");
+}
+
+function etbMinorToProviderAmount(amountMinor: number) {
+  const amount = z.number().int().positive().max(100_000_000).parse(amountMinor),
+    birr = Math.floor(amount / 100),
+    cents = amount % 100;
+  return cents === 0
+    ? String(birr)
+    : `${birr}.${String(cents).padStart(2, "0").replace(/0$/, "")}`;
+}
+
+/**
+ * Pure request construction only. This does not call Telebirr. Fields are
+ * restricted to the current public payment.preorder signing example rather
+ * than importing historical demo-only payee/business/callback fields.
+ */
+export function buildTelebirrPreorderRequest(
+  config: TelebirrSandboxConfig,
+  input: TelebirrPreorderInput,
+): TelebirrPreorderRequest {
+  const safeConfig = assertTelebirrSandboxConfig(config),
+    parsed = TelebirrPreorderInputSchema.parse(input),
+    unsigned = {
+      timestamp: parsed.timestamp,
+      nonce_str: parsed.nonce,
+      method: "payment.preorder" as const,
+      version: "1.0" as const,
+      biz_content: {
+        notify_url: safeConfig.notifyUrl,
+        appid: safeConfig.merchantAppId,
+        merch_code: safeConfig.merchantCode,
+        merch_order_id: parsed.merchantOrderId,
+        trade_type: "Checkout" as const,
+        title: parsed.title,
+        total_amount: etbMinorToProviderAmount(parsed.amountMinor),
+        trans_currency: "ETB" as const,
+        timeout_express: "120m" as const,
+      },
+    };
+  return {
+    ...unsigned,
+    sign: signTelebirrRequest(unsigned, safeConfig.privateKey),
+    sign_type: "SHA256WithRSA",
+  };
 }
 
 /**
