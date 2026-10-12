@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Link } from "react-router-dom";
 import { useEffect } from "react";
 import { initGhostSync } from "./lib/ghostsync";
 import {
@@ -15,6 +15,7 @@ import Farmer360 from "./pages/Farmer360";
 import GhostSyncQueue from "./pages/GhostSyncQueue";
 import OnboardAgent from "./pages/OnboardAgent";
 import SupervisorPortal from "./pages/SupervisorPortal";
+import OperationsReconciliation from "./pages/OperationsReconciliation";
 import DataMule from "./pages/DataMule";
 import LiveTranscription from "./pages/LiveTranscription";
 import DemoArchitecture from "./pages/SovereignNode";
@@ -45,6 +46,18 @@ export default function App() {
                   <InventoryDemo />
                   <LiquidityDemo />
                 </div>
+                <section className="product-card">
+                  <CapabilityBadge state="IMPLEMENTED" />
+                  <h2>Operations & reconciliation</h2>
+                  <p>
+                    Governed ArifPay sandbox status checks for supervisor/admin
+                    operations. Gateway confirmation remains separate from PartnerFI
+                    settlement.
+                  </p>
+                  <Link to="/operations" className="text-link">
+                    Open Operations & Reconciliation Center
+                  </Link>
+                </section>
                 <ServicePortfolio />
               </>
             }
@@ -54,6 +67,7 @@ export default function App() {
           <Route path="/queue" element={<GhostSyncQueue />} />
           <Route path="/onboard" element={<OnboardAgent />} />
           <Route path="/supervisor" element={<SupervisorPortal />} />
+          <Route path="/operations" element={<OperationsReconciliation />} />
           <Route path="/data-mule" element={<DataMule />} />
           <Route path="/transcription" element={<LiveTranscription />} />
           <Route path="/node-status" element={<DemoArchitecture />} />
