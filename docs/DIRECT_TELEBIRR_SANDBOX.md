@@ -8,9 +8,9 @@ This workstream is separate from Telebirr routed through ArifPay. Provider prove
 
 T1 — strict sandbox configuration and exact HTTPS/TestBed gateway guard.
 
-T2 — deterministic canonicalization plus RSA-PSS/SHA-256 signing using the current Ethio telecom request-signature process. RSA-PSS signatures themselves are randomized; only canonicalization is deterministic. Signing rejects non-RSA keys, RSA keys below 2048 bits, ambiguous delimiter-bearing values, duplicate flattened field names and unsupported nested values.
+T2 — deterministic canonicalization plus RSA-PSS/SHA-256 signing using the current Ethio telecom request-signature process. RSA-PSS signatures themselves are randomized; only canonicalization is deterministic. Signing accepts ordinary RSA private keys with modulus >= 2048 bits and applies the pinned SHA-256/PSS configuration. EC, weak RSA and restricted `rsa-pss` key profiles are rejected; restricted PSS key-parameter profiles remain a provider-conformance gate until authoritative hash/MGF/salt semantics are pinned.
 
-T3 — guarded fabric-token client for `/payment/v1/token`, network-disabled by default. Redirects are rejected, response-body consumption remains under the configured timeout, and successful response bodies are size-bounded.
+T3 — guarded fabric-token client for `/payment/v1/token`, network-disabled by default. Redirects are rejected, successful response bodies are size-bounded and deadline-bounded, and every controlled early transport exit actively aborts the request. Response cancellation is best-effort/non-blocking so stalled cleanup cannot hold the caller beyond the controlled error path.
 
 T4 — pure signed `payment.preorder` request construction for `/payment/v1/merchant/preOrder`; no provider mutation.
 
@@ -18,7 +18,7 @@ T5 — bounded preorder-response classification. `ORDER_CREATED` requires an exp
 
 T6 — durable pre-submit correlation intent with idempotency, transaction, merchant-order and nonce replay protection. Local JSON persistence uses an exclusive local lock plus revision compare-and-swap, fsync of the candidate file, atomic rename and directory fsync. This is a local synthetic-development safety primitive, not a distributed database, production outbox or exactly-once guarantee. A stale lock fails closed and requires operator review.
 
-T7 — merchant-side read-only `payment.queryorder` request construction and sandbox query client for `/payment/v1/merchant/queryOrder`. The client returns transport/provider payload evidence only and deliberately does not map provider status fields to payment or settlement until the authoritative status-value contract is pinned. Redirects, oversized responses and timeout-overrun body reads fail closed.
+T7 — merchant-side read-only `payment.queryorder` request construction and sandbox query client for `/payment/v1/merchant/queryOrder`. The client returns transport/provider payload evidence only and deliberately does not map provider status fields to payment or settlement until the authoritative status-value contract is pinned. Redirects, oversized responses and timeout-overrun body reads fail closed; controlled early exits abort the request without waiting indefinitely for response-stream cancellation.
 
 T8 — pure signed H5/SuperApp `rawRequest` construction from `appid`, `merch_code`, `nonce_str`, `prepay_id`, timestamp, sign type and signature. Provider and merchant identifiers are constrained so delimiter injection cannot alter the raw request. The builder performs no provider call and does not invoke client `startPay`.
 
@@ -34,6 +34,16 @@ Current Ethio telecom developer-portal documentation confirms:
 - outbound payment requests use RSA request signing and the merchant keeps its private key while sharing the public key with the service provider;
 - payment API scope/subscription is provider-controlled;
 - the current product portal exposes separate C2B and B2B Web Checkout sample demos.
+
+### Sanitized public references
+
+Reviewed against the current public developer portal on 2026-10-13. These URLs contain no account credential or project secret:
+
+- Getting Started: https://developer.ethiotelecom.et/docs/GettingStarted
+- Developer product/TestBed page: https://developer.ethiotelecom.et/user/product
+- MiniApp request-signature process: https://developer.ethiotelecom.et/docs/MiniApp%20Integration%20with%20Supper%20APP/RequestSignatureProcess
+- H5 C2B request-signature process: https://developer.ethiotelecom.et/docs/H5%20C2B%20Web%20Payment%20Integration%20Quick%20Guide/Request_signature_Process
+- H5/SuperApp checkout handoff: https://developer.ethiotelecom.et/docs/H5%20Integration%20with%20Supper%20APP/%20CheckOut
 
 The project-supplied Telebirr H5 material confirms the token → create order → `prepay_id` → raw-request assembly family. Its sample disables TLS verification; Enawuga does not copy that behavior.
 
@@ -69,7 +79,7 @@ Before any direct sandbox network activation, provision fresh/reissued TestBed c
 
 ## TestBed TLS evidence
 
-A temporary credential-free GitHub-hosted Ubuntu 24.04 probe tested the documented hostname, that hostname forced to the supplied TestBed IP, and the raw TestBed IP with ordinary certificate verification only. All failed with curl exit 60 / `unable to get local issuer certificate` / OpenSSL verify result 20. The hostname resolved to the same TestBed IP present in the supplied Postman environment.
+Credential-free probe evidence: GitHub Actions run `38371392549`, executed 2026-10-13 on a GitHub-hosted Ubuntu 24.04 runner. The temporary probe tested the documented hostname, that hostname forced to the supplied TestBed IP, and the raw TestBed IP with ordinary certificate verification only. All failed with curl exit 60 / `unable to get local issuer certificate` / OpenSSL verify result 20. The hostname resolved to the same TestBed IP present in the supplied Postman environment.
 
 The temporary probe performed GET only, used no credentials, sent no payment mutation, and was removed immediately after evidence capture.
 
@@ -98,7 +108,8 @@ Before enabling the first direct Telebirr sandbox preorder network mutation:
 5. pin authoritative `queryOrder` response fields and status-value meanings before mapping any provider status to an Enawuga payment state;
 6. establish authoritative server-side `notify_url` authentication/signature, replay and retry behavior before treating callbacks as trusted authority;
 7. verify provider compatibility with percent-encoded C2B browser query serialization before using T9 against TestBed;
-8. use only freshly provisioned official TestBed synthetic consumer/account data for any controlled end-to-end payment test.
+8. pin provider support for any restricted RSA-PSS private-key parameter profile before accepting such key material;
+9. use only freshly provisioned official TestBed synthetic consumer/account data for any controlled end-to-end payment test.
 
 Until those gates are satisfied, direct Telebirr payment initiation remains disabled.
 
