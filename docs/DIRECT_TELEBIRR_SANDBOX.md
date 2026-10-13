@@ -93,11 +93,11 @@ Observed from a clean GitHub-hosted Ubuntu 24.04 runner:
 
 Therefore the current approved execution environment cannot safely activate direct Telebirr TestBed networking using the supplied endpoint material. Enawuga will not use `verify=False`, curl `-k`, disabled certificate validation or an unapproved custom trust bypass. Provider networking remains fail-closed until Ethio telecom supplies/fixes a certificate chain trusted by the execution environment or provides an explicitly approved CA chain for the TestBed.
 
-The temporary probe workflow is evidence-only and is removed after capture so normal CI does not depend on provider reachability.
+The temporary probe workflow was removed after evidence capture so normal CI does not depend on provider reachability.
 
 ## Exact T9 validation
 
-Head validated before the TLS evidence-only probe: `98ecb584118537ea5679436b1987276f3f2e8d73`.
+T9 code-bearing head: `98ecb584118537ea5679436b1987276f3f2e8d73`.
 GitHub Actions run: `38308461486`.
 
 - Node 24.21.0 / npm 11.19.0;
@@ -108,6 +108,9 @@ GitHub Actions run: `38308461486`.
 - production build: pass;
 - Docker build: pass;
 - Chromium E2E: **13/13 pass**.
+
+Exact current post-probe/cleanup head: `f4d47f756ea78318f11b8dd5e2bfa58547e56907`.
+GitHub Actions run: `38371613799` — success across production audit, lint, **115/115 tests**, build, Docker and **13/13 Chromium E2E**.
 
 Existing full development/tooling findings remain 23 (2 low, 4 moderate, 17 high). The existing Vite >500 kB bundle advisory remains non-blocking.
 
