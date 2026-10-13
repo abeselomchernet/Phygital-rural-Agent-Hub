@@ -155,9 +155,10 @@ export default function OperationsReconciliation() {
           <div>
             <h1 className="text-2xl font-black">Operations & Reconciliation Center</h1>
             <p className="mt-2 text-slate-300">
-              Read-only provider-status workspace for the bounded ArifPay sandbox C2B flow.
-              Wishland software observes and reconciles gateway evidence; PartnerFI remains the
-              future regulated authority for customer funds and settlement.
+              Governed provider-operations workspace. ArifPay sandbox reconciliation is implemented;
+              direct Telebirr is visible only as an inactive TestBed-readiness foundation. Wishland
+              software observes gateway evidence while PartnerFI remains the future regulated authority
+              for customer funds and settlement.
             </p>
           </div>
         </div>
@@ -178,6 +179,43 @@ export default function OperationsReconciliation() {
             <p className="text-slate-400 mt-1">Gateway success never becomes settlement automatically.</p>
           </div>
         </div>
+
+        <div
+          className="rounded-2xl border border-slate-800 bg-slate-900/70 p-5 space-y-4"
+          data-testid="payment-provider-readiness"
+        >
+          <div>
+            <h2 className="font-black text-lg">Payment provider readiness</h2>
+            <p className="text-sm text-slate-400 mt-1">
+              Provider visibility does not imply production approval, settlement authority or live-funds capability.
+            </p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2 text-sm">
+            <div className="rounded-xl border border-emerald-900/70 bg-emerald-950/20 p-4 space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <strong>ArifPay · Sandbox</strong>
+                <span className="rounded-full border border-emerald-700 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-300">
+                  Reconciliation implemented
+                </span>
+              </div>
+              <p className="text-slate-400">
+                Guarded checkout, durable correlation and verified session-ID reconciliation are available in the bounded synthetic flow.
+              </p>
+            </div>
+            <div className="rounded-xl border border-amber-800/70 bg-amber-950/20 p-4 space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <strong>Direct Telebirr · TestBed foundation</strong>
+                <span className="rounded-full border border-amber-700 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-amber-200">
+                  Networking disabled
+                </span>
+              </div>
+              <p className="text-slate-300">
+                T1–T9 safety, signing, correlation, queryOrder transport and checkout-handoff primitives are implemented on the Draft provider branch.
+              </p>
+              <p className="text-amber-200 text-xs font-bold">TLS trust gate unresolved · no direct payment or reconciliation control is exposed.</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
@@ -185,8 +223,8 @@ export default function OperationsReconciliation() {
           <div>
             <h2 className="font-black text-lg">Controlled provider check</h2>
             <p className="text-sm text-slate-400 mt-1">
-              Supervisor/Partner Admin only. The browser never supplies an ArifPay session ID;
-              the server resolves it from the durable checkout record.
+              ArifPay only. Supervisor/Partner Admin only. The browser never supplies an ArifPay session ID;
+              the server resolves it from the durable checkout record. Direct Telebirr remains inactive here.
             </p>
           </div>
 
