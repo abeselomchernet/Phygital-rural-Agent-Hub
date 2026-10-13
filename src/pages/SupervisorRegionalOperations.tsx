@@ -62,11 +62,19 @@ export default function SupervisorRegionalOperations() {
             <p>Gateway or provider evidence never becomes PartnerFI settlement automatically.</p>
           </div>
         </div>
+      </section>
+
+      <section className="product-card" data-testid="supervisor-network-access">
+        <CapabilityBadge state="IMPLEMENTED" />
+        <h2>Role & object access</h2>
         <p>
-          Current access controls remain the governed application controls already in the
-          baseline. This presentation surface does not itself grant a role, capability or
-          object permission.
+          Stage 3 adds explicit synthetic network-object scopes. Supervisor and Partner
+          Admin roles can read only objects present in their server-side scope; bounded
+          provider reconciliation is a separate action and does not imply settlement.
         </p>
+        <Link className="text-link" to="/network-operations">
+          Review Network Operations Access
+        </Link>
       </section>
 
       <div className="product-grid">
