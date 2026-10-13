@@ -1,0 +1,42 @@
+name: M-PESA Ethiopia sandbox verification
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check credential-free sandbox HTTPS connectivity
+        shell: bash
+        run: |
+          http_status=$(curl --silent --show-error --head \
+            --connect-timeout 10 --max-time 20 \
+            --proto '=https' --output /dev/null --write-out '%{http_code}' \
+            https://apisandbox.safaricom.et/)
+          # HTTP errors from the remote endpoint still establish connectivity.
+          # TLS failures and rejected proxy CONNECT tunnels fail the step.
+          [[ "$http_status" =~ ^[1-5][0-9]{2}$ ]]
+          printf 'Sandbox HTTPS endpoint reached; HTTP %s\n' "$http_status"
+
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Run sanitized sandbox token smoke
+        env:
+          MPESA_ETHIOPIA_CONSUMER_KEY: ${{ secrets.MPESA_ETHIOPIA_SANDBOX_CONSUMER_KEY }}
+          MPESA_ETHIOPIA_CONSUMER_SECRET: ${{ secrets.MPESA_ETHIOPIA_SANDBOX_CONSUMER_SECRET }}
+          MPESA_ETHIOPIA_SANDBOX_NETWORK_ENABLED: "true"
+        run: node --import tsx scripts/mpesa-ethiopia-token-smoke.ts
