@@ -1,8 +1,13 @@
-type SyntheticRole = "AGENT" | "SUPERVISOR" | "PARTNER_ADMIN";
+type SyntheticRole =
+  | "AGENT"
+  | "SUPERVISOR"
+  | "OPERATIONS"
+  | "PARTNER_ADMIN";
 
 type SessionView = {
   csrfToken: string;
   role: SyntheticRole;
+  allowedCustomerIds: readonly string[];
   localDevelopmentAuth: true;
 };
 
