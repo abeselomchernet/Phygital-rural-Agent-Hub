@@ -26,27 +26,18 @@ test("Ardi Engine dynamically renders LCR visual layout", async ({ page }) => {
   await expect(page.getByText("Liquidity Coverage Ratio (LCR)")).toBeVisible();
   await expect(page.getByText("Node Grade (86 pts)")).toBeVisible();
 });
-test("Supervisor Portal displays fleet ledger table", async ({ page }) => {
+test("Supervisor route exposes truth-synced Stage 3 network operations", async ({ page }) => {
   await page.goto("/supervisor");
-  await page.getByRole("button", { name: /Fleet Mgmt/ }).click();
+  const workspace = page.getByTestId("supervisor-regional-operations");
   await expect(
-    page.getByRole("heading", { name: "Fleet Management" }),
+    workspace.getByRole("heading", { name: "Supervisor / Regional Operations" }),
   ).toBeVisible();
-  for (const name of [
-    "Agent",
-    "Last Sync",
-    "Status",
-    "Txns",
-    "Volume (ETB)",
-    "Simulated Partner Float",
-    "Ardi Score",
-    "Remote Actions",
-  ])
-    await expect(
-      page.getByRole("columnheader", { name, exact: true }),
-    ).toBeVisible();
-  await expect(page.getByRole("row")).toHaveCount(4);
-  await expect(page.getByRole("row").nth(1)).toContainText("AGT-842");
+  await expect(workspace).toContainText("Network liquidity");
+  await expect(workspace).toContainText("Cash Fleet planning");
+  await expect(workspace).toContainText("FMCG inventory & logistics");
+  await expect(workspace).toContainText("Partner ecosystem");
+  await expect(page.getByText(/Virtual ATM Swap/i)).toHaveCount(0);
+  await expect(page.getByText(/Swap Ledger Target/i)).toHaveCount(0);
 });
 test("offline request persists through reload and reconnect without settlement", async ({
   page,

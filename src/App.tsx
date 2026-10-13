@@ -14,7 +14,7 @@ import AgentKiosk from "./pages/AgentKiosk";
 import Farmer360 from "./pages/Farmer360";
 import GhostSyncQueue from "./pages/GhostSyncQueue";
 import OnboardAgent from "./pages/OnboardAgent";
-import SupervisorPortal from "./pages/SupervisorPortal";
+import SupervisorRegionalOperations from "./pages/SupervisorRegionalOperations";
 import OperationsReconciliation from "./pages/OperationsReconciliation";
 import PartnerEcosystem from "./pages/PartnerEcosystem";
 import NetworkLiquidity from "./pages/NetworkLiquidity";
@@ -117,7 +117,7 @@ export default function App() {
           <Route path="/farmer-360" element={<Farmer360 />} />
           <Route path="/queue" element={<GhostSyncQueue />} />
           <Route path="/onboard" element={<OnboardAgent />} />
-          <Route path="/supervisor" element={<SupervisorPortal />} />
+          <Route path="/supervisor" element={<SupervisorRegionalOperations />} />
           <Route path="/operations" element={<OperationsReconciliation />} />
           <Route path="/partners" element={<PartnerEcosystem />} />
           <Route path="/liquidity" element={<NetworkLiquidity />} />
