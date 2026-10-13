@@ -80,6 +80,14 @@ export type PartnerAdapterRegistrationStatus = z.infer<
   typeof PartnerAdapterRegistrationStatusSchema
 >;
 
+export const PartnerAdapterRuntimeModeSchema = z.enum([
+  "FOUNDATION_ONLY",
+  "EXECUTABLE",
+]);
+export type PartnerAdapterRuntimeMode = z.infer<
+  typeof PartnerAdapterRuntimeModeSchema
+>;
+
 export const PartnerRouteRegistrationStatusSchema = z.enum([
   "DISABLED",
   "SYNTHETIC_BOUNDED",
@@ -104,6 +112,7 @@ export const PartnerAdapterRegistrationSchema = z
     credentialRef: CredentialReferenceSchema,
     implementationKey: InternalKeySchema,
     status: PartnerAdapterRegistrationStatusSchema,
+    runtimeMode: PartnerAdapterRuntimeModeSchema,
     evidenceRefs: UniqueEvidenceRefsSchema,
   })
   .strict();
@@ -181,7 +190,7 @@ export type PartnerGovernedRouteRequest = {
   pinnedRouteId?: string | null;
 };
 
-const usableAdapterStatusByEnvironment: Record<
+const registeredAdapterStatusByEnvironment: Record<
   PartnerContractEnvironment,
   readonly PartnerAdapterRegistrationStatus[]
 > = {
@@ -229,15 +238,23 @@ export class PartnerAdapterRegistry {
     if (this.adapters.has(metadata.adapterId))
       throw new Error("ADAPTER_ID_ALREADY_REGISTERED");
 
-    const usableStatuses = usableAdapterStatusByEnvironment[metadata.environment];
-    const isUsable = usableStatuses.includes(metadata.status);
-    if (isUsable && !factory) throw new Error("USABLE_ADAPTER_FACTORY_REQUIRED");
+    const registeredStatuses =
+      registeredAdapterStatusByEnvironment[metadata.environment];
+    const environmentRegistered = registeredStatuses.includes(metadata.status);
     if (
       metadata.status !== "REGISTERED_DISABLED" &&
       metadata.status !== "SUSPENDED" &&
-      !isUsable
+      !environmentRegistered
     )
       throw new Error("ADAPTER_STATUS_ENVIRONMENT_MISMATCH");
+
+    if (metadata.runtimeMode === "EXECUTABLE") {
+      if (!environmentRegistered)
+        throw new Error("EXECUTABLE_ADAPTER_REQUIRES_REGISTERED_ENVIRONMENT");
+      if (!factory) throw new Error("EXECUTABLE_ADAPTER_FACTORY_REQUIRED");
+    } else if (factory) {
+      throw new Error("FOUNDATION_ONLY_ADAPTER_FACTORY_FORBIDDEN");
+    }
 
     this.adapters.set(metadata.adapterId, { metadata, factory });
     return structuredClone(metadata);
@@ -270,6 +287,8 @@ export class PartnerAdapterRegistry {
       !isUsable
     )
       throw new Error("ROUTE_STATUS_ENVIRONMENT_MISMATCH");
+    if (isUsable && stored.metadata.runtimeMode !== "EXECUTABLE")
+      throw new Error("ROUTE_REQUIRES_EXECUTABLE_ADAPTER");
 
     this.routes.set(route.routeId, route);
     return structuredClone(route);
@@ -289,9 +308,10 @@ export class PartnerAdapterRegistry {
     const entries = [...this.routes.values()].flatMap((route) => {
       const stored = this.adapters.get(route.adapterId);
       if (!stored) return [];
-      if (!this.routeIsUsable(route) || !this.adapterIsUsable(stored.metadata))
-        return [];
-      return [[route.routeId, asPartnerResolvedRoute(route, stored.metadata)] as const];
+      if (!this.routeIsUsable(route) || !this.adapterIsUsable(stored)) return [];
+      return [
+        [route.routeId, asPartnerResolvedRoute(route, stored.metadata)] as const,
+      ];
     });
     return Object.fromEntries(entries);
   }
@@ -311,8 +331,7 @@ export class PartnerAdapterRegistry {
 
     const stored = this.adapters.get(route.adapterId);
     if (!stored) throw new Error("ROUTE_ADAPTER_NOT_REGISTERED");
-    if (!this.adapterIsUsable(stored.metadata))
-      throw new Error("ADAPTER_NOT_USABLE");
+    if (!this.adapterIsUsable(stored)) throw new Error("ADAPTER_NOT_USABLE");
     if (stored.metadata.environment !== input.environment)
       throw new Error("ADAPTER_ENVIRONMENT_MISMATCH");
     if (!stored.metadata.supportedCapabilities.includes(input.capabilityId))
@@ -384,9 +403,13 @@ export class PartnerAdapterRegistry {
     });
   }
 
-  private adapterIsUsable(metadata: PartnerAdapterRegistration) {
-    return usableAdapterStatusByEnvironment[metadata.environment].includes(
-      metadata.status,
+  private adapterIsUsable(stored: StoredAdapter) {
+    return (
+      stored.metadata.runtimeMode === "EXECUTABLE" &&
+      Boolean(stored.factory) &&
+      registeredAdapterStatusByEnvironment[stored.metadata.environment].includes(
+        stored.metadata.status,
+      )
     );
   }
 
@@ -409,6 +432,7 @@ export function adapterRegistration(input: {
   credentialRef?: string | null;
   implementationKey: string;
   status: PartnerAdapterRegistrationStatus;
+  runtimeMode: PartnerAdapterRuntimeMode;
   evidenceRefs?: string[];
 }) {
   return PartnerAdapterRegistrationSchema.parse({
