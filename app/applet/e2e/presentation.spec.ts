@@ -45,17 +45,22 @@ test("three-language kiosk presentation retains safe local demonstrations", asyn
   ).toBeVisible();
   expect(posts).toEqual([]);
 });
-test("static preview keeps portfolio visible without fabricating customer or partner state", async ({
+test("Farmer 360 is a read-only agent-assisted overview without customer transaction controls", async ({
   page,
 }) => {
-  await page.route("**/api/demo/**", (r) =>
-    r.fulfill({
-      status: 200,
-      contentType: "text/html",
-      body: "<html>SPA-only preview</html>",
-    }),
-  );
+  const businessMutations: string[] = [];
+  page.on("request", (r) => {
+    if (r.method() === "POST") businessMutations.push(r.url());
+  });
   await page.goto("/farmer-360");
+  await expect(
+    page.getByRole("heading", {
+      name: "Farmer 360 — agent-assisted customer overview",
+    }),
+  ).toBeVisible();
+  await expect(page.getByTestId("farmer-360-overview")).toContainText(
+    "not farmer self-service",
+  );
   for (const name of [
     "Savings groups & Equb",
     "Agricultural input vouchers",
@@ -69,16 +74,10 @@ test("static preview keeps portfolio visible without fabricating customer or par
     await expect(
       page.getByRole("heading", { name, exact: true }),
     ).toBeVisible();
-  await expect(
-    page.getByText(
-      "Synthetic authenticated demo API unavailable. Existing outbox records are retained.",
-    ),
-  ).toBeVisible();
-  await expect(page.getByRole("button", { name: /Cash In/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Cash In|Cash Out|verification/i })).toHaveCount(0);
   await expect(page.getByTestId("partner-balance")).toHaveCount(0);
-  await expect(
-    page.getByText("DISABLED PENDING PARTNER AUTHORIZATION", { exact: true }),
-  ).toHaveCount(9);
+  await expect(page.getByText(/No real PII, Fayda lookup, bank balance/)).toBeVisible();
+  expect(businessMutations).toEqual([]);
 });
 test("readiness, transport and conversation concepts never invoke external operations", async ({
   page,
@@ -92,11 +91,17 @@ test("readiness, transport and conversation concepts never invoke external opera
     else businessMutations.push(url);
   });
   await page.goto("/onboard");
+  await expect(page.getByTestId("agent-readiness-boundary")).toContainText(
+    "separate from customer KYC and transaction-request workflows",
+  );
   await page.getByRole("button", { name: "2. Business review" }).click();
   await expect(page.getByText(/accepts no commercial data/)).toBeVisible();
   await page.getByRole("button", { name: "3. Device readiness" }).click();
   await expect(page.getByText(/No device is registered/)).toBeVisible();
   await page.goto("/data-mule");
+  await expect(page.getByTestId("data-mule-boundary")).toContainText(
+    "does not discover devices",
+  );
   await page
     .getByRole("button", { name: "Advance illustrative handoff" })
     .click();
@@ -107,6 +112,9 @@ test("readiness, transport and conversation concepts never invoke external opera
     page.getByRole("button", { name: "Financial resolution disabled" }),
   ).toBeDisabled();
   await page.goto("/transcription");
+  await expect(page.getByTestId("conversation-boundary")).toContainText(
+    "No microphone capture",
+  );
   await page.getByRole("button", { name: "Load sample dialogue" }).click();
   await expect(
     page.getByText("No. PartnerFI authorization is a separate step."),

@@ -17,14 +17,15 @@ test("Agent Kiosk Layout loads properly", async ({ page }) => {
     page.getByText(/Partner Account — simulated balance/),
   ).toBeVisible();
 });
-test("Ardi Engine dynamically renders LCR visual layout", async ({ page }) => {
+test("Ardi calculator exposes bounded LCI scenario without legacy grades or limits", async ({ page }) => {
   await page.goto("/ardi-engine");
-  await page.getByRole("button", { name: /Agent Liquidity/i }).click();
-  await expect(page.getByText("Liquidity Inputs")).toBeVisible();
-  await expect(page.getByText("Awaiting Computation")).toBeVisible();
-  await page.getByRole("button", { name: "Compute Demo Score" }).click();
-  await expect(page.getByText("Liquidity Coverage Ratio (LCR)")).toBeVisible();
-  await expect(page.getByText("Node Grade (86 pts)")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Ardi planning calculator" }),
+  ).toBeVisible();
+  await expect(page.getByTestId("ardi-lci")).toBeVisible();
+  await expect(page.getByText(/not prudential regulatory LCR/)).toBeVisible();
+  await expect(page.getByText("Agent LCR & Grade", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Node Grade (86 pts)", { exact: true })).toHaveCount(0);
 });
 test("Supervisor route exposes truth-synced Stage 3 network operations", async ({ page }) => {
   await page.goto("/supervisor");

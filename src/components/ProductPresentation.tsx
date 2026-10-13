@@ -37,7 +37,7 @@ const copy = {
     kiosk: "Agent Terminal",
     portfolio: "Farmer 360 service portfolio",
     inventory: "Inventory & restock",
-    liquidity: "Liquidity planning",
+    liquidity: "Local liquidity scenario",
     hardware: "Device & printer concepts",
     training: "Agent learning",
     onboarding: "Agent readiness",
@@ -51,7 +51,7 @@ const copy = {
     kiosk: "የወኪል ተርሚናል",
     portfolio: "የገበሬ 360 አገልግሎቶች",
     inventory: "ዕቃ እና ዳግም አቅርቦት",
-    liquidity: "የገንዘብ ፍሰት እቅድ",
+    liquidity: "የአካባቢ ፈሳሽነት ሁኔታ",
     hardware: "የመሣሪያ እና አታሚ ጽንሰ ሀሳብ",
     training: "የወኪል ትምህርት",
     onboarding: "የወኪል ዝግጅት",
@@ -65,7 +65,7 @@ const copy = {
     kiosk: "Terminalii Bakka Bu’aa",
     portfolio: "Tajaajiloota Qonnaan Bulaa 360",
     inventory: "Kuusaa fi dhiyeessii",
-    liquidity: "Karoora maallaqa",
+    liquidity: "Haala dhangala'aa naannoo",
     hardware: "Yaada meeshaa fi maxxansaa",
     training: "Barnoota bakka bu’aa",
     onboarding: "Qophii bakka bu’aa",
@@ -133,18 +133,31 @@ export function PresentationShell({ children }: { children: ReactNode }) {
           </p>
         </div>
         <nav className="product-nav" aria-label="Prototype modules">
-          <Link to="/kiosk">{t.kiosk}</Link>
-          <Link to="/farmer-360">Farmer 360</Link>
-          <Link to="/queue">GhostSync</Link>
-          <Link to="/onboard">{t.onboarding}</Link>
-          <Link to="/supervisor">Supervisor</Link>
-          <Link to="/operations">Operations</Link>
-          <Link to="/partners">Partner Ecosystem</Link>
-          <Link to="/data-mule">Data Mule</Link>
-          <Link to="/node-status">Demo architecture</Link>
-          <Link to="/academy">{t.training}</Link>
-          <Link to="/transcription">Conversation</Link>
-          <Link to="/ardi-engine">Ardi calculator</Link>
+          <div className="product-nav-group">
+            <span className="product-nav-label">Field workflows</span>
+            <Link to="/kiosk">{t.kiosk}</Link>
+            <Link to="/farmer-360">Farmer 360</Link>
+            <Link to="/onboard">{t.onboarding}</Link>
+            <Link to="/academy">{t.training}</Link>
+            <Link to="/queue">GhostSync</Link>
+            <Link to="/data-mule">Data Mule</Link>
+            <Link to="/transcription">Conversation</Link>
+          </div>
+          <div className="product-nav-group">
+            <span className="product-nav-label">Network operations</span>
+            <Link to="/supervisor">Supervisor</Link>
+            <Link to="/operations">Operations</Link>
+            <Link to="/network-operations">Access</Link>
+            <Link to="/partners">Partner Ecosystem</Link>
+            <Link to="/liquidity">Network Liquidity</Link>
+            <Link to="/cash-fleet">Cash Fleet</Link>
+            <Link to="/fmcg">FMCG</Link>
+          </div>
+          <div className="product-nav-group">
+            <span className="product-nav-label">Evidence & concepts</span>
+            <Link to="/node-status">Demo architecture</Link>
+            <Link to="/ardi-engine">Ardi calculator</Link>
+          </div>
         </nav>
         <div className="product-content">{children}</div>
         <footer className="product-footer">
