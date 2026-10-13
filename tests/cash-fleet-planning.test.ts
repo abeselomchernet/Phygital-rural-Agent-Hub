@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import assert from "node:assert/strict";
+import test from "node:test";
 import {
   LiquidityPlanningSourceSchema,
   SYNTHETIC_CASH_FLEET_POLICY,
@@ -6,9 +7,19 @@ import {
   syntheticLiquidityPlanningSources,
 } from "../src/domain/cashFleetPlanning";
 
-describe("synthetic Cash Fleet and liquidity-match planning", () => {
-  it("keeps custody, dispatch, handover, cash movement and PartnerFI posting disabled", () => {
-    expect(SYNTHETIC_CASH_FLEET_POLICY).toMatchObject({
+test("synthetic Cash Fleet keeps custody, dispatch, handover, movement and PartnerFI posting disabled", () => {
+  assert.deepEqual(
+    {
+      mode: SYNTHETIC_CASH_FLEET_POLICY.mode,
+      custodyAuthorized: SYNTHETIC_CASH_FLEET_POLICY.custodyAuthorized,
+      dispatchAuthorized: SYNTHETIC_CASH_FLEET_POLICY.dispatchAuthorized,
+      handoverAuthorized: SYNTHETIC_CASH_FLEET_POLICY.handoverAuthorized,
+      cashMovementAuthorized: SYNTHETIC_CASH_FLEET_POLICY.cashMovementAuthorized,
+      partnerFiPostingAuthorized: SYNTHETIC_CASH_FLEET_POLICY.partnerFiPostingAuthorized,
+      commercialSettlementAuthorized:
+        SYNTHETIC_CASH_FLEET_POLICY.commercialSettlementAuthorized,
+    },
+    {
       mode: "PLANNING_SIMULATION_ONLY",
       custodyAuthorized: false,
       dispatchAuthorized: false,
@@ -16,28 +27,41 @@ describe("synthetic Cash Fleet and liquidity-match planning", () => {
       cashMovementAuthorized: false,
       partnerFiPostingAuthorized: false,
       commercialSettlementAuthorized: false,
-    });
+    },
+  );
 
-    for (const source of syntheticLiquidityPlanningSources) {
-      expect(source.capabilityState).toBe("SIMULATION_ONLY");
-      expect(source.custodyAuthorized).toBe(false);
-      expect(source.dispatchAuthorized).toBe(false);
-      expect(source.handoverAuthorized).toBe(false);
-      expect(source.digitalPostingAuthorized).toBe(false);
-      expect(source.capacityMeaning).toBe(
-        "SYNTHETIC_PLANNING_CAPACITY_NOT_CONFIRMED_CASH",
-      );
-    }
-  });
+  for (const source of syntheticLiquidityPlanningSources) {
+    assert.equal(source.capabilityState, "SIMULATION_ONLY");
+    assert.equal(source.custodyAuthorized, false);
+    assert.equal(source.dispatchAuthorized, false);
+    assert.equal(source.handoverAuthorized, false);
+    assert.equal(source.digitalPostingAuthorized, false);
+    assert.equal(
+      source.capacityMeaning,
+      "SYNTHETIC_PLANNING_CAPACITY_NOT_CONFIRMED_CASH",
+    );
+  }
+});
 
-  it("builds a deterministic 2H match for the priority synthetic shortfall", () => {
-    const plan = buildSyntheticLiquidityMatchPlan("2H");
+test("2H planning deterministically matches the priority synthetic shortfall", () => {
+  const plan = buildSyntheticLiquidityMatchPlan("2H");
 
-    expect(plan.totalPriorityShortfallMinor).toBe(1_500_000);
-    expect(plan.totalPlannedMatchMinor).toBe(1_500_000);
-    expect(plan.unmatchedShortfallMinor).toBe(0);
-    expect(plan.recommendations).toHaveLength(1);
-    expect(plan.recommendations[0]).toMatchObject({
+  assert.equal(plan.totalPriorityShortfallMinor, 1_500_000);
+  assert.equal(plan.totalPlannedMatchMinor, 1_500_000);
+  assert.equal(plan.unmatchedShortfallMinor, 0);
+  assert.equal(plan.recommendations.length, 1);
+  assert.deepEqual(
+    {
+      horizon: plan.recommendations[0]?.horizon,
+      agentId: plan.recommendations[0]?.agentId,
+      sourceId: plan.recommendations[0]?.sourceId,
+      plannedAmountMinor: plan.recommendations[0]?.plannedAmountMinor,
+      remainingAgentShortfallAfterMatchMinor:
+        plan.recommendations[0]?.remainingAgentShortfallAfterMatchMinor,
+      status: plan.recommendations[0]?.status,
+      authorityBoundary: plan.recommendations[0]?.authorityBoundary,
+    },
+    {
       horizon: "2H",
       agentId: "synthetic-agent-charlie",
       sourceId: "synthetic-source-cash-fleet-central",
@@ -46,46 +70,46 @@ describe("synthetic Cash Fleet and liquidity-match planning", () => {
       status: "PLANNING_MATCH_ONLY",
       authorityBoundary:
         "NO_CUSTODY_DISPATCH_HANDOVER_CASH_MOVEMENT_OR_PARTNERFI_POSTING",
-    });
-  });
+    },
+  );
+});
 
-  it("does not over-allocate shared synthetic planning capacity at EOD", () => {
-    const plan = buildSyntheticLiquidityMatchPlan("EOD");
+test("EOD planning does not over-allocate shared synthetic planning capacity", () => {
+  const plan = buildSyntheticLiquidityMatchPlan("EOD");
 
-    expect(plan.totalPriorityShortfallMinor).toBe(11_000_000);
-    expect(plan.sourcePlanningCapacityMinor).toBe(9_500_000);
-    expect(plan.totalPlannedMatchMinor).toBe(9_000_000);
-    expect(plan.unmatchedShortfallMinor).toBe(2_000_000);
-    expect(plan.sourcePlanningCapacityRemainingMinor).toBe(500_000);
+  assert.equal(plan.totalPriorityShortfallMinor, 11_000_000);
+  assert.equal(plan.sourcePlanningCapacityMinor, 9_500_000);
+  assert.equal(plan.totalPlannedMatchMinor, 9_000_000);
+  assert.equal(plan.unmatchedShortfallMinor, 2_000_000);
+  assert.equal(plan.sourcePlanningCapacityRemainingMinor, 500_000);
 
-    const allocatedBySource = new Map<string, number>();
-    for (const recommendation of plan.recommendations) {
-      allocatedBySource.set(
-        recommendation.sourceId,
-        (allocatedBySource.get(recommendation.sourceId) ?? 0) +
-          recommendation.plannedAmountMinor,
-      );
-      expect(recommendation.status).toBe("PLANNING_MATCH_ONLY");
-    }
+  const allocatedBySource = new Map<string, number>();
+  for (const recommendation of plan.recommendations) {
+    allocatedBySource.set(
+      recommendation.sourceId,
+      (allocatedBySource.get(recommendation.sourceId) ?? 0) +
+        recommendation.plannedAmountMinor,
+    );
+    assert.equal(recommendation.status, "PLANNING_MATCH_ONLY");
+  }
 
-    for (const source of syntheticLiquidityPlanningSources) {
-      expect(allocatedBySource.get(source.sourceId) ?? 0).toBeLessThanOrEqual(
-        source.planningCapacityMinor,
-      );
-    }
-  });
+  for (const source of syntheticLiquidityPlanningSources) {
+    assert.ok(
+      (allocatedBySource.get(source.sourceId) ?? 0) <= source.planningCapacityMinor,
+    );
+  }
+});
 
-  it("fails closed if a planning source tries to assert dispatch authority", () => {
-    const source = syntheticLiquidityPlanningSources[0];
-    expect(() =>
-      LiquidityPlanningSourceSchema.parse({
-        ...source,
-        dispatchAuthorized: true,
-      }),
-    ).toThrow();
-  });
+test("planning source schema fails closed on asserted dispatch authority", () => {
+  const source = syntheticLiquidityPlanningSources[0];
+  assert.throws(() =>
+    LiquidityPlanningSourceSchema.parse({
+      ...source,
+      dispatchAuthorized: true,
+    }),
+  );
+});
 
-  it("rejects an unsupported liquidity horizon", () => {
-    expect(() => buildSyntheticLiquidityMatchPlan("24H" as never)).toThrow();
-  });
+test("liquidity matching rejects unsupported horizons", () => {
+  assert.throws(() => buildSyntheticLiquidityMatchPlan("24H" as never));
 });
