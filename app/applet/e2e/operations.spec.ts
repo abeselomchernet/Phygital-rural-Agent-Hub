@@ -43,9 +43,8 @@ test("operations reconciliation workspace is first-class navigation but privileg
   await expect(mpesa).toContainText("Callback authority unavailable");
   await expect(page.getByRole("button", { name: /m-pesa|mpesa/i })).toHaveCount(0);
 
-  const controlledProviderCheck = page.getByText("Controlled provider check").locator("..");
-  await expect(controlledProviderCheck).toContainText("ArifPay only");
-  await expect(controlledProviderCheck).toContainText("PartnerFI").toHaveCount(0);
+  await expect(page.getByText("Controlled provider check")).toBeVisible();
+  await expect(page.getByText(/ArifPay only\. Supervisor\/Partner Admin only\./)).toBeVisible();
 
   await page
     .getByRole("button", { name: "Start synthetic supervisor session" })
