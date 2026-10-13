@@ -3,6 +3,7 @@ import { z } from "zod";
 export const NetworkOperationsRoleSchema = z.enum([
   "AGENT",
   "SUPERVISOR",
+  "OPERATIONS",
   "PARTNER_ADMIN",
 ]);
 export type NetworkOperationsRole = z.infer<typeof NetworkOperationsRoleSchema>;
@@ -108,12 +109,19 @@ export const networkOperationsObjects: readonly NetworkOperationsObject[] = [
 ].map((entry) => NetworkOperationsObjectSchema.parse(entry));
 
 const allObjectIds = networkOperationsObjects.map((entry) => entry.objectId);
+const operationsObjectIds = networkOperationsObjects
+  .filter(
+    (entry) =>
+      entry.kind === "PARTNER_ECOSYSTEM" || entry.kind === "PROVIDER_RECONCILIATION",
+  )
+  .map((entry) => entry.objectId);
 
 export function defaultNetworkObjectIdsForRole(
   role: NetworkOperationsRole,
 ): readonly NetworkOperationsObjectId[] {
   const parsedRole = NetworkOperationsRoleSchema.parse(role);
   if (parsedRole === "AGENT") return [];
+  if (parsedRole === "OPERATIONS") return [...operationsObjectIds];
   return [...allObjectIds];
 }
 
@@ -130,6 +138,10 @@ export function isNetworkOperationsActionAuthorized(
   );
   if (!object) return false;
   if (parsedRole === "AGENT") return false;
+  if (parsedRole === "OPERATIONS") {
+    if (object.kind === "PROVIDER_RECONCILIATION") return true;
+    return parsedAction === "READ" && object.kind === "PARTNER_ECOSYSTEM";
+  }
   if (parsedAction === "READ") return true;
   return object.kind === "PROVIDER_RECONCILIATION";
 }
