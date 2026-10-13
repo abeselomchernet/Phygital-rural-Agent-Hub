@@ -16,6 +16,7 @@ import GhostSyncQueue from "./pages/GhostSyncQueue";
 import OnboardAgent from "./pages/OnboardAgent";
 import SupervisorPortal from "./pages/SupervisorPortal";
 import OperationsReconciliation from "./pages/OperationsReconciliation";
+import PartnerEcosystem from "./pages/PartnerEcosystem";
 import DataMule from "./pages/DataMule";
 import LiveTranscription from "./pages/LiveTranscription";
 import DemoArchitecture from "./pages/SovereignNode";
@@ -46,18 +47,31 @@ export default function App() {
                   <InventoryDemo />
                   <LiquidityDemo />
                 </div>
-                <section className="product-card">
-                  <CapabilityBadge state="IMPLEMENTED" />
-                  <h2>Operations & reconciliation</h2>
-                  <p>
-                    Governed ArifPay sandbox status checks for supervisor/admin
-                    operations. Gateway confirmation remains separate from PartnerFI
-                    settlement.
-                  </p>
-                  <Link to="/operations" className="text-link">
-                    Open Operations & Reconciliation Center
-                  </Link>
-                </section>
+                <div className="product-grid">
+                  <section className="product-card">
+                    <CapabilityBadge state="IMPLEMENTED" />
+                    <h2>Operations & reconciliation</h2>
+                    <p>
+                      Governed ArifPay sandbox status checks for supervisor/admin
+                      operations. Gateway confirmation remains separate from PartnerFI
+                      settlement.
+                    </p>
+                    <Link to="/operations" className="text-link">
+                      Open Operations & Reconciliation Center
+                    </Link>
+                  </section>
+                  <section className="product-card" data-testid="partner-ecosystem-home-card">
+                    <CapabilityBadge state="SYNTHETIC DEMO" />
+                    <h2>Partner ecosystem</h2>
+                    <p>
+                      Stage 3 read-only partner classes, capability switches and route
+                      provenance. Code presence never becomes service authorization.
+                    </p>
+                    <Link to="/partners" className="text-link">
+                      Open Partner Ecosystem Console
+                    </Link>
+                  </section>
+                </div>
                 <ServicePortfolio />
               </>
             }
@@ -68,6 +82,7 @@ export default function App() {
           <Route path="/onboard" element={<OnboardAgent />} />
           <Route path="/supervisor" element={<SupervisorPortal />} />
           <Route path="/operations" element={<OperationsReconciliation />} />
+          <Route path="/partners" element={<PartnerEcosystem />} />
           <Route path="/data-mule" element={<DataMule />} />
           <Route path="/transcription" element={<LiveTranscription />} />
           <Route path="/node-status" element={<DemoArchitecture />} />
