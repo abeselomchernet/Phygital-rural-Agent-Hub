@@ -72,6 +72,17 @@ export default function App() {
                       Open Partner Ecosystem Console
                     </Link>
                   </section>
+                  <section className="product-card" data-testid="network-liquidity-home-card">
+                    <CapabilityBadge state="SYNTHETIC DEMO" />
+                    <h2>Network liquidity</h2>
+                    <p>
+                      Stage 3 NLC / Liquidity Coverage Index planning for 2H, 4H, 8H and
+                      EOD horizons. Synthetic decision support only; not regulatory LCR.
+                    </p>
+                    <Link to="/liquidity" className="text-link">
+                      Open Network Liquidity Console
+                    </Link>
+                  </section>
                 </div>
                 <ServicePortfolio />
               </>
