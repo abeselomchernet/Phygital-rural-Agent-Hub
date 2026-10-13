@@ -1,6 +1,7 @@
 import { syntheticMetadata } from "../demo/fixtures";
 import type { Express } from "express";
 import { z } from "zod";
+import type { PartnerAdapterRegistry } from "../domain/adapterRegistry";
 import {
   CustomerStore,
   type CustomerStorePersistence,
@@ -33,7 +34,15 @@ import {
   SyntheticAuditLog,
   type SyntheticAuditPersistence,
 } from "./audit";
-import { createDefaultSyntheticFinancialInstitutionAdapter } from "./adapter-bootstrap";
+import {
+  createDefaultSyntheticFinancialInstitutionAdapter,
+  createRuntimeAdapterRegistry,
+} from "./adapter-bootstrap";
+import {
+  SyntheticWorkspaceKeySchema,
+  generateSyntheticWorkspaceForSession,
+  resolveSyntheticWorkspaceContext,
+} from "./workspace";
 
 export const demoPhones = [
   "+251900000001",
@@ -51,9 +60,15 @@ export interface DemoApiOptions {
   auditPersistence?: SyntheticAuditPersistence;
   paymentGateway?: PaymentGatewayAdapter;
   paymentGatewayReconciliation?: PaymentGatewayReconciliationService;
+  adapterRegistry?: PartnerAdapterRegistry;
 }
 
-const roleSchema = z.enum(["AGENT", "SUPERVISOR", "PARTNER_ADMIN"]);
+const roleSchema = z.enum([
+  "AGENT",
+  "SUPERVISOR",
+  "OPERATIONS",
+  "PARTNER_ADMIN",
+]);
 const mutationMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 const demoPhoneSet = new Set<string>(demoPhones);
 
@@ -68,7 +83,9 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
         options.partnerLedgerPersistence,
       ),
     transactions = new TransactionService(customers, partner),
-    auth = new SyntheticAuthService({}, audit);
+    auth = new SyntheticAuthService({}, audit),
+    workspaceRegistry =
+      options.adapterRegistry ?? createRuntimeAdapterRegistry({ env: {} });
 
   let customer = customers
     .list()
@@ -122,8 +139,11 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
 
   app.post("/api/demo/session/start", (req, res) =>
     respond(res, () => {
-      const { role } = z
-        .object({ role: roleSchema.default("AGENT") })
+      const { role, workspaceKey } = z
+        .object({
+          role: roleSchema.default("AGENT"),
+          workspaceKey: SyntheticWorkspaceKeySchema.optional(),
+        })
         .strict()
         .parse(req.body);
       if (role !== "AGENT" && !options.allowPrivilegedSyntheticRoles) {
@@ -135,7 +155,16 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
         });
         throw new SyntheticAuthError("PRIVILEGED_SYNTHETIC_ROLE_DISABLED", 403);
       }
-      const session = auth.createSession(role as SyntheticRole, [fixtureId]);
+      const workspaceContext = resolveSyntheticWorkspaceContext({
+        role: role as SyntheticRole,
+        workspaceKey,
+      });
+      const session = auth.createSession(
+        role as SyntheticRole,
+        [fixtureId],
+        undefined,
+        workspaceContext,
+      );
       auth.setSessionCookie(req, res, session);
       return auth.view(session);
     }),
@@ -159,6 +188,15 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
       ...auth.view(res.locals.syntheticSession),
       ...syntheticMetadata,
     }),
+  );
+  app.get("/api/demo/workspace", (_req, res) =>
+    respond(res, () =>
+      generateSyntheticWorkspaceForSession({
+        session: res.locals.syntheticSession,
+        registry: workspaceRegistry,
+        evaluatedAt: new Date().toISOString(),
+      }),
+    ),
   );
   app.post("/api/demo/session/logout", (req, res) => {
     auth.revoke(res.locals.syntheticSession);
@@ -405,7 +443,7 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
     const session = res.locals.syntheticSession;
     let request;
     try {
-      auth.requireRole(session, ["SUPERVISOR", "PARTNER_ADMIN"]);
+      auth.requireRole(session, ["SUPERVISOR", "OPERATIONS", "PARTNER_ADMIN"]);
       request = PaymentGatewayReconciliationRequestSchema.parse(req.body);
       auth.requireCustomer(session, request.customerId);
       if (request.customerId !== fixtureId)
