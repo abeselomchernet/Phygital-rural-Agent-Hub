@@ -8,33 +8,39 @@ test.beforeEach(async ({ page }) => {
   );
 });
 
-test("primary navigation exposes governed field, network-operations and evidence surfaces", async ({ page }) => {
+test("primary navigation is generated from the active Agent partner workspace", async ({ page }) => {
   await page.goto("/");
-  const navigation = page.getByRole("navigation", { name: "Prototype modules" });
+  const navigation = page.getByRole("navigation", {
+    name: "Role and partner workspace",
+  });
   await expect(navigation).toContainText("Field workflows");
-  await expect(navigation).toContainText("Network operations");
-  await expect(navigation).toContainText("Evidence & concepts");
-
+  await expect(navigation).toContainText("Field tools");
   for (const link of [
+    "Home",
     "Agent Terminal",
     "Farmer 360",
+    "Requests & offline queue",
     "Agent readiness",
     "Agent learning",
-    "GhostSync",
     "Data Mule",
     "Conversation",
-    "Supervisor",
-    "Operations",
-    "Access",
-    "Partner Ecosystem",
-    "Network Liquidity",
-    "Cash Fleet",
-    "FMCG",
-    "Demo architecture",
-    "Ardi calculator",
   ]) {
     await expect(navigation.getByRole("link", { name: link, exact: true })).toBeVisible();
   }
+  await expect(navigation.getByRole("link", { name: "Operations Center" })).toHaveCount(0);
+  await expect(navigation.getByRole("link", { name: "Network Liquidity" })).toHaveCount(0);
+  await expect(navigation.getByRole("link", { name: "Ardi calculator" })).toHaveCount(0);
+
+  const services = page.getByTestId("workspace-services");
+  await expect(services).toContainText("Cash In");
+  await expect(services).toContainText("Cash Out");
+
+  await page.getByLabel("Synthetic reference workspace").selectOption("BETA_AGENT_ADAMA");
+  await expect(page.getByTestId("workspace-context")).toContainText("Beta");
+  await expect(services).toContainText("Savings Inquiry");
+  await expect(services).toContainText("Savings Service Request");
+  await expect(services).not.toContainText("Cash In");
+  await expect(services).not.toContainText("Cash Out");
 });
 
 test("Ardi uses bounded scenario arithmetic and removes legacy grade, swap and vault claims", async ({ page }) => {
