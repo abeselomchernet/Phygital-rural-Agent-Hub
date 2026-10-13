@@ -1,28 +1,54 @@
 # Safaricom Ethiopia M-PESA sandbox foundation
 
-Status: Draft / inactive contract-and-correlation foundation only / synthetic data only.
+Status: Draft / Ethiopia sandbox contract evidence retrieved / runtime networking still inactive / synthetic data only.
 
 Date checked: 2026-10-13.
 
-This workstream establishes only a provider-neutral correlation/reservation foundation plus read-only Operations readiness metadata for a possible future direct Safaricom Ethiopia M-PESA integration. It does not implement an Ethiopia M-PESA API contract and it does not activate any provider network path.
+This workstream now has provider-supplied Safaricom Ethiopia sandbox evidence for the token endpoint and several product endpoints. The runtime remains deliberately unmounted: no M-PESA payment route, customer payment initiation, callback authority, status mapping or PartnerFI mutation is enabled by this PR.
 
-## Established evidence
+## Evidence now established
 
-Current public Safaricom Ethiopia material establishes that:
+Project-supplied Safaricom Ethiopia portal material identifies the `Phygital-rural-Agent-Hub` application in the Sandbox domain with products including Pay Out Sandbox, USSD PUSH Sandbox, TSQ API Product, B2B API Product and Accept Payment Sandbox.
 
-- Safaricom M-PESA Mobile Financial Services PLC operates M-PESA in Ethiopia;
-- M-PESA merchant/payment services exist in Ethiopia, including merchant payments and merchant onboarding;
-- Safaricom Ethiopia has public merchant/paybill/bulk-payment terms and business material for M-PESA services.
+The supplied Ethiopia portal documentation and Postman collection establish these sandbox contract elements:
 
-Sanitized public references reviewed on 2026-10-13:
+- sandbox host: `https://apisandbox.safaricom.et`;
+- token endpoint: `GET /v1/token/generate?grant_type=client_credentials`;
+- token authentication: HTTP Basic using consumer key and consumer secret;
+- successful token shape: `access_token`, `token_type: Bearer`, `expires_in`;
+- USSD Push / merchant-initiated C2B endpoint: `POST /mpesa/stkpush/v3/processrequest` with bearer authentication;
+- C2B URL registration endpoint: `POST /v1/c2b-register-url/register`;
+- B2C payout endpoint: `POST /mpesa/b2c/v2/paymentrequest`;
+- transaction-status endpoint: `POST /mpesa/transactionstatus/v1/query`;
+- account-balance endpoint: `POST /mpesa/accountbalance/v2/query`;
+- reversal endpoint: `POST /mpesa/reversal/v2/request`.
 
-- Safaricom Ethiopia M-PESA launch: https://www.safaricom.et/en/whats-new/latest/news-and-blogs/safaricom-ethiopia-goes-live-with-m-pesa
-- Safaricom Ethiopia terms and conditions, including M-PESA Merchant / Paybill / Bulk Payment: https://www.safaricom.et/en/help-and-support/terms-and-privacy/terms-and-conditions
-- Safaricom M-PESA / EagleLion merchant-integration announcement: https://www.safaricom.et/en/whats-new/latest/news-and-blogs/m-pesa-safaricom-and-eagle-lion-partner-to-drive-digital-financial-inclusion-in-ethiopia
+The credential-bearing source artifacts are evidence inputs only. Their consumer credentials, passkeys, initiator passwords, bearer tokens and security credentials MUST NOT be copied into Git, PR text, browser code, logs, fixtures or documentation. Sandbox credentials should be rotated after the controlled integration work.
 
-A public M-PESA developer-portal lead was identified during research, but the authoritative Ethiopia-specific developer/sandbox contract needed for provider-facing implementation was not retrieved and pinned during this workstream.
+## Evidence inconsistencies that remain gates
 
-Public Kenya/Daraja documentation is NOT treated as an Ethiopia integration contract. No Kenya-specific request fields, endpoints, credentials, token flow, shortcode/passkey model, callback rules, status meanings or currency assumptions are implemented here.
+The Ethiopia source material is not internally uniform, so this PR does not blindly translate every example into runtime behavior.
+
+Known examples:
+
+- some request-parameter descriptions still show Kenya-style `2547...` MSISDN examples even though Ethiopia simulator/example requests use `251...` values;
+- one historical Postman response example contains an `internalsandbox.safaricom.co.ke` result URL even though the actual Ethiopia request endpoints use `apisandbox.safaricom.et`;
+- the USSD Push password description is inconsistent across supplied material: one description says a base64 encoding of `Shortcode + Passkey + Timestamp`, while the Postman test-data note states `Base64(Sha256(ShortCode + Passkey + TimeStamp))`.
+
+Therefore no payer/MSISDN production rule, callback authority rule or USSD Push password derivation is implemented in this PR. Those details require controlled Ethiopia sandbox verification before initiation code is added.
+
+## Callback/authenticity boundary
+
+The supplied material documents asynchronous callbacks, result URLs and C2B validation/confirmation bodies, but the reviewed evidence does not establish an authoritative callback signature, HMAC, mTLS client identity or equivalent authenticity mechanism.
+
+Accordingly:
+
+- inbound callback JSON is not treated as settlement authority;
+- no callback receiver is mounted;
+- no callback result directly mutates PartnerFI or regulated financial state;
+- future callback evidence must be correlated to a reserved internal attempt and independently reconciled where required.
+
+A webhook.site URL was supplied for sandbox observation. It may be used only with Safaricom sandbox/simulator identities and synthetic amounts. It is not an approved production callback endpoint.
 
 ## Current implementation
 
@@ -31,72 +57,73 @@ Implemented now:
 - provider metadata: `MPESA_ETHIOPIA_DIRECT`;
 - jurisdiction metadata: `ET`;
 - environment metadata: `sandbox`;
-- contract status fixed to `UNVERIFIED`;
-- networking fixed to `false`;
-- initiation/status/notification capabilities marked unavailable;
+- contract status: `EVIDENCE_RETRIEVED`;
+- foundation networking fixed to `false`;
+- token contract marked documented;
+- initiation/status-read/notification capabilities remain unavailable;
+- hard-pinned Ethiopia sandbox token host and path;
+- guarded server-side token client primitive with networking disabled unless explicitly enabled by a future reviewed caller;
+- redirect rejection, timeout, bounded-response parsing and strict token-response validation;
+- no token, consumer secret or authorization header persistence;
 - provider-neutral attempt/reservation schema and bounded local synthetic persistence;
 - cross-provider reservation conflict primitives for future reviewed orchestration;
 - read-only Operations readiness visibility.
 
-Not implemented:
+Not implemented or mounted:
 
-- provider endpoint or hostname;
-- OAuth/token client;
-- STK Push or equivalent initiation flow;
-- C2B registration;
-- status-query transport;
+- server/API route for M-PESA;
+- runtime environment wiring that can activate M-PESA networking;
+- USSD Push/C2B payment initiation;
+- C2B URL registration;
+- B2C payout;
+- transaction-status transport;
+- account-balance transport;
+- reversal transport;
 - callback/notification endpoint;
-- credentials, consumer key/secret, shortcode, passkey or merchant identifier;
-- provider-specific correlation/status fields;
+- provider-specific lifecycle/status mapping;
 - PartnerFI account, balance, authorization or settlement mutation.
 
-The neutral attempt store is currently an unmounted foundation. Existing ArifPay and Telebirr runtime flows have not been migrated into it, so this branch does not claim that current live-in-code provider paths already share one cross-provider idempotency store.
+The neutral attempt store remains an unmounted foundation. Existing ArifPay and Telebirr runtime flows have not been migrated into it, so this branch does not claim that current provider implementations already share one global cross-provider idempotency store.
 
-## Unresolved activation gates
+## Controlled token smoke status
 
-Before any direct Safaricom Ethiopia M-PESA sandbox networking can be considered, authoritative Ethiopia-specific evidence must establish and pin at least:
+A credentialed token-generation smoke was attempted on 2026-10-13 using the supplied sandbox application credentials without printing or persisting the credential or returned token. The execution environment could not resolve `apisandbox.safaricom.et` (`curl` exit 6 / HTTP status `000`), so no request reached the provider and no runtime contract verification was obtained from that environment.
 
-1. developer/sandbox availability for the intended Ethiopia account/product;
-2. exact sandbox hostname and endpoint allowlist;
-3. exact subscribed product;
-4. authentication method;
-5. token behavior, if applicable;
-6. amount and currency rules;
-7. merchant/service identifiers;
-8. approved synthetic payer/MSISDN format;
-9. initiation request schema;
-10. initiation response schema;
-11. authoritative provider correlation identifiers;
-12. status/query contract;
-13. lifecycle/status meanings;
-14. notification/callback authentication;
-15. replay and retry rules;
-16. provider idempotency behavior;
-17. redirect policy;
-18. TLS requirements;
-19. provider response/body constraints;
-20. production/sandbox separation.
+This is an environment/network limitation, not evidence of a Safaricom API failure. Runtime token verification remains pending in an execution environment that permits DNS/egress to the pinned Ethiopia sandbox host.
+
+## Remaining activation gates
+
+Before M-PESA payment initiation is mounted, at minimum:
+
+1. complete a successful token-generation smoke against `apisandbox.safaricom.et` with current sandbox credentials;
+2. verify TLS/redirect behavior from the intended execution environment;
+3. confirm the exact app-product assignment for the narrow first payment flow;
+4. pin the Ethiopia USSD Push password derivation using successful sandbox evidence;
+5. confirm approved synthetic Ethiopia payer/MSISDN fixtures and formatting;
+6. verify initiation request/response correlation using `MerchantRequestID` and `CheckoutRequestID`;
+7. establish callback authenticity/replay/retry rules or retain callbacks as non-authoritative evidence;
+8. verify transaction-status semantics before mapping provider state;
+9. define provider idempotency/retry behavior for uncertain initiation outcomes;
+10. preserve strict sandbox/production host and credential separation.
 
 ## Explicit safety boundary
 
-No M-PESA provider call was made in this workstream.
-
-No M-PESA credential was used or stored.
+No payment, payout, reversal, account-balance query, status query or callback registration was sent in this workstream.
 
 No real customer data was used.
 
 No live funds were involved.
 
-No Kenya-specific protocol was implemented.
+No Kenya endpoint or Kenya-only protocol is implemented as an Ethiopia runtime contract.
 
-No callback authority or provider status mapping was introduced.
+No callback authority or provider status-to-settlement mapping is introduced.
 
-No PartnerFI settlement, regulated-account or cash-in/cash-out authority was introduced.
+No PartnerFI settlement, regulated-account or cash-in/cash-out authority is introduced.
 
 Local attempt persistence is a synthetic development safety primitive only. It is not a distributed lock, transactional outbox, provider exactly-once guarantee, regulated ledger or production settlement store.
 
 ## Configuration consequence
 
-Do not add speculative configuration such as `MPESA_BASE_URL`, `MPESA_CONSUMER_KEY`, `MPESA_CONSUMER_SECRET`, `MPESA_SHORTCODE` or `MPESA_PASSKEY` until authoritative Safaricom Ethiopia evidence establishes the relevant contract.
+The repo still does not contain M-PESA credential values. Future runtime configuration may reference server-side secret names for the verified Ethiopia sandbox contract, but values must remain outside Git and browser code.
 
-An environment variable alone must never be capable of activating networking while the contract remains unverified.
+An environment variable alone must never enable a payment path. Activation requires explicit server-side wiring, capability governance, tests and evidence review.
