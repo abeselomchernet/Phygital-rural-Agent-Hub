@@ -17,6 +17,7 @@ import OnboardAgent from "./pages/OnboardAgent";
 import SupervisorPortal from "./pages/SupervisorPortal";
 import OperationsReconciliation from "./pages/OperationsReconciliation";
 import PartnerEcosystem from "./pages/PartnerEcosystem";
+import NetworkLiquidity from "./pages/NetworkLiquidity";
 import DataMule from "./pages/DataMule";
 import LiveTranscription from "./pages/LiveTranscription";
 import DemoArchitecture from "./pages/SovereignNode";
@@ -83,6 +84,7 @@ export default function App() {
           <Route path="/supervisor" element={<SupervisorPortal />} />
           <Route path="/operations" element={<OperationsReconciliation />} />
           <Route path="/partners" element={<PartnerEcosystem />} />
+          <Route path="/liquidity" element={<NetworkLiquidity />} />
           <Route path="/data-mule" element={<DataMule />} />
           <Route path="/transcription" element={<LiveTranscription />} />
           <Route path="/node-status" element={<DemoArchitecture />} />
