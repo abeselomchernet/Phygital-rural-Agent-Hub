@@ -30,6 +30,7 @@ const runtimeAdapters = createRuntimeAdapterContext({
 
 const app = createApp({
   allowPrivilegedSyntheticRoles,
+  adapterRegistry: runtimeAdapters.registry,
   financialInstitutionAdapter: runtimeAdapters.financialInstitutionAdapter,
   ...(syntheticStateDir
     ? {
