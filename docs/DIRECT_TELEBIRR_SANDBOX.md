@@ -24,6 +24,14 @@ T8 — pure signed H5/SuperApp `rawRequest` construction from `appid`, `merch_co
 
 T9 — pure C2B browser Web Checkout URL construction based on the supplied `C2B_WebCheckoutDemo`. Browser query fields are percent-encoded independently so base64 signature bytes survive standards-compliant URL parsing. This safer serialization remains a provider/TestBed conformance gate before activation. T9 performs no provider call, opens no browser, and does not import B2B `WebCheckout` / `TransferToOtherOrg` semantics.
 
+T10 — the existing Operations UI shows provider readiness only. ArifPay remains the only interactive sandbox reconciliation flow. Direct Telebirr is visible only as an inactive TestBed foundation with networking disabled and TLS trust unresolved; no Telebirr payment or reconciliation action is exposed.
+
+## Independent closure review
+
+Astra re-reviewed the post-hardening branch and found no critical or high finding for the inactive foundation. Its remaining medium finding was response cleanup that could outlive the configured deadline on HTTP error/oversized-response paths. The follow-up patch now actively aborts those requests and performs response cancellation without awaiting potentially stalled cleanup. Four regression tests cover token/query HTTP rejection, oversized declared responses, and restricted RSA-PSS key profiles.
+
+This closes the reproduced transport-cleanup gap at the inactive foundation level. It does not activate Telebirr networking and does not change provider/payment/settlement authority.
+
 ## Evidence basis
 
 Current Ethio telecom developer-portal documentation confirms:
