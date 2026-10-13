@@ -16,7 +16,10 @@ test("Partner Ecosystem console exposes governed synthetic capability and route 
   const homeCard = page.getByTestId("partner-ecosystem-home-card");
   await expect(homeCard).toContainText("Partner ecosystem");
   await expect(homeCard).toContainText("Code presence never becomes service authorization");
-  await homeCard.getByRole("link", { name: "Open Partner Ecosystem Console" }).click();
+
+  const navigation = page.getByRole("navigation", { name: "Prototype modules" });
+  await expect(navigation).toContainText("Partner Ecosystem");
+  await navigation.getByRole("link", { name: "Partner Ecosystem", exact: true }).click();
 
   await expect(page).toHaveURL(/\/partners$/);
   await expect(
