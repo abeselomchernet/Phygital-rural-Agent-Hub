@@ -6,14 +6,14 @@ import {
   ServicePortfolio,
   InventoryDemo,
   LiquidityDemo,
-  TrainingDemo,
   CapabilityBadge,
-  OnboardingWalkthrough,
 } from "./components/ProductPresentation";
+import "./components/navigation-groups.css";
 import AgentKiosk from "./pages/AgentKiosk";
 import Farmer360 from "./pages/Farmer360";
 import GhostSyncQueue from "./pages/GhostSyncQueue";
 import OnboardAgent from "./pages/OnboardAgent";
+import AgentLearning from "./pages/AgentLearning";
 import SupervisorRegionalOperations from "./pages/SupervisorRegionalOperations";
 import OperationsNetworkOperations from "./pages/OperationsNetworkOperations";
 import NetworkOperationsAccess from "./pages/NetworkOperationsAccess";
@@ -130,6 +130,7 @@ export default function App() {
           <Route path="/farmer-360" element={<Farmer360 />} />
           <Route path="/queue" element={<GhostSyncQueue />} />
           <Route path="/onboard" element={<OnboardAgent />} />
+          <Route path="/academy" element={<AgentLearning />} />
           <Route path="/supervisor" element={<SupervisorRegionalOperations />} />
           <Route path="/operations" element={<OperationsNetworkOperations />} />
           <Route path="/network-operations" element={<NetworkOperationsAccess />} />
@@ -142,28 +143,7 @@ export default function App() {
           <Route path="/node-status" element={<DemoArchitecture />} />
           <Route path="/judge-ticker" element={<DemoArchitecture />} />
           <Route path="/inventory" element={<InventoryDemo />} />
-          <Route
-            path="/academy"
-            element={
-              <div className="product-grid">
-                <TrainingDemo />
-                <OnboardingWalkthrough />
-              </div>
-            }
-          />
-          <Route
-            path="/ardi-engine"
-            element={
-              <section className="rounded-xl p-4 bg-slate-950">
-                <CapabilityBadge state="SYNTHETIC DEMO" />
-                <p className="text-slate-200 p-4">
-                  Arithmetic scoring illustration only. No AI provider, credit
-                  decision or entitlement.
-                </p>
-                <ArdiEngine />
-              </section>
-            }
-          />
+          <Route path="/ardi-engine" element={<ArdiEngine />} />
           {[
             "swaps",
             "fmcg-liquidity",
