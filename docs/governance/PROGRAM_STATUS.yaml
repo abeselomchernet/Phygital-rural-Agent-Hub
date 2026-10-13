@@ -34,32 +34,50 @@ completed:
   - "Direct Telebirr inactive/TestBed foundation merged in PR #6; activation remains provider-gated"
   - "M-PESA Ethiopia inactive sandbox contract/correlation foundation merged in PR #7"
   - "M-PESA Ethiopia sandbox token contract verified from an external local runtime without exposing token or credentials"
-stage_2_evidence:
+stage_1_evidence:
+  workflow_name: "Synthetic prototype validation"
+  workflow_run_number: 97
+  workflow_run_id: 38261103443
+  node: "v24.21.0"
+  npm: "11.19.0"
+  npm_ci: "PASS_576_PACKAGES"
+  production_audit: "PASS_0_VULNERABILITIES"
+  lint: "PASS"
+  unit_domain_api_tests: "PASS_59_OF_59"
+  build: "PASS"
+  docker_build: "PASS"
+  chromium_e2e: "PASS_12_OF_12"
+  data_mode: "synthetic"
+  external_telemetry: false
+stage_2_exit_evidence:
   arifpay_pr: 5
   arifpay_merge_sha: "023a0919a44a28241711331a2dfc115e530d2294"
   arifpay_sandbox_network_evidence: "HTTP_200_SESSION_AND_SESSION_ID_RECONCILIATION_VERIFIED"
   provider_authority_boundary: "GATEWAY_EVIDENCE_NEVER_PARTNERFI_SETTLEMENT"
-  telebirr_pr: 6
-  telebirr_merge_sha: "75abae49b323d48ec9574dc086c65814726e3012"
-  telebirr_state: "INACTIVE_TESTBED_FOUNDATION"
-  telebirr_activation_gate: "TLS_TRUST_AND_PROVIDER_CONTRACT_EVIDENCE_REQUIRED"
-  mpesa_ethiopia_pr: 7
-  mpesa_ethiopia_merge_sha: "0028b079c1c641535e00db78b58f29bb442136ae"
-  mpesa_ethiopia_state: "INACTIVE_SANDBOX_FOUNDATION_TOKEN_VERIFIED"
-  mpesa_token_contract: "VERIFIED_BEARER_EXPIRES_IN_3599"
-  main_validation:
-    workflow_name: "Synthetic prototype validation"
-    workflow_run_number: 245
-    workflow_run_id: 38426151886
-    result: "PASS"
-    production_audit: "PASS_0_PRODUCTION_FINDINGS"
-    lint: "PASS"
-    tests: "PASS"
-    build: "PASS"
-    docker_build: "PASS"
-    chromium_e2e: "PASS"
-    data_mode: "synthetic"
-    external_telemetry: false
+provider_foundation_evidence:
+  telebirr:
+    pr: 6
+    merge_sha: "75abae49b323d48ec9574dc086c65814726e3012"
+    state: "INACTIVE_TESTBED_FOUNDATION"
+    activation_gate: "TLS_TRUST_AND_PROVIDER_CONTRACT_EVIDENCE_REQUIRED"
+  mpesa_ethiopia:
+    pr: 7
+    merge_sha: "0028b079c1c641535e00db78b58f29bb442136ae"
+    state: "INACTIVE_SANDBOX_FOUNDATION_TOKEN_VERIFIED"
+    token_contract: "VERIFIED_BEARER_EXPIRES_IN_3599"
+main_validation:
+  workflow_name: "Synthetic prototype validation"
+  workflow_run_number: 245
+  workflow_run_id: 38426151886
+  result: "PASS"
+  production_audit: "PASS_0_PRODUCTION_FINDINGS"
+  lint: "PASS"
+  tests: "PASS"
+  build: "PASS"
+  docker_build: "PASS"
+  chromium_e2e: "PASS"
+  data_mode: "synthetic"
+  external_telemetry: false
   non_blocking_observations:
     - "development/tooling graph: 23 findings (2 low, 4 moderate, 17 high)"
     - "existing Vite >500kB chunk advisory"
