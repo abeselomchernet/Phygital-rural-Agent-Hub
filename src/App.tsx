@@ -19,6 +19,7 @@ import OperationsReconciliation from "./pages/OperationsReconciliation";
 import PartnerEcosystem from "./pages/PartnerEcosystem";
 import NetworkLiquidity from "./pages/NetworkLiquidity";
 import CashFleetPlanning from "./pages/CashFleetPlanning";
+import FmcgCommerce from "./pages/FmcgCommerce";
 import DataMule from "./pages/DataMule";
 import LiveTranscription from "./pages/LiveTranscription";
 import DemoArchitecture from "./pages/SovereignNode";
@@ -96,6 +97,17 @@ export default function App() {
                       Open Cash Fleet Planning Console
                     </Link>
                   </section>
+                  <section className="product-card" data-testid="fmcg-home-card">
+                    <CapabilityBadge state="SYNTHETIC DEMO" />
+                    <h2>FMCG inventory & logistics</h2>
+                    <p>
+                      Purpose-limited synthetic inventory, restock-draft and route
+                      planning. No live order, dispatch or settlement is authorized.
+                    </p>
+                    <Link to="/fmcg" className="text-link">
+                      Open FMCG Inventory & Logistics Console
+                    </Link>
+                  </section>
                 </div>
                 <ServicePortfolio />
               </>
@@ -110,6 +122,7 @@ export default function App() {
           <Route path="/partners" element={<PartnerEcosystem />} />
           <Route path="/liquidity" element={<NetworkLiquidity />} />
           <Route path="/cash-fleet" element={<CashFleetPlanning />} />
+          <Route path="/fmcg" element={<FmcgCommerce />} />
           <Route path="/data-mule" element={<DataMule />} />
           <Route path="/transcription" element={<LiveTranscription />} />
           <Route path="/node-status" element={<DemoArchitecture />} />
