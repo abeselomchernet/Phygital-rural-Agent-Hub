@@ -19,9 +19,19 @@ test("operations reconciliation workspace is first-class navigation but privileg
   await expect(
     page.getByRole("heading", { name: "Operations & Reconciliation Center" }),
   ).toBeVisible();
-  await expect(page.getByText("ArifPay · Sandbox")).toBeVisible();
+  await expect(page.getByText("ArifPay · Sandbox").first()).toBeVisible();
   await expect(page.getByText("Webhook authority")).toBeVisible();
   await expect(page.getByText("PartnerFI · Separate")).toBeVisible();
+
+  const readiness = page.getByTestId("payment-provider-readiness");
+  await expect(readiness).toContainText("Payment provider readiness");
+  await expect(readiness).toContainText("Direct Telebirr · TestBed foundation");
+  await expect(readiness).toContainText("Networking disabled");
+  await expect(readiness).toContainText("TLS trust gate unresolved");
+  await expect(readiness).toContainText(
+    "no direct payment or reconciliation control is exposed",
+  );
+  await expect(page.getByRole("button", { name: /telebirr/i })).toHaveCount(0);
 
   await page
     .getByRole("button", { name: "Start synthetic supervisor session" })
