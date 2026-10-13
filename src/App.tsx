@@ -2,12 +2,12 @@ import { Routes, Route, Link } from "react-router-dom";
 import { useEffect } from "react";
 import { initGhostSync } from "./lib/ghostsync";
 import {
-  PresentationShell,
   ServicePortfolio,
   InventoryDemo,
   LiquidityDemo,
   CapabilityBadge,
 } from "./components/ProductPresentation";
+import CapabilityWorkspaceShell from "./components/CapabilityWorkspaceShell";
 import "./components/navigation-groups.css";
 import AgentKiosk from "./pages/AgentKiosk";
 import Farmer360 from "./pages/Farmer360";
@@ -34,7 +34,7 @@ export default function App() {
   }, []);
   return (
     <>
-      <PresentationShell>
+      <CapabilityWorkspaceShell>
         <Routes>
           <Route
             path="/"
@@ -56,9 +56,8 @@ export default function App() {
                     <CapabilityBadge state="IMPLEMENTED" />
                     <h2>Operations & reconciliation</h2>
                     <p>
-                      Governed ArifPay sandbox status checks for supervisor/admin
-                      operations. Gateway confirmation remains separate from PartnerFI
-                      settlement.
+                      Governed ArifPay sandbox status checks for bounded operations.
+                      Gateway confirmation remains separate from PartnerFI settlement.
                     </p>
                     <Link to="/operations" className="text-link">
                       Open Operations & Reconciliation Center
@@ -68,9 +67,9 @@ export default function App() {
                     <CapabilityBadge state="IMPLEMENTED" />
                     <h2>Network operations access</h2>
                     <p>
-                      Stage 3 synthetic role/object scopes for Supervisor and Partner
-                      Admin network-operations views. No cash movement, dispatch,
-                      PartnerFI posting or settlement authority is created.
+                      Stage 3 synthetic role/object scopes for Supervisor, Operations
+                      and Partner Admin views. No cash movement, dispatch, PartnerFI
+                      posting or settlement authority is created.
                     </p>
                     <Link to="/network-operations" className="text-link">
                       Review Network Operations Access
@@ -174,7 +173,7 @@ export default function App() {
             }
           />
         </Routes>
-      </PresentationShell>
+      </CapabilityWorkspaceShell>
       <Toaster position="top-right" />
     </>
   );
