@@ -1,14 +1,14 @@
-version: "1.0"
-as_of: "2026-10-12"
+version: "1.1"
+as_of: "2026-10-13"
 repository:
   full_name: "abeselomchernet/Phygital-rural-Agent-Hub"
   visibility: "private"
   default_branch: "main"
-  baseline_sha: "cd48c377e4398b77f2cd725eb2bd5706774d2817"
+  baseline_sha: "0028b079c1c641535e00db78b58f29bb442136ae"
 program:
-  current_stage: "STAGE_2_ARIFPAY_SANDBOX_INTEGRATION"
-  previous_completed_stage: "STAGE_1_WORKSPACE_REBASELINE_AND_P0_CLOSURE"
-  next_substantive_stage: "STAGE_3_PARTNER_ECOSYSTEM_AND_NETWORK_LIQUIDITY"
+  current_stage: "STAGE_3_PARTNER_ECOSYSTEM_AND_NETWORK_LIQUIDITY"
+  previous_completed_stage: "STAGE_2_ARIFPAY_SANDBOX_INTEGRATION"
+  next_substantive_stage: "STAGE_4_GOVERNED_ET_RESIDENT_STAGING_FOUNDATION"
   evidence_model: "gate_based_not_calendar_based"
 current_boundaries:
   real_customer_pii: false
@@ -19,6 +19,8 @@ current_boundaries:
   live_identity_provider: false
   regulated_mode: false
   remote_ghostsync_for_real_data: false
+  direct_telebirr_payment_initiation: false
+  mpesa_ethiopia_payment_initiation: false
 completed:
   - "P0-A merged"
   - "P0-B merged"
@@ -28,6 +30,10 @@ completed:
   - "Stage 1 clean environment re-validation completed"
   - "Stage 1 post-P0-B closure recorded"
   - "P0 backlog synchronized to distinguish bounded implementation from remaining external/production gates"
+  - "Stage 2 ArifPay sandbox C2B orchestration and reconciliation merged in PR #5"
+  - "Direct Telebirr inactive/TestBed foundation merged in PR #6; activation remains provider-gated"
+  - "M-PESA Ethiopia inactive sandbox contract/correlation foundation merged in PR #7"
+  - "M-PESA Ethiopia sandbox token contract verified from an external local runtime without exposing token or credentials"
 stage_1_evidence:
   workflow_name: "Synthetic prototype validation"
   workflow_run_number: 97
@@ -43,32 +49,68 @@ stage_1_evidence:
   chromium_e2e: "PASS_12_OF_12"
   data_mode: "synthetic"
   external_telemetry: false
+stage_2_exit_evidence:
+  arifpay_pr: 5
+  arifpay_merge_sha: "023a0919a44a28241711331a2dfc115e530d2294"
+  arifpay_sandbox_network_evidence: "HTTP_200_SESSION_AND_SESSION_ID_RECONCILIATION_VERIFIED"
+  provider_authority_boundary: "GATEWAY_EVIDENCE_NEVER_PARTNERFI_SETTLEMENT"
+provider_foundation_evidence:
+  telebirr:
+    pr: 6
+    merge_sha: "75abae49b323d48ec9574dc086c65814726e3012"
+    state: "INACTIVE_TESTBED_FOUNDATION"
+    activation_gate: "TLS_TRUST_AND_PROVIDER_CONTRACT_EVIDENCE_REQUIRED"
+  mpesa_ethiopia:
+    pr: 7
+    merge_sha: "0028b079c1c641535e00db78b58f29bb442136ae"
+    state: "INACTIVE_SANDBOX_FOUNDATION_TOKEN_VERIFIED"
+    token_contract: "VERIFIED_BEARER_EXPIRES_IN_3599"
+main_validation:
+  workflow_name: "Synthetic prototype validation"
+  workflow_run_number: 245
+  workflow_run_id: 38426151886
+  result: "PASS"
+  production_audit: "PASS_0_PRODUCTION_FINDINGS"
+  lint: "PASS"
+  tests: "PASS"
+  build: "PASS"
+  docker_build: "PASS"
+  chromium_e2e: "PASS"
+  data_mode: "synthetic"
+  external_telemetry: false
   non_blocking_observations:
     - "development/tooling graph: 23 findings (2 low, 4 moderate, 17 high)"
     - "existing Vite >500kB chunk advisory"
+stage_3_objective: "Build reusable synthetic partner-ecosystem and network-liquidity decision-support architecture without real cash movement or regulated posting."
 immediate_actions:
-  - id: "S2-A"
-    action: "Re-verify current official ArifPay sandbox documentation before implementation"
+  - id: "S3-A"
+    action: "Implement the partner organization and capability-switch model with explicit partner class, route provenance and enablement state"
+    mutation_allowed: true
+  - id: "S3-B"
+    action: "Build the Partner Ecosystem Console on the governed backend; code presence must remain distinct from capability activation"
+    mutation_allowed: true
+  - id: "S3-C"
+    action: "Implement synthetic Network Liquidity Coverage / Liquidity Coverage Index decision-support metrics for 2h, 4h, 8h and EOD horizons"
+    mutation_allowed: true
+  - id: "S3-D"
+    action: "Implement synthetic cash-fleet planning and liquidity-match simulation with no custody, dispatch authority or real cash movement"
+    mutation_allowed: true
+  - id: "S3-E"
+    action: "Implement bounded FMCG partner, inventory and logistics models with strict data minimization"
+    mutation_allowed: true
+  - id: "S3-F"
+    action: "Expand role/object authorization and Supervisor/Operations UX for synthetic network operations"
+    mutation_allowed: true
+  - id: "S3-G"
+    action: "Produce Stage 3 validation, claims review and gate evidence before any Stage 4 transition"
     mutation_allowed: false
-  - id: "S2-B"
-    action: "Create a separate ArifPay sandbox integration branch after governance PR closure"
-    mutation_allowed: true
-  - id: "S2-C"
-    action: "Implement PaymentGatewayAdapter and ArifPaySandboxAdapter with hard sandbox guard"
-    mutation_allowed: true
-  - id: "S2-D"
-    action: "Implement one narrow C2B sandbox flow using synthetic customers and amounts"
-    mutation_allowed: true
-  - id: "S2-E"
-    action: "Integrate callback/status reconciliation with existing P0-B state model and replay protections"
-    mutation_allowed: true
-  - id: "S2-F"
-    action: "Add sandbox Operations/Reconciliation UX and validation evidence"
-    mutation_allowed: true
 stop_conditions:
-  - "production credential encountered during sandbox stage"
-  - "production host or endpoint enabled during sandbox stage"
+  - "production credential encountered during synthetic Stage 3 work"
   - "real customer data requested before data/residency gate"
-  - "provider acceptance mapped directly to settlement without contract"
+  - "provider acceptance mapped directly to PartnerFI settlement without contract"
   - "cash movement requested without approved custody/authority model"
-  - "ArifPay treated as PartnerFI rather than payment-gateway/rail integration"
+  - "NLC/LCI represented as regulatory LCR or prudential compliance"
+  - "provider route provenance hidden or collapsed"
+  - "code presence or configuration interpreted as capability authorization"
+  - "Telebirr TestBed networking enabled before TLS/provider gates are satisfied"
+  - "M-PESA payment initiation enabled before the remaining Ethiopia sandbox activation gates are satisfied"

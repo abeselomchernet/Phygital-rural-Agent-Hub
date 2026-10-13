@@ -1,12 +1,12 @@
 # Current Verified Baseline
 
-**As of:** 2026-10-12  
+**As of:** 2026-10-13  
 **Canonical repository:** `abeselomchernet/Phygital-rural-Agent-Hub`  
 **Visibility:** Private  
 **Canonical branch:** `main`  
-**Canonical baseline commit:** `cd48c377e4398b77f2cd725eb2bd5706774d2817`
+**Canonical baseline commit:** `0028b079c1c641535e00db78b58f29bb442136ae`
 
-## 1. Completed historical phases
+## 1. Completed governed phases
 
 ### P0-A - partner-led financial, identity and residency boundaries
 
@@ -34,74 +34,105 @@ Merged. Bounded synthetic work includes:
 - Ethiopia-resident staging evidence checklist;
 - active UI/claims review.
 
-## 2. Stage 1 re-validation and closure
+### Stage 1 - workspace re-baseline and post-P0 closure
 
-Stage 1 — Workspace Re-baseline & P0 Closure is complete for its governed scope.
+Complete. The clean hosted validation baseline was reproduced and the post-P0 closure was recorded without rewriting historical validation evidence.
 
-Fresh GitHub-hosted validation on 2026-10-12 reproduced the bounded baseline with:
+### Stage 2 - ArifPay sandbox integration
 
-- Node `v24.21.0` and npm `11.19.0`;
-- `npm ci` PASS with 576 packages;
-- `npm audit --omit=dev` PASS with 0 production vulnerabilities;
-- lint PASS;
-- 59/59 domain/API tests PASS;
-- production build PASS;
-- Docker image build PASS;
-- 12/12 Chromium E2E tests PASS;
-- `DATA_MODE=synthetic` and external telemetry disabled.
+Complete for its governed scope. PR #5 merged the bounded ArifPay sandbox C2B orchestration/reconciliation slice with hard sandbox guards, pre-submit durable correlation, uncertainty handling, server-side session-ID reconciliation, Operations UX and explicit separation from PartnerFI settlement authority.
 
-Known non-blocking observations remain the full development/tooling graph's 23 findings (2 low, 4 moderate, 17 high) and the existing Vite >500 kB chunk advisory.
+Stage 2 did **not** authorize production provider credentials, real customer PII, real funds, cash custody, live PartnerFI posting or regulated operation.
 
-See `docs/P0_POST_MERGE_CLOSURE.md` for the closure record. Historical P0-A/P0-B validation documents remain unchanged.
+## 2. Additional merged provider foundations
 
-## 3. Existing UI/product skeleton
+These are provider-specific foundations layered onto the bounded baseline; they do not expand regulated authority.
 
-Current routes provide a useful product base:
+### Direct Telebirr
 
-- Agent Terminal.
-- Farmer 360 / customer workbench.
-- GhostSync queue.
-- Agent readiness/onboarding walkthrough.
-- Supervisor Hub.
-- Data Mule transport demonstration.
-- Node/architecture status view.
-- Academy/training.
-- Conversation/transcription concept.
-- Ardi arithmetic illustration.
-- Inventory and liquidity-planning demonstrations.
+PR #6 merged an inactive/TestBed foundation with strict configuration, guarded token/query primitives, canonical signing/builders, durable pre-submit correlation and read-only provider-readiness visibility. Networking/payment initiation remains disabled pending provider/TLS and protocol gates. Standard TLS verification failed against the supplied TestBed path; no TLS bypass is permitted.
 
-These surfaces SHOULD be evolved rather than discarded.
+### M-PESA Ethiopia direct
 
-## 4. Current hard boundaries
+PR #7 merged an inactive Ethiopia sandbox contract/correlation foundation with a hard-pinned Safaricom Ethiopia sandbox token client and provider-neutral attempt primitives. A controlled external local runtime successfully verified the documented token contract and returned sanitized metadata indicating `Bearer` with `expires_in=3599`.
 
-The current repository MUST still be described as a bounded synthetic prototype. It does not establish:
+That token verification does **not** verify or authorize payment initiation, payout, callback authority, status mapping, reversal, account-balance transport, PartnerFI posting or settlement.
 
-- live bank/MFI connectivity;
+## 3. Canonical validation evidence
+
+The current `main` baseline `0028b079c1c641535e00db78b58f29bb442136ae` was validated by GitHub Actions `Synthetic prototype validation` run #245 (`38426151886`) on 2026-10-13.
+
+Result: **PASS**.
+
+Validated gates:
+
+- `npm ci`;
+- production dependency audit with 0 production findings;
+- TypeScript/lint;
+- unit/domain/API tests;
+- production build;
+- synthetic Docker image build;
+- Chromium installation;
+- Chromium E2E.
+
+The validation remains explicitly synthetic with external telemetry disabled. Known non-blocking observations remain the development/tooling graph's 23 findings (2 low, 4 moderate, 17 high) and the existing Vite >500 kB chunk advisory.
+
+## 4. Existing UI/product skeleton
+
+Current product surfaces provide the base to evolve rather than replace:
+
+- Agent Terminal;
+- Farmer 360 / customer workbench;
+- Supervisor Hub;
+- Operations & Reconciliation;
+- partner/provider readiness visibility;
+- GhostSync queue and Data Mule transport demonstration;
+- agent readiness/onboarding walkthrough;
+- node/architecture status view;
+- Academy/training;
+- conversation/transcription concept;
+- Ardi arithmetic illustration;
+- inventory and liquidity-planning demonstrations.
+
+Stage 3 should add Partner Ecosystem and network-liquidity capabilities into this governed product architecture rather than create ungoverned provider silos.
+
+## 5. Current hard boundaries
+
+The current repository remains a **bounded synthetic / sandbox-capable prototype**, not a live regulated financial deployment. It does not establish:
+
+- live bank/MFI connectivity or posting authority;
 - live Fayda/identity connectivity;
-- live ArifPay/payment-provider connectivity;
-- real cash-in/cash-out authority;
+- production payment-provider credentials;
+- direct Telebirr payment initiation;
+- M-PESA Ethiopia payment initiation;
+- real customer PII;
 - real customer funds or liabilities;
-- production-grade encrypted edge storage;
+- real cash-in/cash-out authority or physical cash custody;
 - approved Ethiopia-resident production/staging infrastructure;
-- approved key custody;
+- approved production key custody;
 - production HA/DR;
 - live SMS/USSD/hardware control;
 - regulated pilot authorization.
 
-## 5. Current program position
+Provider acceptance or provider success MUST NOT be represented as PartnerFI settlement.
+
+## 6. Current program position
 
 The active substantive stage is now:
 
-> **Stage 2 — ArifPay Sandbox Integration**
+> **Stage 3 - Partner Ecosystem & Network Liquidity (synthetic)**
 
-The Stage 2 sequence is:
+Stage 3 is restricted to reusable synthetic product architecture and decision support:
 
-1. Re-verify current official ArifPay sandbox documentation before implementation.
-2. Create a separate task-specific branch after governance PR closure.
-3. Implement `PaymentGatewayAdapter` and `ArifPaySandboxAdapter` with a hard sandbox-only guard.
-4. Prove one narrow C2B sandbox flow using synthetic customer/amount data.
-5. Integrate callback/status reconciliation with the existing P0-B state model, idempotency and replay protections.
-6. Add bounded sandbox Operations/Reconciliation UX and validation evidence.
-7. Keep ArifPay separate from PartnerFI authority and keep all real-data/live-cash/production-provider capabilities disabled.
+1. partner organization and capability-switch model;
+2. Partner Ecosystem Console;
+3. route provenance across service provider, integration route, gateway/operator and Enawuga transaction;
+4. Network Liquidity Coverage / Liquidity Coverage Index using non-regulatory terminology;
+5. synthetic 2h/4h/8h/EOD liquidity horizons and operational states;
+6. synthetic cash-fleet planning and liquidity-match simulation;
+7. bounded FMCG partner/inventory/logistics models;
+8. role/object authorization expansion;
+9. Supervisor/Operations network-operations UX;
+10. no real cash movement, custody, regulated posting or provider activation.
 
-After Stage 2, the next planned substantive stage is Partner Ecosystem & Network Liquidity: partner organization types, NLC/LCI, Cash Fleet planning, FMCG/logistics, synthetic liquidity matching and expanded Supervisor/Operations UX.
+The next substantive stage after evidence-gated Stage 3 completion is Stage 4 - Governed ET-resident staging foundation.

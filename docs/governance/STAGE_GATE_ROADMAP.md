@@ -4,9 +4,9 @@ This roadmap is evidence-gated, not calendar-gated. No stage has a guaranteed du
 
 ## Stage 0 - Current bounded synthetic baseline
 
-**Status:** COMPLETE / CURRENT BASELINE.
+**Status:** COMPLETE / HISTORICAL BOUNDED BASELINE.
 
-Evidence: P0-A and P0-B merged; current `main` baseline recorded in `CURRENT_BASELINE.md`.
+Evidence: P0-A and P0-B merged; the current verified baseline is recorded in `CURRENT_BASELINE.md`.
 
 Allowed:
 
@@ -24,6 +24,8 @@ Forbidden:
 - claims of regulated deployment.
 
 ## Stage 1 - Workspace re-baseline and post-P0 closure
+
+**Status:** COMPLETE.
 
 **Goal:** establish a clean private coding environment and synchronize forward documentation.
 
@@ -43,6 +45,8 @@ Exit evidence:
 - closure PR reviewed and merged.
 
 ## Stage 2 - ArifPay sandbox integration
+
+**Status:** COMPLETE for the governed ArifPay sandbox scope; PR #5 merged.
 
 **Goal:** prove one external payment-gateway integration without crossing into production.
 
@@ -75,6 +79,8 @@ Exit evidence:
 
 ## Stage 3 - Partner Ecosystem & Network Liquidity (synthetic)
 
+**Status:** ACTIVE as of 2026-10-13.
+
 **Goal:** build the reusable product architecture for multiple partner classes and field liquidity planning.
 
 Scope:
@@ -94,7 +100,11 @@ Use **Network Liquidity Coverage (NLC)** or **Liquidity Coverage Index (LCI)** r
 
 No real cash movement.
 
+Provider-specific foundations already present in the repository remain independently gated. Stage 3 does not activate direct Telebirr, M-PESA Ethiopia payment initiation, production ArifPay, PartnerFI posting or any other regulated financial capability.
+
 ## Stage 4 - Governed ET-resident staging foundation
+
+**Status:** PLANNED / LOCKED pending Stage 3 exit evidence.
 
 **Goal:** stand up an approved non-production environment whose evidence can satisfy the B6 evidence register.
 

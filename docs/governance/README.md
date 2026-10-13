@@ -1,15 +1,15 @@
 # Enawuga Implementation & Execution Governance Pack
 
-**Version:** 1.0  
-**Effective date:** 2026-10-12  
-**Repository baseline:** `abeselomchernet/Phygital-rural-Agent-Hub` @ `cd48c377e4398b77f2cd725eb2bd5706774d2817`  
+**Version:** 1.1  
+**Effective date:** 2026-10-13  
+**Repository baseline:** `abeselomchernet/Phygital-rural-Agent-Hub` @ `0028b079c1c641535e00db78b58f29bb442136ae`  
 **Status:** Governing forward plan; does not itself authorize regulated operation.
 
 ## Purpose
 
 This package is the forward implementation and execution control set for Enawuga / Phygital Rural Agent Hub. It is designed so that an engineer, technical lead, partner-integration team, product designer, security reviewer, or program manager can enter the program at any later stage, determine the current approved state, and continue without reconstructing the project's history from chat transcripts.
 
-The pack governs how the project advances from the current bounded synthetic prototype through sandbox integrations, partner staging, Ethiopia-resident controlled environments, pilot authorization, production readiness, and scale.
+The pack governs how the project advances from the bounded synthetic/sandbox-capable prototype through partner-ecosystem development, governed Ethiopia-resident staging, partner staging, pilot authorization, production readiness and scale.
 
 ## Authority hierarchy
 
@@ -17,7 +17,7 @@ When sources conflict, use this order:
 
 1. **Executable repository evidence** - merged code, tests, CI, deployment evidence and immutable commit history establish what is actually implemented.
 2. **Approved external evidence** - signed contracts, written institutional approvals, approved infrastructure evidence, identity/payment-provider credentials and formal operating policies establish what is authorized externally.
-3. **Historical validation records** - P0-A/P0-B validation and claims-review documents remain evidence of prior bounded stages and must not be rewritten to make the past look current.
+3. **Historical validation records** - P0-A/P0-B and subsequent validation/closure documents remain evidence of prior bounded stages and must not be rewritten to make the past look current.
 4. **This governance pack** - controls future implementation, stage gates, UX/product direction and engineering handoff.
 5. **Research reports and exploratory analysis** - advisory inputs only. They may inform design but do not prove implementation, compliance, approval, licensing, production readiness or partner commitments.
 
@@ -42,6 +42,8 @@ When sources conflict, use this order:
 | `VALIDATION_EVIDENCE_STANDARD.md` | Test, evidence and exit criteria required at every gate |
 | `ENGINEERING_EXECUTION_RUNBOOK.md` | How a future engineer resumes, branches, validates, records and hands off work |
 | `DECISION_EVIDENCE_TEMPLATES.md` | ADR, evidence register, risk acceptance and gate review templates |
+| `EVIDENCE_REGISTER.md` | Forward evidence register for stage/provider/governance decisions |
+| `RELEASE_NOTES.md` | Forward governance release and stage-transition record |
 | `PROGRAM_STATUS.yaml` | Machine-readable current stage and next actions |
 | `CAPABILITY_REGISTRY.yaml` | Machine-readable capability maturity and unlock conditions |
 
@@ -49,13 +51,18 @@ When sources conflict, use this order:
 
 1. Read `PROGRAM_STATUS.yaml`.
 2. Confirm the repository `main` SHA and compare it to the recorded baseline.
-3. Read the active stage in `STAGE_GATE_ROADMAP.md`.
+3. Read `CURRENT_BASELINE.md` and the active stage in `STAGE_GATE_ROADMAP.md`.
 4. Check `CAPABILITY_REGISTRY.yaml` for what may and may not be enabled.
 5. Review the relevant architecture/security/UX standard before changing code.
 6. Work on a dedicated branch; do not push directly to `main`.
 7. Produce the validation and evidence required by `VALIDATION_EVIDENCE_STANDARD.md`.
-8. Open a Draft PR and stop at the specified review gate unless explicit approval to proceed is recorded.
+8. Update the evidence register and release notes when a stage transition or externally relevant capability state changes.
+9. Open a Draft PR and stop at the specified review gate unless explicit approval to proceed is recorded.
 
 ## Current program statement
 
-The current repository is a **bounded synthetic prototype** with P0-A and P0-B merged. It is not a live regulated financial deployment. The next substantive integration phase is a sandbox-only payment-gateway workstream, followed by partner-ecosystem and network-liquidity expansion. Real customer data, real funds, real cash custody, real identity-provider credentials and production financial posting remain gated.
+The current repository is a **bounded synthetic / sandbox-capable prototype**. Stage 2 - ArifPay Sandbox Integration is complete for its governed scope. Direct Telebirr remains an inactive/TestBed foundation and M-PESA Ethiopia remains an inactive sandbox foundation with the token contract verified; neither direct provider payment path is activated.
+
+The active substantive stage is **Stage 3 - Partner Ecosystem & Network Liquidity (synthetic)**. Stage 3 may implement partner organization/capability-switch architecture, Partner Ecosystem UX, NLC/LCI decision support, synthetic cash-fleet planning, FMCG/logistics models, liquidity-match simulation and expanded network-operations authorization/UX.
+
+Real customer data, real funds, real cash custody, production provider credentials, live identity-provider access, live PartnerFI posting and regulated financial operation remain gated. Provider acceptance or success must never be represented as PartnerFI settlement, and code presence must never be treated as capability authorization.
