@@ -17,6 +17,7 @@ import OnboardAgent from "./pages/OnboardAgent";
 import SupervisorPortal from "./pages/SupervisorPortal";
 import OperationsReconciliation from "./pages/OperationsReconciliation";
 import PartnerEcosystem from "./pages/PartnerEcosystem";
+import NetworkLiquidity from "./pages/NetworkLiquidity";
 import DataMule from "./pages/DataMule";
 import LiveTranscription from "./pages/LiveTranscription";
 import DemoArchitecture from "./pages/SovereignNode";
@@ -71,6 +72,17 @@ export default function App() {
                       Open Partner Ecosystem Console
                     </Link>
                   </section>
+                  <section className="product-card" data-testid="network-liquidity-home-card">
+                    <CapabilityBadge state="SYNTHETIC DEMO" />
+                    <h2>Network liquidity</h2>
+                    <p>
+                      Stage 3 NLC / Liquidity Coverage Index planning for 2H, 4H, 8H and
+                      EOD horizons. Synthetic decision support only; not regulatory LCR.
+                    </p>
+                    <Link to="/liquidity" className="text-link">
+                      Open Network Liquidity Console
+                    </Link>
+                  </section>
                 </div>
                 <ServicePortfolio />
               </>
@@ -83,6 +95,7 @@ export default function App() {
           <Route path="/supervisor" element={<SupervisorPortal />} />
           <Route path="/operations" element={<OperationsReconciliation />} />
           <Route path="/partners" element={<PartnerEcosystem />} />
+          <Route path="/liquidity" element={<NetworkLiquidity />} />
           <Route path="/data-mule" element={<DataMule />} />
           <Route path="/transcription" element={<LiveTranscription />} />
           <Route path="/node-status" element={<DemoArchitecture />} />
