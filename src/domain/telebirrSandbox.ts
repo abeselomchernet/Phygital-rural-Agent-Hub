@@ -6,6 +6,14 @@ export const TELEBIRR_SANDBOX_BASE_URL =
 export const TELEBIRR_TOKEN_PATH = "/payment/v1/token";
 export const TELEBIRR_PREORDER_PATH = "/payment/v1/merchant/preOrder";
 export const TELEBIRR_QUERY_ORDER_PATH = "/payment/v1/merchant/queryOrder";
+export const TELEBIRR_MAX_RESPONSE_BYTES = 64 * 1024;
+
+const NoControlString = (max: number) =>
+  z
+    .string()
+    .min(1)
+    .max(max)
+    .refine((value) => !/[\u0000-\u001F\u007F]/.test(value));
 
 export const TelebirrSandboxConfigSchema = z
   .object({
@@ -23,11 +31,16 @@ export const TelebirrSandboxConfigSchema = z
   .strict();
 export type TelebirrSandboxConfig = z.infer<typeof TelebirrSandboxConfigSchema>;
 
+const TelebirrProviderScalarSchema = z.union([
+  NoControlString(128),
+  z.number().finite(),
+]);
+
 export const TelebirrTokenResponseSchema = z
   .object({
-    token: z.string().min(1),
-    effectiveDate: z.union([z.string(), z.number()]).optional(),
-    expirationDate: z.union([z.string(), z.number()]).optional(),
+    token: NoControlString(4096),
+    effectiveDate: TelebirrProviderScalarSchema.optional(),
+    expirationDate: TelebirrProviderScalarSchema.optional(),
   })
   .passthrough();
 export type TelebirrTokenResponse = z.infer<typeof TelebirrTokenResponseSchema>;
@@ -99,11 +112,6 @@ export type TelebirrQueryOrderTransportResult = {
   settlementConfirmed: false;
 };
 
-function normalizedGatewayBase(input: string) {
-  const parsed = new URL(input);
-  return `${parsed.origin}${parsed.pathname.replace(/\/$/, "")}`;
-}
-
 export function telebirrSandboxConfigFromEnv(
   env: Record<string, string | undefined> = process.env,
 ): TelebirrSandboxConfig {
@@ -121,19 +129,20 @@ export function telebirrSandboxConfigFromEnv(
       ? Number(env.TELEBIRR_SANDBOX_TIMEOUT_MS)
       : 15_000,
   });
-  assertTelebirrSandboxConfig(config);
-  return config;
+  return assertTelebirrSandboxConfig(config);
 }
 
 export function assertTelebirrSandboxConfig(config: TelebirrSandboxConfig) {
-  const parsed = TelebirrSandboxConfigSchema.parse(config),
-    url = new URL(parsed.baseUrl);
+  const parsed = TelebirrSandboxConfigSchema.parse(config);
+  const url = new URL(parsed.baseUrl);
   if (url.protocol !== "https:") throw new Error("TELEBIRR_HTTPS_REQUIRED");
-  if (normalizedGatewayBase(parsed.baseUrl) !== TELEBIRR_SANDBOX_BASE_URL)
-    throw new Error("TELEBIRR_SANDBOX_GATEWAY_REQUIRED");
   if (url.username || url.password)
     throw new Error("TELEBIRR_GATEWAY_URL_CREDENTIALS_FORBIDDEN");
-  return parsed;
+  if (url.search || url.hash)
+    throw new Error("TELEBIRR_GATEWAY_URL_SUFFIX_FORBIDDEN");
+  if (parsed.baseUrl !== TELEBIRR_SANDBOX_BASE_URL)
+    throw new Error("TELEBIRR_SANDBOX_GATEWAY_REQUIRED");
+  return { ...parsed, baseUrl: TELEBIRR_SANDBOX_BASE_URL };
 }
 
 /**
@@ -146,30 +155,59 @@ export function normalizeTelebirrPrivateKey(input: string) {
   if (trimmed.includes("-----BEGIN")) return trimmed;
   if (!/^[A-Za-z0-9+/=\r\n]+$/.test(trimmed))
     throw new Error("TELEBIRR_PRIVATE_KEY_FORMAT_INVALID");
-  const compact = trimmed.replace(/\s+/g, ""),
-    wrapped = compact.match(/.{1,64}/g)?.join("\n") ?? compact;
+  const compact = trimmed.replace(/\s+/g, "");
+  const wrapped = compact.match(/.{1,64}/g)?.join("\n") ?? compact;
   return `-----BEGIN PRIVATE KEY-----\n${wrapped}\n-----END PRIVATE KEY-----`;
+}
+
+function canonicalPrimitive(key: string, value: unknown) {
+  if (!/^[A-Za-z0-9_]+$/.test(key))
+    throw new Error("TELEBIRR_SIGNING_FIELD_NAME_INVALID");
+  if (
+    typeof value !== "string" &&
+    typeof value !== "number" &&
+    typeof value !== "boolean"
+  )
+    throw new Error("TELEBIRR_SIGNING_VALUE_INVALID");
+  if (typeof value === "number" && !Number.isFinite(value))
+    throw new Error("TELEBIRR_SIGNING_VALUE_INVALID");
+  const rendered = String(value);
+  if (/[&=\u0000-\u001F\u007F]/.test(rendered))
+    throw new Error("TELEBIRR_SIGNING_VALUE_AMBIGUOUS");
+  return rendered;
 }
 
 /**
  * Canonical string described by the current Ethio telecom request-signature
  * documentation: exclude sign/sign_type, flatten biz_content one level,
  * sort field names A-z, then join key=value pairs with '&'.
+ *
+ * Because that format has no escaping rule in the pinned material, this
+ * implementation fails closed on delimiter-bearing values or duplicate
+ * flattened names rather than inventing an encoding convention.
  */
 export function canonicalizeTelebirrRequest(input: TelebirrSignableRequest) {
   const pairs: Array<[string, string]> = [];
+  const names = new Set<string>();
+
+  const addPair = (key: string, value: unknown) => {
+    if (names.has(key)) throw new Error("TELEBIRR_SIGNING_DUPLICATE_FIELD");
+    names.add(key);
+    pairs.push([key, canonicalPrimitive(key, value)]);
+  };
+
   for (const [key, value] of Object.entries(input)) {
     if (value === undefined || key === "sign" || key === "sign_type") continue;
     if (key === "biz_content") {
       if (!value || typeof value !== "object" || Array.isArray(value))
         throw new Error("TELEBIRR_BIZ_CONTENT_INVALID");
       for (const [bizKey, bizValue] of Object.entries(value))
-        pairs.push([bizKey, String(bizValue)]);
+        addPair(bizKey, bizValue);
       continue;
     }
     if (typeof value === "object")
       throw new Error("TELEBIRR_SIGNING_NESTED_OBJECT_UNSUPPORTED");
-    pairs.push([key, String(value)]);
+    addPair(key, value);
   }
   pairs.sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0));
   return pairs.map(([key, value]) => `${key}=${value}`).join("&");
@@ -177,13 +215,22 @@ export function canonicalizeTelebirrRequest(input: TelebirrSignableRequest) {
 
 /**
  * Current portal documentation demonstrates SHA-256 with RSA MGF1 (RSA-PSS).
- * The private key remains server-side; only the base64 signature is returned.
+ * RSA-PSS signatures are intentionally randomized; only canonicalization is
+ * deterministic. The private key remains server-side.
  */
 export function signTelebirrRequest(
   input: TelebirrSignableRequest,
   privateKey: string,
 ) {
   const key = createPrivateKey(normalizeTelebirrPrivateKey(privateKey));
+  if (key.asymmetricKeyType !== "rsa" && key.asymmetricKeyType !== "rsa-pss")
+    throw new Error("TELEBIRR_PRIVATE_KEY_RSA_REQUIRED");
+  const modulusLength = key.asymmetricKeyDetails?.modulusLength;
+  if (!modulusLength)
+    throw new Error("TELEBIRR_PRIVATE_KEY_RSA_STRENGTH_UNKNOWN");
+  if (modulusLength < 2048)
+    throw new Error("TELEBIRR_PRIVATE_KEY_RSA_TOO_WEAK");
+
   return cryptoSign("sha256", Buffer.from(canonicalizeTelebirrRequest(input)), {
     key,
     padding: constants.RSA_PKCS1_PSS_PADDING,
@@ -192,12 +239,90 @@ export function signTelebirrRequest(
 }
 
 function etbMinorToProviderAmount(amountMinor: number) {
-  const amount = z.number().int().positive().max(100_000_000).parse(amountMinor),
-    birr = Math.floor(amount / 100),
-    cents = amount % 100;
+  const amount = z.number().int().positive().max(100_000_000).parse(amountMinor);
+  const birr = Math.floor(amount / 100);
+  const cents = amount % 100;
   return cents === 0
     ? String(birr)
     : `${birr}.${String(cents).padStart(2, "0").replace(/0$/, "")}`;
+}
+
+function raceAbort<T>(operation: Promise<T>, signal: AbortSignal): Promise<T> {
+  if (signal.aborted)
+    return Promise.reject(new Error("TELEBIRR_RESPONSE_TIMEOUT"));
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = () => {
+      signal.removeEventListener("abort", onAbort);
+      reject(new Error("TELEBIRR_RESPONSE_TIMEOUT"));
+    };
+    signal.addEventListener("abort", onAbort, { once: true });
+    operation.then(
+      (value) => {
+        signal.removeEventListener("abort", onAbort);
+        resolve(value);
+      },
+      (error) => {
+        signal.removeEventListener("abort", onAbort);
+        reject(error);
+      },
+    );
+  });
+}
+
+async function readBoundedJson(
+  response: Response,
+  signal: AbortSignal,
+  invalidCode: string,
+  tooLargeCode: string,
+): Promise<unknown> {
+  const declared = response.headers.get("content-length");
+  if (declared !== null) {
+    const bytes = Number(declared);
+    if (Number.isFinite(bytes) && bytes > TELEBIRR_MAX_RESPONSE_BYTES)
+      throw new Error(tooLargeCode);
+  }
+  if (!response.body) throw new Error(invalidCode);
+
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await raceAbort(reader.read(), signal);
+      if (done) break;
+      total += value.byteLength;
+      if (total > TELEBIRR_MAX_RESPONSE_BYTES) {
+        await reader.cancel();
+        throw new Error(tooLargeCode);
+      }
+      chunks.push(value);
+    }
+  } catch (error) {
+    try {
+      await reader.cancel();
+    } catch {
+      // Best effort only. The caller still fails closed.
+    }
+    throw error;
+  }
+
+  const text = Buffer.concat(
+    chunks.map((chunk) => Buffer.from(chunk)),
+    total,
+  ).toString("utf8");
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    throw new Error(invalidCode);
+  }
+}
+
+function isControlledTelebirrError(error: unknown, prefix: string) {
+  return (
+    error instanceof Error &&
+    error.message.startsWith(`${prefix}_`) &&
+    error.message !== `${prefix}_NETWORK_ERROR`
+  );
 }
 
 /**
@@ -209,25 +334,25 @@ export function buildTelebirrPreorderRequest(
   config: TelebirrSandboxConfig,
   input: TelebirrPreorderInput,
 ): TelebirrPreorderRequest {
-  const safeConfig = assertTelebirrSandboxConfig(config),
-    parsed = TelebirrPreorderInputSchema.parse(input),
-    unsigned = {
-      timestamp: parsed.timestamp,
-      nonce_str: parsed.nonce,
-      method: "payment.preorder" as const,
-      version: "1.0" as const,
-      biz_content: {
-        notify_url: safeConfig.notifyUrl,
-        appid: safeConfig.merchantAppId,
-        merch_code: safeConfig.merchantCode,
-        merch_order_id: parsed.merchantOrderId,
-        trade_type: "Checkout" as const,
-        title: parsed.title,
-        total_amount: etbMinorToProviderAmount(parsed.amountMinor),
-        trans_currency: "ETB" as const,
-        timeout_express: "120m" as const,
-      },
-    };
+  const safeConfig = assertTelebirrSandboxConfig(config);
+  const parsed = TelebirrPreorderInputSchema.parse(input);
+  const unsigned = {
+    timestamp: parsed.timestamp,
+    nonce_str: parsed.nonce,
+    method: "payment.preorder" as const,
+    version: "1.0" as const,
+    biz_content: {
+      notify_url: safeConfig.notifyUrl,
+      appid: safeConfig.merchantAppId,
+      merch_code: safeConfig.merchantCode,
+      merch_order_id: parsed.merchantOrderId,
+      trade_type: "Checkout" as const,
+      title: parsed.title,
+      total_amount: etbMinorToProviderAmount(parsed.amountMinor),
+      trans_currency: "ETB" as const,
+      timeout_express: "120m" as const,
+    },
+  };
   return {
     ...unsigned,
     sign: signTelebirrRequest(unsigned, safeConfig.privateKey),
@@ -244,19 +369,19 @@ export function buildTelebirrQueryOrderRequest(
   config: TelebirrSandboxConfig,
   input: TelebirrQueryOrderInput,
 ): TelebirrQueryOrderRequest {
-  const safeConfig = assertTelebirrSandboxConfig(config),
-    parsed = TelebirrQueryOrderInputSchema.parse(input),
-    unsigned = {
-      timestamp: parsed.timestamp,
-      nonce_str: parsed.nonce,
-      method: "payment.queryorder" as const,
-      version: "1.0" as const,
-      biz_content: {
-        appid: safeConfig.merchantAppId,
-        merch_code: safeConfig.merchantCode,
-        merch_order_id: parsed.merchantOrderId,
-      },
-    };
+  const safeConfig = assertTelebirrSandboxConfig(config);
+  const parsed = TelebirrQueryOrderInputSchema.parse(input);
+  const unsigned = {
+    timestamp: parsed.timestamp,
+    nonce_str: parsed.nonce,
+    method: "payment.queryorder" as const,
+    version: "1.0" as const,
+    biz_content: {
+      appid: safeConfig.merchantAppId,
+      merch_code: safeConfig.merchantCode,
+      merch_order_id: parsed.merchantOrderId,
+    },
+  };
   return {
     ...unsigned,
     sign: signTelebirrRequest(unsigned, safeConfig.privateKey),
@@ -285,12 +410,12 @@ export class TelebirrSandboxTokenClient {
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.config.timeoutMs);
-    let response: Response;
     try {
-      response = await this.fetcher(
+      const response = await this.fetcher(
         `${this.config.baseUrl}${TELEBIRR_TOKEN_PATH}`,
         {
           method: "POST",
+          redirect: "error",
           headers: {
             "Content-Type": "application/json",
             "X-APP-Key": this.config.fabricAppId,
@@ -299,27 +424,33 @@ export class TelebirrSandboxTokenClient {
           signal: controller.signal,
         },
       );
-    } catch {
-      clearTimeout(timeout);
-      throw new Error("TELEBIRR_TOKEN_NETWORK_ERROR");
-    }
-    clearTimeout(timeout);
+      if (
+        response.redirected ||
+        (response.status >= 300 && response.status < 400)
+      )
+        throw new Error("TELEBIRR_TOKEN_REDIRECT_REJECTED");
+      if (!response.ok)
+        throw new Error(
+          response.status === 401 || response.status === 403
+            ? "TELEBIRR_TOKEN_AUTH_REJECTED"
+            : "TELEBIRR_TOKEN_REQUEST_REJECTED",
+        );
 
-    let raw: unknown;
-    try {
-      raw = await response.json();
-    } catch {
-      throw new Error("TELEBIRR_TOKEN_RESPONSE_INVALID");
-    }
-    if (!response.ok)
-      throw new Error(
-        response.status === 401 || response.status === 403
-          ? "TELEBIRR_TOKEN_AUTH_REJECTED"
-          : "TELEBIRR_TOKEN_REQUEST_REJECTED",
+      const raw = await readBoundedJson(
+        response,
+        controller.signal,
+        "TELEBIRR_TOKEN_RESPONSE_INVALID",
+        "TELEBIRR_TOKEN_RESPONSE_TOO_LARGE",
       );
-    const parsed = TelebirrTokenResponseSchema.safeParse(raw);
-    if (!parsed.success) throw new Error("TELEBIRR_TOKEN_RESPONSE_INVALID");
-    return parsed.data;
+      const parsed = TelebirrTokenResponseSchema.safeParse(raw);
+      if (!parsed.success) throw new Error("TELEBIRR_TOKEN_RESPONSE_INVALID");
+      return parsed.data;
+    } catch (error) {
+      if (isControlledTelebirrError(error, "TELEBIRR_TOKEN")) throw error;
+      throw new Error("TELEBIRR_TOKEN_NETWORK_ERROR");
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 }
 
@@ -355,12 +486,12 @@ export class TelebirrSandboxQueryOrderClient {
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), this.config.timeoutMs);
-    let response: Response;
     try {
-      response = await this.fetcher(
+      const response = await this.fetcher(
         `${this.config.baseUrl}${TELEBIRR_QUERY_ORDER_PATH}`,
         {
           method: "POST",
+          redirect: "error",
           headers: {
             "Content-Type": "application/json",
             "x-app-key": this.config.fabricAppId,
@@ -370,32 +501,38 @@ export class TelebirrSandboxQueryOrderClient {
           signal: controller.signal,
         },
       );
-    } catch {
-      clearTimeout(timeout);
-      throw new Error("TELEBIRR_QUERY_ORDER_NETWORK_ERROR");
-    }
-    clearTimeout(timeout);
+      if (
+        response.redirected ||
+        (response.status >= 300 && response.status < 400)
+      )
+        throw new Error("TELEBIRR_QUERY_ORDER_REDIRECT_REJECTED");
+      if (!response.ok)
+        throw new Error(
+          response.status === 401 || response.status === 403
+            ? "TELEBIRR_QUERY_ORDER_AUTH_REJECTED"
+            : "TELEBIRR_QUERY_ORDER_REQUEST_REJECTED",
+        );
 
-    let raw: unknown;
-    try {
-      raw = await response.json();
-    } catch {
-      throw new Error("TELEBIRR_QUERY_ORDER_RESPONSE_INVALID");
-    }
-    if (!response.ok)
-      throw new Error(
-        response.status === 401 || response.status === 403
-          ? "TELEBIRR_QUERY_ORDER_AUTH_REJECTED"
-          : "TELEBIRR_QUERY_ORDER_REQUEST_REJECTED",
+      const raw = await readBoundedJson(
+        response,
+        controller.signal,
+        "TELEBIRR_QUERY_ORDER_RESPONSE_INVALID",
+        "TELEBIRR_QUERY_ORDER_RESPONSE_TOO_LARGE",
       );
-    if (!raw || typeof raw !== "object" || Array.isArray(raw))
-      throw new Error("TELEBIRR_QUERY_ORDER_RESPONSE_INVALID");
+      if (!raw || typeof raw !== "object" || Array.isArray(raw))
+        throw new Error("TELEBIRR_QUERY_ORDER_RESPONSE_INVALID");
 
-    return {
-      httpStatus: response.status,
-      payload: raw as Record<string, unknown>,
-      paymentConfirmed: false,
-      settlementConfirmed: false,
-    };
+      return {
+        httpStatus: response.status,
+        payload: raw as Record<string, unknown>,
+        paymentConfirmed: false,
+        settlementConfirmed: false,
+      };
+    } catch (error) {
+      if (isControlledTelebirrError(error, "TELEBIRR_QUERY_ORDER")) throw error;
+      throw new Error("TELEBIRR_QUERY_ORDER_NETWORK_ERROR");
+    } finally {
+      clearTimeout(timeout);
+    }
   }
 }

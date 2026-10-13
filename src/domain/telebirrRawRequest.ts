@@ -24,19 +24,20 @@ export type TelebirrRawRequestInput = z.infer<
   typeof TelebirrRawRequestInputSchema
 >;
 
-/**
- * Pure H5/SuperApp rawRequest construction based on the supplied Ethio
- * telecom H5 demo. This does not call Telebirr or start a payment. It only
- * prepares the signed string that a separately governed client handoff could
- * use after a provider preorder has returned a prepay_id.
- *
- * The client-side startPay callback remains non-authoritative. Building this
- * string is never evidence of customer payment or PartnerFI settlement.
- */
-export function buildTelebirrRawRequest(
+export type TelebirrRawRequestFields = {
+  appid: string;
+  merch_code: string;
+  nonce_str: string;
+  prepay_id: string;
+  timestamp: string;
+  sign_type: "SHA256WithRSA";
+  sign: string;
+};
+
+export function buildTelebirrRawRequestFields(
   config: TelebirrSandboxConfig,
   input: TelebirrRawRequestInput,
-) {
+): TelebirrRawRequestFields {
   const safeConfig = assertTelebirrSandboxConfig(config);
   SafeProviderConfigIdentifier.parse(safeConfig.merchantAppId);
   SafeProviderConfigIdentifier.parse(safeConfig.merchantCode);
@@ -48,19 +49,39 @@ export function buildTelebirrRawRequest(
     prepay_id: parsed.prepayId,
     timestamp: parsed.timestamp,
   };
-  const sign = signTelebirrRequest(unsigned, safeConfig.privateKey);
+  return {
+    ...unsigned,
+    sign_type: "SHA256WithRSA",
+    sign: signTelebirrRequest(unsigned, safeConfig.privateKey),
+  };
+}
 
-  // Preserve the field order shown in Ethio telecom's H5 demo. The signature
-  // itself is generated from the canonical sorted representation. All
-  // unsigned identifiers are restricted above so no unescaped '&'/'='
-  // delimiters can be injected into this legacy rawRequest format.
+/**
+ * Pure H5/SuperApp rawRequest construction based on the supplied Ethio
+ * telecom H5 demo. This does not call Telebirr or start a payment. It only
+ * prepares the legacy signed string that a separately governed client handoff
+ * could use after a provider preorder has returned a prepay_id.
+ *
+ * The client-side startPay callback remains non-authoritative. Building this
+ * string is never evidence of customer payment or PartnerFI settlement.
+ */
+export function buildTelebirrRawRequest(
+  config: TelebirrSandboxConfig,
+  input: TelebirrRawRequestInput,
+) {
+  const fields = buildTelebirrRawRequestFields(config, input);
+
+  // Preserve the field order shown in Ethio telecom's H5 demo. This raw H5
+  // string is intentionally distinct from browser URL serialization: browser
+  // query parameters are percent-encoded separately so base64 signature bytes
+  // survive normal URL parsing.
   return [
-    `appid=${unsigned.appid}`,
-    `merch_code=${unsigned.merch_code}`,
-    `nonce_str=${unsigned.nonce_str}`,
-    `prepay_id=${unsigned.prepay_id}`,
-    `timestamp=${unsigned.timestamp}`,
-    "sign_type=SHA256WithRSA",
-    `sign=${sign}`,
+    `appid=${fields.appid}`,
+    `merch_code=${fields.merch_code}`,
+    `nonce_str=${fields.nonce_str}`,
+    `prepay_id=${fields.prepay_id}`,
+    `timestamp=${fields.timestamp}`,
+    `sign_type=${fields.sign_type}`,
+    `sign=${fields.sign}`,
   ].join("&");
 }

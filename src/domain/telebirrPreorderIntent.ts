@@ -17,8 +17,7 @@ export type TelebirrPreorderIntentRequest = z.infer<
   typeof TelebirrPreorderIntentRequestSchema
 >;
 
-export const TelebirrPreorderIntentRecordSchema = z
-  .object({
+export const TelebirrPreorderIntentRecordSchema = z  .object({
     status: z.literal("PREORDER_INTENT_RECORDED"),
     request: TelebirrPreorderIntentRequestSchema,
   })
@@ -27,9 +26,9 @@ export type TelebirrPreorderIntentRecord = z.infer<
   typeof TelebirrPreorderIntentRecordSchema
 >;
 
-export const TelebirrPreorderIntentSnapshotSchema = z
-  .object({
+export const TelebirrPreorderIntentSnapshotSchema = z  .object({
     version: z.literal(1),
+    revision: z.number().int().nonnegative().default(0),
     records: z.array(TelebirrPreorderIntentRecordSchema).max(10_000),
   })
   .strict();
@@ -39,7 +38,10 @@ export type TelebirrPreorderIntentSnapshot = z.infer<
 
 export interface TelebirrPreorderIntentPersistence {
   load(): TelebirrPreorderIntentSnapshot | undefined;
-  save(snapshot: TelebirrPreorderIntentSnapshot): void;
+  save(
+    snapshot: TelebirrPreorderIntentSnapshot,
+    expectedRevision: number,
+  ): void;
 }
 
 function fingerprint(request: TelebirrPreorderIntentRequest) {
@@ -54,6 +56,11 @@ function fingerprint(request: TelebirrPreorderIntentRequest) {
  * mutation is allowed. It intentionally stores no app secret, private key,
  * access token, request signature, callback payload or provider payment state.
  *
+ * The local persistence contract uses revision-based compare-and-swap. The
+ * provided JSON persistence also takes an exclusive local lock during writes.
+ * That closes lost-update races between cooperating local processes sharing
+ * one file, but it is not a distributed database or production outbox.
+ *
  * The reservation is a safety primitive, not proof that Telebirr received an
  * order and never evidence of payment, settlement or PartnerFI posting.
  */
@@ -62,11 +69,13 @@ export class DurableTelebirrPreorderIntentStore {
   private readonly transactionKeys = new Map<string, string>();
   private readonly merchantOrderKeys = new Map<string, string>();
   private readonly nonceKeys = new Map<string, string>();
+  private revision = 0;
 
   constructor(private readonly persistence: TelebirrPreorderIntentPersistence) {
     const snapshot = persistence.load();
     if (!snapshot) return;
     const validated = TelebirrPreorderIntentSnapshotSchema.parse(snapshot);
+    this.revision = validated.revision;
     for (const record of validated.records) {
       const { request } = record;
       const key = request.idempotencyKey;
@@ -105,19 +114,24 @@ export class DurableTelebirrPreorderIntentStore {
       status: "PREORDER_INTENT_RECORDED",
       request: structuredClone(request),
     };
+    const nextRevision = this.revision + 1;
 
-    // Durability is the gate: do not make this reservation observable in
-    // memory until the atomic persistence layer has accepted the candidate
-    // snapshot. If save throws, a same-process retry must still perform the
-    // durable write rather than returning a phantom in-memory reservation.
-    this.persistence.save({
-      version: 1,
-      records: [
-        ...this.records.values(),
-        record,
-      ].map((entry) => structuredClone(entry)),
-    });
+    // Persistence is the gate: do not make this reservation observable in
+    // memory until the persistence layer has atomically accepted the expected
+    // prior revision and durable candidate snapshot.
+    this.persistence.save(
+      {
+        version: 1,
+        revision: nextRevision,
+        records: [
+          ...this.records.values(),
+          record,
+        ].map((entry) => structuredClone(entry)),
+      },
+      this.revision,
+    );
 
+    this.revision = nextRevision;
     this.records.set(request.idempotencyKey, record);
     this.transactionKeys.set(request.transactionId, request.idempotencyKey);
     this.merchantOrderKeys.set(request.merchantOrderId, request.idempotencyKey);
