@@ -25,7 +25,8 @@ export default function NetworkOperationsAccess() {
         <h1>Network Operations Access</h1>
         <p>
           Stage 3 synthetic role/object authorization model for network-operations
-          surfaces. Access remains local-development/synthetic and does not establish
+          surfaces. Access requires both an allowed action and explicit server-side
+          object membership. It remains local-development/synthetic and does not establish
           institutional or regulated authority.
         </p>
       </div>
