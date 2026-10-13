@@ -139,6 +139,7 @@ export function PresentationShell({ children }: { children: ReactNode }) {
           <Link to="/onboard">{t.onboarding}</Link>
           <Link to="/supervisor">Supervisor</Link>
           <Link to="/operations">Operations</Link>
+          <Link to="/partners">Partner Ecosystem</Link>
           <Link to="/data-mule">Data Mule</Link>
           <Link to="/node-status">Demo architecture</Link>
           <Link to="/academy">{t.training}</Link>
