@@ -1,0 +1,34 @@
+.product-nav {
+  align-items: stretch;
+}
+
+.product-nav-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid #d4dfd1;
+  border-radius: 12px;
+  background: #eef3e9;
+}
+
+.product-nav-label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #566b64;
+  padding: 0 4px;
+}
+
+.product-nav-group a {
+  display: inline-flex;
+  align-items: center;
+}
+
+@media (max-width: 700px) {
+  .product-nav-group {
+    width: 100%;
+  }
+}
