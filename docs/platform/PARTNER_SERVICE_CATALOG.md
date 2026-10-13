@@ -2,12 +2,12 @@
 
 ## Purpose
 
-The Partner Service Catalog is the machine-readable list of products/actions a partner makes available through Enawuga. It is the bridge between a partner's business offering and Enawuga's reusable workflows.
+The Partner Service Catalog is the machine-readable list of products/actions a partner makes available through Enawuga. It bridges a partner's business offering to reusable Enawuga workflows without institution-specific page forks.
 
-A service is not the same thing as a capability, route or adapter:
+A service is not a capability, route or adapter:
 
 ```text
-Service -> requires capability -> resolved to governed route -> executed by adapter
+Service -> requires capability -> governed route -> reviewed adapter
 ```
 
 Example:
@@ -15,111 +15,123 @@ Example:
 ```text
 Cash-in request
   -> FIN.CASH_IN_AUTHORIZE
-  -> route_partnerfi_alpha_mock
-  -> MockPartnerFI adapter
+  -> route_syn_partnerfi_alpha_core
+  -> adapter_syn_partnerfi_alpha_v1
 ```
 
-The UI should render services from this catalog rather than hard-coding institution-specific pages.
+The UI consumes policy-filtered service definitions. Server authorization remains authoritative on every action.
 
 ## Core principles
 
 1. Services are partner-owned offerings.
-2. Services reference provider-neutral capabilities.
-3. Routes are selected separately and remain provenance-visible.
-4. A service can be visible only where membership, role, region, environment and capability grants all allow it.
-5. Service publication does not create capability authority.
-6. A new partner using an existing service type should normally require configuration, not core UI edits.
+2. Services reference provider-neutral capability IDs from the Partner Capability Contract.
+3. Routes and adapters remain separate, versioned and provenance-visible.
+4. Membership, role, region, agent-group, object/data scope, service publication and capability policy must all permit use.
+5. Service publication never creates capability authority.
+6. A new partner using an existing service/workflow type should normally require configuration plus a certified adapter, not core UI edits.
+7. Unknown service semantics require domain review rather than arbitrary JSON extension.
+8. Removing or suspending a service removes it from new workspaces without deleting historical evidence.
 
-## Service schema
+## Catalog schema
 
 Recommended logical structure:
 
 ```yaml
-serviceId: svc_alpha_cash_in
+schemaVersion: 1
 catalogVersion: 1
-partnerOrgId: org_syn_alpha
-serviceType: FINANCIAL_CASH_IN
-display:
-  name: Cash In
-  shortDescription: Prepare a PartnerFI cash-in authorization request
-  category: Financial services
-status: PUBLISHED_SYNTHETIC
+partnerOrgId: org_syn_partnerfi_alpha
 environment: synthetic
-roles: [AGENT]
-regions: [region_syn_adama, region_syn_arisi]
-agentGroups: [group_syn_alpha_agents]
-requiredCapabilities:
-  - FIN.CASH_IN_AUTHORIZE
-allowedRoutePolicy:
-  mode: EXPLICIT
-  routeIds: [route_mock_partnerfi_alpha]
-dataRequirements:
-  inputClasses: [CUSTOMER_REFERENCE, TRANSACTION_INTENT]
-  outputClasses: [TRANSACTION_STATUS]
-offlinePolicy: CAPTURE_INTENT_ONLY
-workflowTemplate: CASH_SERVICE_REQUEST_V1
-evidenceRefs: [EV-SYN-ALPHA-CASHIN]
+lifecycleState: PUBLISHED_SYNTHETIC
+services:
+  - serviceId: svc_alpha_cash_in
+    serviceType: FINANCIAL_CASH_IN
+    display:
+      name: Cash In
+      shortDescription: Prepare a PartnerFI cash-in authorization request
+      category: Financial services
+      iconKey: cash-in
+    roles: [AGENT]
+    regions: [region_syn_adama, region_syn_arisi]
+    agentGroups: [group_syn_alpha_agents]
+    requiredCapabilities: [FIN.CASH_IN_AUTHORIZE]
+    routePolicy:
+      mode: EXPLICIT
+      routeIds: [route_syn_partnerfi_alpha_core]
+    dataRequirements:
+      inputClasses: [CUSTOMER_REFERENCE, TRANSACTION_INTENT]
+      outputClasses: [TRANSACTION_STATUS]
+    offlinePolicy: CAPTURE_INTENT_ONLY
+    workflowTemplate: CASH_SERVICE_REQUEST_V1
+    activation:
+      effectiveAt: null
+      expiresAt: null
+      evidenceRefs: [EV-SYN-ALPHA-V1]
 ```
 
 ## Required fields
 
-### Identity
+### Catalog identity
 
-- `serviceId`
+- `schemaVersion`
 - `catalogVersion`
 - `partnerOrgId`
+- `environment`
+- `lifecycleState`
+
+### Service identity
+
+- `serviceId`
 - `serviceType`
-
-### Presentation metadata
-
-- display name;
-- short description;
-- category;
-- optional localized labels;
-- optional icon key from an approved internal set.
-
-Presentation metadata must not be able to inject executable code or arbitrary HTML.
+- presentation metadata
+- reusable `workflowTemplate`
 
 ### Availability scope
 
-- environment;
-- role assignments;
+Each service declares:
+
+- roles;
 - region IDs;
-- agent group IDs where applicable;
-- effective/expiry dates if partner policy requires them.
+- optional agent-group IDs;
+- effective/expiry timestamps where needed.
+
+The catalog does not replace principal/object authorization. A service can be visible only after catalog and capability-contract scopes intersect successfully.
 
 ### Capability requirements
 
-A service lists one or more required capability IDs. All mandatory requirements must pass policy evaluation before the service is actionable.
+A service lists one or more required provider-neutral capability IDs. Every required capability must exist in the partner's contract and pass the policy evaluator before the service is actionable.
+
+A catalog cannot invent capability IDs.
 
 ### Route policy
 
-Route choice must be explicit and auditable. Supported policies should begin conservatively:
+Initial route-policy modes:
 
-- `EXPLICIT` — one or more approved route IDs;
-- `PRIORITY_ORDER` — ordered approved routes, with no silent cross-provider fallback after an ambiguous external mutation;
+- `EXPLICIT` — one approved route;
+- `PRIORITY_ORDER` — ordered approved routes, subject to the no-silent-fallback rule after ambiguous external mutation;
 - `READ_ONLY_AGGREGATE` — no external mutation route.
 
-Automatic route fallback for financial mutations is forbidden unless the contract proves it cannot duplicate execution.
+For financial mutations, automatic cross-provider retry/fallback is prohibited after an ambiguous external outcome unless the external contract and idempotency model prove duplicate execution cannot occur.
 
 ### Data requirements
 
-The service declares only the data classes required for its workflow. Runtime policy must intersect service requirements with the partner's approved data scope.
+The service declares only the data classes needed by the workflow. Runtime policy intersects service requirements with the capability grant's permitted data classes.
+
+A service requesting a data class not authorized by its capability grant must fail closed.
 
 ### Offline policy
 
-Initial allowed values:
+Catalog values align exactly to the Partner Capability Contract runtime:
 
-- `NOT_AVAILABLE_OFFLINE`
-- `READ_CACHED_SYNTHETIC_ONLY`
+- `DENY_OFFLINE`
+- `READ_CACHED_REFERENCE_ONLY`
 - `CAPTURE_INTENT_ONLY`
-- `QUEUE_NON_FINANCIAL_DRAFT`
+- `LOCAL_SIMULATION_ONLY`
 
-Offline capture never upgrades authorization or settlement state.
+Offline capture never upgrades provider acceptance, authorization, PartnerFI posting or settlement state.
 
 ### Workflow template
 
-The service points to an Enawuga-owned reusable workflow template, for example:
+The catalog points to Enawuga-owned reusable workflow templates. Initial examples:
 
 ```text
 CUSTOMER_LOOKUP_V1
@@ -127,17 +139,21 @@ CASH_SERVICE_REQUEST_V1
 SAVINGS_INQUIRY_V1
 SERVICE_REQUEST_V1
 C2B_PAYMENT_REQUEST_V1
+PAYMENT_STATUS_V1
+IDENTITY_VERIFY_V1
+FMCG_CATALOG_V1
+FMCG_INVENTORY_V1
 FMCG_RESTOCK_PLAN_V1
-NLC_PLANNING_V1
+FLEET_ROUTE_PLANNING_V1
+NLC_READ_V1
+SMS_REQUEST_V1
 ```
 
-A partner may configure labels, required capabilities and mappings but cannot replace core state-transition safety with arbitrary client-side workflow code.
+Partners may configure labels, scopes, capability requirements and route mappings. They cannot inject executable client code or replace governed state transitions.
 
-## Service type taxonomy
+## Initial service-type taxonomy
 
-Initial target taxonomy should be small and domain-oriented:
-
-### Financial institution services
+### Financial institution
 
 - `FINANCIAL_ACCOUNT_LOOKUP`
 - `FINANCIAL_CASH_IN`
@@ -145,41 +161,52 @@ Initial target taxonomy should be small and domain-oriented:
 - `FINANCIAL_SAVINGS_INQUIRY`
 - `FINANCIAL_SERVICE_REQUEST`
 
-### Payment services
+### Payments
 
 - `PAYMENT_C2B`
 - `PAYMENT_STATUS`
 
-### Identity services
+### Identity
 
-- `IDENTITY_ONBOARDING`
-- `IDENTITY_REVERIFICATION`
+- `IDENTITY_ONBOARD_VERIFY`
 
-### FMCG/logistics services
+`IDENTITY_REVERIFY` is a future service type unless/until a matching provider-neutral capability is added through domain review.
+
+### FMCG / logistics
 
 - `FMCG_CATALOG_VIEW`
+- `FMCG_INVENTORY_VIEW`
 - `FMCG_RESTOCK_DRAFT`
 - `FLEET_ROUTE_PLANNING`
 
-### Network operations services
+Dispatch and cash handover are not exposed as active service types while their capability grants remain disabled.
+
+### Network operations
 
 - `NETWORK_LIQUIDITY_READ`
-- `NETWORK_LIQUIDITY_PLAN`
-- `PROVIDER_RECONCILIATION`
 
-New service types require domain review. A partner should not create arbitrary service semantics merely by adding JSON.
+Planning or mutation-oriented network operations require separately governed capability support.
 
-## Example: two PartnerFIs, same UI framework
+### Communications
 
-### PartnerFI Alpha
+- `COMMUNICATIONS_SMS_REQUEST`
+
+## Synthetic reference catalogs
+
+The first implementation must prove heterogeneity through the merged reference organizations.
+
+### Synthetic PartnerFI Alpha
 
 Publishes:
 
 - Account Lookup
 - Cash In
 - Cash Out
+- NLC/LCI read-only view for Supervisor
 
-### PartnerFI Beta
+Regions: Adama and Arisi.
+
+### Synthetic PartnerFI Beta
 
 Publishes:
 
@@ -187,19 +214,24 @@ Publishes:
 - Savings Inquiry
 - Savings Service Request
 
-The Agent workspace uses the same components/workflow templates, but the generated menu/action set differs because the catalog differs.
+Region: Adama only.
 
-No files such as `AlphaAgentPage.tsx` or `BetaAgentPage.tsx` should be required.
+It publishes no cash-in/cash-out service. If the generated Agent workspace still exposes cash controls for Beta, the abstraction has failed.
 
-## Service discovery API target
+### Other reference partners
 
-The backend should ultimately expose an authenticated, policy-filtered manifest rather than returning the entire raw catalog to every user.
+Gateway Gamma, Mobile Money Delta, Identity Epsilon, FMCG Zeta, Fleet Eta and Telco Theta publish only the service types supported by their current synthetic capability grants. Disabled grants may be represented as readiness/evidence state but must not become actionable services.
 
-Example conceptual response:
+## Policy-filtered workspace manifest
+
+The backend should expose an authenticated, filtered manifest rather than sending the complete raw catalog to every user.
+
+Conceptual response:
 
 ```json
 {
-  "partnerOrgId": "org_syn_alpha",
+  "partnerOrgId": "org_syn_partnerfi_alpha",
+  "catalogVersion": 1,
   "role": "AGENT",
   "regionId": "region_syn_adama",
   "services": [
@@ -207,74 +239,76 @@ Example conceptual response:
       "serviceId": "svc_alpha_cash_in",
       "serviceType": "FINANCIAL_CASH_IN",
       "name": "Cash In",
+      "workflowTemplate": "CASH_SERVICE_REQUEST_V1",
       "actionState": "AVAILABLE_SYNTHETIC"
     }
   ]
 }
 ```
 
-The manifest is a presentation aid. Every subsequent API request still re-runs authorization.
+The manifest is presentation/discovery evidence, not authorization. Every subsequent operation re-runs server-side capability authorization.
 
-## Service lifecycle
+## Catalog lifecycle
 
-Recommended states:
+Target states:
 
 - `DRAFT`
 - `PUBLISHED_SYNTHETIC`
 - `PUBLISHED_SANDBOX`
+- `PUBLISHED_TESTBED`
 - `PUBLISHED_STAGING`
 - `AUTHORIZED`
 - `SUSPENDED`
 - `RETIRED`
 
-The current stage must reject live/authorized use until governance permits it.
+Current runtime gates must reject staging/authorized actionability until governance explicitly permits those environments.
 
-## Versioning
+## Versioning and audit
 
-Catalog entries are versioned. Material changes such as capability requirements, route policy, data scope or workflow type create a new catalog version.
+Catalogs are immutable by version for execution/audit purposes. Material changes to capability requirements, route policy, data scope, workflow type, role/region scope or lifecycle state create a new catalog version.
 
-Transactions/audit events should record `serviceId` + `catalogVersion` so historical execution can be reconstructed.
-
-## Relationship to route provenance
-
-Every actionable service result must be able to answer:
+Every resulting request/audit event should be able to reconstruct:
 
 ```text
-What service did the user request?
-Which partner published it?
-Which capability authorized it?
-Which route was selected?
-Which adapter executed/read the provider contract?
-What authority state resulted?
+serviceId + catalogVersion
+partnerOrgId + partnerContractVersion
+capabilityId + grantId
+routeId + adapterId/version
+resulting authority/status state
 ```
-
-This chain is mandatory for auditability and truthful UI claims.
 
 ## Migration from current UI
 
-1. Keep current presentation pages operational.
-2. Convert hard-coded service cards into catalog-backed definitions one workflow at a time.
-3. Begin with two synthetic PartnerFIs.
-4. Add policy-filtered workspace manifest.
-5. Move primary Agent actions to catalog-driven rendering.
-6. Preserve direct route links for Supervisor/Operations where needed, but generate them from scoped services/capabilities over time.
+1. Keep current product surfaces operational.
+2. Introduce strict catalog schema and catalog evaluator.
+3. Publish Alpha and Beta catalogs from the same runtime model.
+4. Add policy-filtered workspace-manifest generation.
+5. In the dedicated capability-driven UI workstream, replace hard-coded service cards/navigation with manifest-backed rendering.
+6. Preserve server-side authorization on every action.
+7. Migrate Supervisor/Operations surfaces incrementally using the same service/capability vocabulary.
 
-## Acceptance criteria for implementation
+## Acceptance criteria
 
-- Strict schema with no executable content.
-- Services cannot reference unknown capabilities/routes.
-- Two synthetic PartnerFIs publish materially different catalogs.
-- Agent UI changes from catalog data without institution-specific component forks.
-- Region/role restrictions are enforced server-side.
-- Service data requirements are intersected with partner data permissions.
-- Offline policy is explicit per service.
-- Route provenance and catalog version are attached to resulting intents/audit records.
-- Removing/suspending a service removes it from the workspace manifest without deleting historical records.
+Implementation is complete only when:
+
+- the catalog uses a strict schema with no executable content or secret fields;
+- every service belongs to the catalog partner and references known contract capability IDs;
+- route IDs must be explicitly permitted by the relevant capability grants;
+- service data requirements are a subset of capability-grant data permissions;
+- service roles, regions and agent groups cannot exceed contract/grant scopes;
+- offline policy cannot be more permissive than the capability grant;
+- Alpha and Beta publish materially different catalogs through the same code;
+- Beta cannot acquire Alpha cash services merely by sharing the `AGENT` role;
+- suspending/removing a service removes it from new manifests without erasing historical records;
+- catalog version and route/capability provenance are available for downstream audit;
+- later capability-driven UI can change the workspace solely from partner/catalog/context data, with no `AlphaAgentPage` / `BetaAgentPage` forks.
 
 ## Out of scope
 
-- Partner pricing/fees unless separately governed.
-- Real product terms.
-- Credit underwriting/approval.
-- Production settlement.
-- Arbitrary third-party UI code or scripts.
+- real partner pricing or product terms;
+- real credit underwriting or approval;
+- production settlement or PartnerFI posting;
+- arbitrary third-party UI code/scripts;
+- provider credential storage;
+- runtime Adapter Registry implementation (separate workstream);
+- final capability-driven UI implementation (separate workstream).
