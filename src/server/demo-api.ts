@@ -12,8 +12,8 @@ import {
   type MockIdentityProviderPersistence,
 } from "../domain/identity";
 import {
-  MockPartnerFI,
   TransactionService,
+  type FinancialInstitutionAdapter,
   type PartnerLedgerPersistence,
 } from "../domain/financial";
 import {
@@ -33,6 +33,7 @@ import {
   SyntheticAuditLog,
   type SyntheticAuditPersistence,
 } from "./audit";
+import { createDefaultSyntheticFinancialInstitutionAdapter } from "./adapter-bootstrap";
 
 export const demoPhones = [
   "+251900000001",
@@ -44,6 +45,7 @@ export interface DemoApiOptions {
   allowPrivilegedSyntheticRoles?: boolean;
   customerPersistence?: CustomerStorePersistence;
   partnerLedgerPersistence?: PartnerLedgerPersistence;
+  financialInstitutionAdapter?: FinancialInstitutionAdapter;
   identityProviderPersistence?: MockIdentityProviderPersistence;
   kycPendingPersistence?: KycPendingPersistence;
   auditPersistence?: SyntheticAuditPersistence;
@@ -60,7 +62,11 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
     customers = new CustomerStore(options.customerPersistence, audit),
     provider = new MockFaydaAdapter(options.identityProviderPersistence),
     identity = new KycService(customers, provider, options.kycPendingPersistence),
-    partner = new MockPartnerFI("accept", options.partnerLedgerPersistence),
+    partner =
+      options.financialInstitutionAdapter ??
+      createDefaultSyntheticFinancialInstitutionAdapter(
+        options.partnerLedgerPersistence,
+      ),
     transactions = new TransactionService(customers, partner),
     auth = new SyntheticAuthService({}, audit);
 
