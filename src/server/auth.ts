@@ -1,5 +1,13 @@
 import { randomUUID, timingSafeEqual } from "node:crypto";
 import type { Request, Response } from "express";
+import {
+  NetworkOperationsActionSchema,
+  NetworkOperationsObjectIdSchema,
+  defaultNetworkObjectIdsForRole,
+  isNetworkOperationsActionAuthorized,
+  type NetworkOperationsAction,
+  type NetworkOperationsObjectId,
+} from "../domain/networkOperationsAuthorization";
 import { SyntheticAuditLog, type SyntheticAuditEventInput } from "./audit";
 
 export type SyntheticRole = "AGENT" | "SUPERVISOR" | "PARTNER_ADMIN";
@@ -8,6 +16,7 @@ export interface SyntheticPrincipal {
   userId: "synthetic-agent-01" | "synthetic-supervisor-01" | "synthetic-partner-admin-01";
   role: SyntheticRole;
   allowedCustomerIds: readonly string[];
+  allowedNetworkObjectIds: readonly NetworkOperationsObjectId[];
 }
 
 export interface SyntheticSessionView extends SyntheticPrincipal {
@@ -70,7 +79,11 @@ export class SyntheticAuthService {
     this.maxRequestsPerWindow = config.maxRequestsPerWindow ?? 60;
   }
 
-  createSession(role: SyntheticRole, allowedCustomerIds: readonly string[]) {
+  createSession(
+    role: SyntheticRole,
+    allowedCustomerIds: readonly string[],
+    allowedNetworkObjectIds: readonly NetworkOperationsObjectId[] = defaultNetworkObjectIdsForRole(role),
+  ) {
     const userId =
       role === "AGENT"
         ? "synthetic-agent-01"
@@ -83,6 +96,9 @@ export class SyntheticAuthService {
       userId,
       role,
       allowedCustomerIds: [...allowedCustomerIds],
+      allowedNetworkObjectIds: allowedNetworkObjectIds.map((objectId) =>
+        NetworkOperationsObjectIdSchema.parse(objectId),
+      ),
       expiresAtMs: Date.now() + this.sessionTtlMs,
     };
     this.sessions.set(session.sessionId, session);
@@ -140,6 +156,26 @@ export class SyntheticAuthService {
     }
   }
 
+  requireNetworkObject(
+    session: StoredSession,
+    objectId: NetworkOperationsObjectId,
+    action: NetworkOperationsAction = "READ",
+  ) {
+    const parsedObjectId = NetworkOperationsObjectIdSchema.parse(objectId);
+    const parsedAction = NetworkOperationsActionSchema.parse(action);
+    if (
+      !session.allowedNetworkObjectIds.includes(parsedObjectId) ||
+      !isNetworkOperationsActionAuthorized(
+        session.role,
+        parsedObjectId,
+        parsedAction,
+      )
+    ) {
+      this.record("OBJECT_ACCESS_DENIED", "DENY", session);
+      throw new SyntheticAuthError("OBJECT_ACCESS_DENIED", 403);
+    }
+  }
+
   requireCsrf(req: Request, session: StoredSession) {
     const supplied = req.get("x-csrf-token") ?? "";
     if (!supplied || !safeEqual(supplied, session.csrfToken)) {
@@ -159,6 +195,7 @@ export class SyntheticAuthService {
       userId: session.userId,
       role: session.role,
       allowedCustomerIds: [...session.allowedCustomerIds],
+      allowedNetworkObjectIds: [...session.allowedNetworkObjectIds],
       csrfToken: session.csrfToken,
       expiresAt: new Date(session.expiresAtMs).toISOString(),
       localDevelopmentAuth: true,
