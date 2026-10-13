@@ -175,12 +175,30 @@ test("M-PESA foundation has no mounted API route", async () => {
   await new Promise<void>((resolve) => server.once("listening", resolve));
   const base = `http://127.0.0.1:${(server.address() as any).port}`;
   try {
+    const sessionResponse = await fetch(base + "/api/demo/session/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role: "AGENT" }),
+    });
+    assert.equal(sessionResponse.status, 200);
+    const cookie = sessionResponse.headers.get("set-cookie")?.split(";")[0];
+    assert.ok(cookie);
+    const session = await sessionResponse.json() as { csrfToken: string };
+
     for (const path of [
       "/api/demo/payments/mpesa/c2b",
       "/api/demo/payments/mpesa/status",
       "/api/demo/payments/mpesa/callback",
     ]) {
-      const response = await fetch(base + path, { method: "POST" });
+      const response = await fetch(base + path, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Cookie: cookie,
+          "X-CSRF-Token": session.csrfToken,
+        },
+        body: "{}",
+      });
       assert.equal(response.status, 404);
       assert.equal((await response.json()).error, "API_NOT_FOUND");
     }
