@@ -41,6 +41,7 @@ function minimalRegistry() {
       configSchemaId: "CFG_TEST_V1",
       implementationKey: "TEST_IMPLEMENTATION_V1",
       status: "REGISTERED_SYNTHETIC",
+      runtimeMode: "EXECUTABLE",
       evidenceRefs: ["EV-TEST-V1"],
     }),
     () => ({ name: "test-adapter" }),
@@ -60,6 +61,7 @@ test("adapter and route identifiers fail closed on duplicates", () => {
     configSchemaId: "CFG_TEST_V1",
     implementationKey: "TEST_IMPLEMENTATION_V1",
     status: "REGISTERED_SYNTHETIC",
+    runtimeMode: "EXECUTABLE",
   });
   assert.throws(
     () => registry.registerAdapter(adapter, () => ({})),
@@ -150,6 +152,7 @@ test("disabled adapter and route registrations are discoverable metadata but not
       configSchemaId: "CFG_DISABLED_V1",
       implementationKey: "DISABLED_GATEWAY_V1",
       status: "REGISTERED_DISABLED",
+      runtimeMode: "FOUNDATION_ONLY",
     }),
   );
   registry.registerRoute(
@@ -181,6 +184,63 @@ test("disabled adapter and route registrations are discoverable metadata but not
   );
 });
 
+test("environment registration is separate from runtime executability", () => {
+  const registry = new PartnerAdapterRegistry();
+  registry.registerAdapter(
+    adapterRegistration({
+      adapterId: "adapter_foundation_sandbox_v1",
+      partnerClass: "MOBILE_MONEY_PAYMENT_INSTRUMENT_ISSUER",
+      providerKey: "FOUNDATION_PROVIDER",
+      protocolFamily: "FOUNDATION_PROTOCOL",
+      environment: "sandbox",
+      supportedCapabilities: ["PAY.C2B_CREATE"],
+      configSchemaId: "CFG_FOUNDATION_V1",
+      implementationKey: "FOUNDATION_PROVIDER_V1",
+      status: "REGISTERED_SANDBOX",
+      runtimeMode: "FOUNDATION_ONLY",
+    }),
+  );
+
+  const metadata = registry.adapterMetadata()[0];
+  assert.equal(metadata.status, "REGISTERED_SANDBOX");
+  assert.equal(metadata.runtimeMode, "FOUNDATION_ONLY");
+  assert.throws(
+    () =>
+      registry.registerRoute(
+        routeRegistration({
+          routeId: "route_foundation_payment",
+          providerOrgId: "org_foundation_provider",
+          partnerClass: "MOBILE_MONEY_PAYMENT_INSTRUMENT_ISSUER",
+          environment: "sandbox",
+          serviceIds: ["svc_foundation_payment"],
+          adapterId: "adapter_foundation_sandbox_v1",
+          supportedCapabilities: ["PAY.C2B_CREATE"],
+          status: "SANDBOX_BOUNDED",
+        }),
+      ),
+    /ROUTE_REQUIRES_EXECUTABLE_ADAPTER/,
+  );
+
+  assert.throws(
+    () =>
+      new PartnerAdapterRegistry().registerAdapter(
+        adapterRegistration({
+          adapterId: "adapter_missing_factory_v1",
+          partnerClass: "PAYMENT_GATEWAY_SYSTEM_OPERATOR",
+          providerKey: "MISSING_FACTORY",
+          protocolFamily: "TEST_PROTOCOL",
+          environment: "sandbox",
+          supportedCapabilities: ["PAY.C2B_CREATE"],
+          configSchemaId: "CFG_MISSING_FACTORY_V1",
+          implementationKey: "MISSING_FACTORY_V1",
+          status: "REGISTERED_SANDBOX",
+          runtimeMode: "EXECUTABLE",
+        }),
+      ),
+    /EXECUTABLE_ADAPTER_FACTORY_REQUIRED/,
+  );
+});
+
 test("Alpha cash-in resolves through catalog + capability contract + route registry", () => {
   const registry = createRuntimeAdapterRegistry({ env: {} });
   const resolution = registry.resolveGoverned<{ financialInstitution: unknown }>({
@@ -194,7 +254,10 @@ test("Alpha cash-in resolves through catalog + capability contract + route regis
     evaluatedAt,
   });
 
-  assert.equal(resolution.provenance.partnerOrgId, SYNTHETIC_PARTNER_IDS.PARTNERFI_ALPHA);
+  assert.equal(
+    resolution.provenance.partnerOrgId,
+    SYNTHETIC_PARTNER_IDS.PARTNERFI_ALPHA,
+  );
   assert.equal(resolution.provenance.routeId, SYNTHETIC_ROUTE_IDS.ALPHA_CORE);
   assert.equal(resolution.provenance.adapterId, SYNTHETIC_ADAPTER_IDS.ALPHA);
   assert.ok(resolution.adapter.financialInstitution);
@@ -266,18 +329,38 @@ test("registry metadata exposes references, never factories or secret values", (
   assert.equal(serialized.includes("../"), false);
 });
 
-test("Telebirr and M-PESA foundations remain registered disabled", () => {
+test("Telebirr TestBed and M-PESA sandbox foundations are registered without active payment routes", () => {
   const registry = createRuntimeAdapterRegistry({ env: {} });
   const byId = Object.fromEntries(
     registry.adapterMetadata().map((entry) => [entry.adapterId, entry]),
   );
   assert.equal(
     byId[RUNTIME_ADAPTER_IDS.TELEBIRR_TESTBED_FOUNDATION]?.status,
-    "REGISTERED_DISABLED",
+    "REGISTERED_TESTBED",
+  );
+  assert.equal(
+    byId[RUNTIME_ADAPTER_IDS.TELEBIRR_TESTBED_FOUNDATION]?.runtimeMode,
+    "FOUNDATION_ONLY",
   );
   assert.equal(
     byId[RUNTIME_ADAPTER_IDS.MPESA_ETHIOPIA_SANDBOX_FOUNDATION]?.status,
-    "REGISTERED_DISABLED",
+    "REGISTERED_SANDBOX",
+  );
+  assert.equal(
+    byId[RUNTIME_ADAPTER_IDS.MPESA_ETHIOPIA_SANDBOX_FOUNDATION]?.runtimeMode,
+    "FOUNDATION_ONLY",
+  );
+
+  const routedAdapterIds = new Set(
+    registry.routeMetadata().map((route) => route.adapterId),
+  );
+  assert.equal(
+    routedAdapterIds.has(RUNTIME_ADAPTER_IDS.TELEBIRR_TESTBED_FOUNDATION),
+    false,
+  );
+  assert.equal(
+    routedAdapterIds.has(RUNTIME_ADAPTER_IDS.MPESA_ETHIOPIA_SANDBOX_FOUNDATION),
+    false,
   );
 });
 
