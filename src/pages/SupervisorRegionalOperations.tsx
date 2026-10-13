@@ -62,6 +62,11 @@ export default function SupervisorRegionalOperations() {
             <p>Gateway or provider evidence never becomes PartnerFI settlement automatically.</p>
           </div>
         </div>
+        <p>
+          Current access controls remain the governed application controls already in the
+          baseline. This presentation surface does not itself grant a role, capability or
+          object permission.
+        </p>
       </section>
 
       <section className="product-card" data-testid="supervisor-network-access">
