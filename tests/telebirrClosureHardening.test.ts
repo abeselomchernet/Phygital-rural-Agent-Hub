@@ -127,7 +127,14 @@ test("declared oversized response aborts immediately even when cancellation stal
 });
 
 test("restricted rsa-pss private keys remain unsupported until provider parameters are pinned", () => {
-  const restricted = generateKeyPairSync("rsa-pss", {
+  // The runtime supports rsa-pss generation, while this repository's current
+  // Node type definitions do not expose that overload. Keep the type escape
+  // test-local so production signing remains fully typed.
+  const generateRuntimeKeyPair = generateKeyPairSync as unknown as (
+    type: string,
+    options: Record<string, unknown>,
+  ) => { publicKey: string; privateKey: string };
+  const restricted = generateRuntimeKeyPair("rsa-pss", {
     modulusLength: 2048,
     hashAlgorithm: "sha256",
     mgf1HashAlgorithm: "sha512",
