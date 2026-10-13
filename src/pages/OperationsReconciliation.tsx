@@ -72,9 +72,12 @@ const stateCopy: Record<
 
 const lifecycle = [
   ["Checkout created", "Provider session created; no settlement asserted."],
-  ["Provider status", "Supervisor/admin performs a read-only session-status check."],
+  ["Provider status", "Operations performs a bounded read-only session-status check."],
   ["Gateway state", "Pending, confirmed, failed, canceled, expired or uncertain."],
-  ["PartnerFI authority", "Separate regulated authorization/settlement remains outside this gateway result."],
+  [
+    "PartnerFI authority",
+    "Separate regulated authorization/settlement remains outside this gateway result.",
+  ],
 ] as const;
 
 export default function OperationsReconciliation() {
@@ -92,16 +95,19 @@ export default function OperationsReconciliation() {
   const checkedAt = useMemo(() => {
     if (!result) return "Not checked";
     const parsed = new Date(result.checkedAt);
-    return Number.isNaN(parsed.getTime()) ? "Provider check recorded" : parsed.toLocaleString();
+    return Number.isNaN(parsed.getTime())
+      ? "Provider check recorded"
+      : parsed.toLocaleString();
   }, [result]);
 
-  const beginSupervisorSession = async () => {
+  const beginOperationsSession = async () => {
     setBusy(true);
     setResult(null);
     try {
-      const session = await startDemoSession("SUPERVISOR");
-      const customer = await demoApiAs("SUPERVISOR", "customer");
-      setCustomerId(customer.customerId);
+      const session = await startDemoSession("OPERATIONS");
+      const scopedCustomerId = session.allowedCustomerIds[0];
+      if (!scopedCustomerId) throw new Error("OPERATIONS_CUSTOMER_SCOPE_UNAVAILABLE");
+      setCustomerId(scopedCustomerId);
       setAuthorized(true);
       setMessage(
         `Synthetic ${session.role} session active. Enter an Enawuga transaction ID created by the guarded ArifPay checkout flow.`,
@@ -120,14 +126,18 @@ export default function OperationsReconciliation() {
 
   const reconcile = async () => {
     if (!authorized || !customerId) return;
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(transactionId)) {
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        transactionId,
+      )
+    ) {
       setMessage("Enter a valid Enawuga transaction UUID.");
       return;
     }
     setBusy(true);
     try {
       const next = (await demoApiAs(
-        "SUPERVISOR",
+        "OPERATIONS",
         "payments/arifpay/c2b/reconcile",
         { customerId, transactionId },
       )) as ReconciliationResult;
@@ -144,7 +154,10 @@ export default function OperationsReconciliation() {
   };
 
   return (
-    <section className="max-w-5xl mx-auto space-y-6" data-testid="operations-reconciliation">
+    <section
+      className="max-w-5xl mx-auto space-y-6"
+      data-testid="operations-reconciliation"
+    >
       <div className="rounded-2xl border border-slate-800 bg-slate-950 p-6 text-slate-100 space-y-4">
         <div className="flex flex-wrap items-center gap-3">
           <CapabilityBadge state="IMPLEMENTED" />
@@ -153,30 +166,45 @@ export default function OperationsReconciliation() {
         <div className="flex items-start gap-3">
           <ShieldCheck className="h-7 w-7 text-indigo-400 mt-1" />
           <div>
-            <h1 className="text-2xl font-black">Operations & Reconciliation Center</h1>
+            <h1 className="text-2xl font-black">
+              Operations & Reconciliation Center
+            </h1>
             <p className="mt-2 text-slate-300">
               Governed provider-operations workspace. ArifPay sandbox reconciliation is implemented;
-              direct Telebirr and Safaricom Ethiopia M-PESA are visible only as inactive provider
-              foundations. Wishland software observes gateway/provider evidence while PartnerFI remains
-              the future regulated authority for customer funds and settlement.
+              direct Telebirr and Safaricom Ethiopia M-PESA are registered as bounded TestBed/sandbox
+              foundations whose payment routes remain activation-gated. Wishland software observes
+              gateway/provider evidence while PartnerFI remains the future regulated authority for
+              customer funds and settlement.
             </p>
           </div>
         </div>
         <div className="grid gap-3 md:grid-cols-3 text-sm">
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-            <p className="text-slate-500 uppercase tracking-widest text-[10px]">Payment gateway</p>
+            <p className="text-slate-500 uppercase tracking-widest text-[10px]">
+              Payment gateway
+            </p>
             <strong>ArifPay · Sandbox</strong>
-            <p className="text-slate-400 mt-1">Session-ID status read verified.</p>
+            <p className="text-slate-400 mt-1">
+              Session-ID status read verified.
+            </p>
           </div>
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-            <p className="text-slate-500 uppercase tracking-widest text-[10px]">Webhook authority</p>
+            <p className="text-slate-500 uppercase tracking-widest text-[10px]">
+              Webhook authority
+            </p>
             <strong>Disabled</strong>
-            <p className="text-slate-400 mt-1">Raw notify JSON is not trusted without verified authenticity.</p>
+            <p className="text-slate-400 mt-1">
+              Raw notify JSON is not trusted without verified authenticity.
+            </p>
           </div>
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-            <p className="text-slate-500 uppercase tracking-widest text-[10px]">Settlement authority</p>
+            <p className="text-slate-500 uppercase tracking-widest text-[10px]">
+              Settlement authority
+            </p>
             <strong>PartnerFI · Separate</strong>
-            <p className="text-slate-400 mt-1">Gateway success never becomes settlement automatically.</p>
+            <p className="text-slate-400 mt-1">
+              Gateway success never becomes settlement automatically.
+            </p>
           </div>
         </div>
 
@@ -187,7 +215,8 @@ export default function OperationsReconciliation() {
           <div>
             <h2 className="font-black text-lg">Payment provider readiness</h2>
             <p className="text-sm text-slate-400 mt-1">
-              Provider visibility does not imply production approval, settlement authority or live-funds capability.
+              Environment registration, runtime executability and route activation are separate states.
+              None of them by itself implies production approval, settlement authority or live-funds capability.
             </p>
           </div>
           <div className="grid gap-3 md:grid-cols-2 text-sm">
@@ -195,24 +224,32 @@ export default function OperationsReconciliation() {
               <div className="flex items-center justify-between gap-3">
                 <strong>ArifPay · Sandbox</strong>
                 <span className="rounded-full border border-emerald-700 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-300">
-                  Reconciliation implemented
+                  Sandbox integrated
                 </span>
               </div>
               <p className="text-slate-400">
                 Guarded checkout, durable correlation and verified session-ID reconciliation are available in the bounded synthetic flow.
               </p>
             </div>
-            <div className="rounded-xl border border-amber-800/70 bg-amber-950/20 p-4 space-y-2">
+            <div
+              className="rounded-xl border border-amber-800/70 bg-amber-950/20 p-4 space-y-2"
+              data-testid="telebirr-readiness"
+            >
               <div className="flex items-center justify-between gap-3">
                 <strong>Direct Telebirr · TestBed foundation</strong>
                 <span className="rounded-full border border-amber-700 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-amber-200">
-                  Networking disabled
+                  REGISTERED_TESTBED · FOUNDATION_ONLY
                 </span>
               </div>
               <p className="text-slate-300">
-                T1–T10 safety, signing, correlation, queryOrder transport, checkout-handoff and readiness primitives are merged as an inactive TestBed foundation.
+                T1–T10 safety, signing, correlation, queryOrder transport and checkout-handoff primitives are implemented as the direct TestBed foundation.
               </p>
-              <p className="text-amber-200 text-xs font-bold">TLS trust gate unresolved · no direct payment or reconciliation control is exposed.</p>
+              <p className="text-amber-200 text-xs font-bold">
+                Direct payment route not mounted · remaining TestBed TLS/provider-contract gates must pass before route activation.
+              </p>
+              <p className="text-slate-400 text-xs">
+                Foundation registration is not production authorization or PartnerFI settlement authority.
+              </p>
             </div>
             <div
               className="rounded-xl border border-slate-700 bg-slate-950/60 p-4 space-y-2"
@@ -221,17 +258,19 @@ export default function OperationsReconciliation() {
               <div className="flex items-center justify-between gap-3">
                 <strong>Safaricom Ethiopia M-PESA</strong>
                 <span className="rounded-full border border-emerald-800 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-300">
-                  Token contract verified
+                  REGISTERED_SANDBOX · FOUNDATION_ONLY
                 </span>
               </div>
-              <p className="text-slate-300">Inactive sandbox foundation · application payment networking disabled</p>
+              <p className="text-slate-300">
+                Sandbox foundation registered · token contract verified
+              </p>
               <p className="text-slate-400 text-xs">
-                Controlled external token smoke reached the Ethiopia sandbox successfully. Token authentication evidence does not establish a payment, callback authority or settlement.
+                Controlled external token smoke reached the Ethiopia sandbox successfully. Token authentication evidence does not establish payment, callback authority or settlement.
               </p>
               <ul className="text-slate-400 space-y-1">
-                <li>Initiation unavailable</li>
-                <li>Status reading unavailable</li>
-                <li>Callback authority unavailable</li>
+                <li>Payment initiation route not mounted</li>
+                <li>Status route not mounted</li>
+                <li>Callback authority not activated</li>
                 <li>PartnerFI settlement/posting unavailable</li>
               </ul>
             </div>
@@ -244,22 +283,22 @@ export default function OperationsReconciliation() {
           <div>
             <h2 className="font-black text-lg">Controlled provider check</h2>
             <p className="text-sm text-slate-400 mt-1">
-              ArifPay only. Supervisor/Partner Admin only. The browser never supplies an ArifPay session ID;
-              the server resolves it from the durable checkout record. Direct Telebirr and M-PESA remain inactive and non-interactive here.
+              ArifPay only. Operations/Supervisor/Partner Admin only. The browser never supplies an ArifPay session ID;
+              the server resolves it from the durable checkout record. Direct Telebirr and M-PESA remain registered foundations with no interactive payment route here.
             </p>
           </div>
 
           {!authorized ? (
             <button
               className="rounded-xl bg-indigo-600 px-4 py-3 font-bold disabled:opacity-50"
-              onClick={beginSupervisorSession}
+              onClick={beginOperationsSession}
               disabled={busy}
             >
-              Start synthetic supervisor session
+              Start synthetic operations session
             </button>
           ) : (
             <div className="rounded-xl border border-emerald-800/60 bg-emerald-950/30 p-3 text-sm">
-              Synthetic supervisor session active · fixture customer loaded.
+              Synthetic operations session active · scoped transaction reference access loaded.
             </div>
           )}
 
@@ -283,11 +322,17 @@ export default function OperationsReconciliation() {
             onClick={reconcile}
             disabled={!authorized || busy || !transactionId}
           >
-            <RefreshCw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`h-4 w-4 ${busy ? "animate-spin" : ""}`}
+            />
             Check provider status
           </button>
 
-          <p role="status" className="text-sm text-slate-300" data-testid="operations-message">
+          <p
+            role="status"
+            className="text-sm text-slate-300"
+            data-testid="operations-message"
+          >
             {message}
           </p>
 
@@ -299,7 +344,10 @@ export default function OperationsReconciliation() {
               <div className="flex items-center gap-3">
                 <StateIcon className="h-6 w-6 text-indigo-400" />
                 <div>
-                  <p className="font-black" data-testid="gateway-reconciliation-state">
+                  <p
+                    className="font-black"
+                    data-testid="gateway-reconciliation-state"
+                  >
                     {state.title}
                   </p>
                   <p className="text-xs text-slate-500">{result.code}</p>
@@ -309,7 +357,9 @@ export default function OperationsReconciliation() {
               <dl className="grid gap-2 text-xs md:grid-cols-2">
                 <div>
                   <dt className="text-slate-500">Provider</dt>
-                  <dd>{result.provider} · {result.environment}</dd>
+                  <dd>
+                    {result.provider} · {result.environment}
+                  </dd>
                 </div>
                 <div>
                   <dt className="text-slate-500">Checked</dt>
