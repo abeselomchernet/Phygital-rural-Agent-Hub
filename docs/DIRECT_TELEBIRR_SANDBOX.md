@@ -79,9 +79,25 @@ T8 uses only the H5 raw-request field set shown in the supplied Telebirr demo. I
 
 T9 constructs only the C2B browser Web Checkout URL. It does not launch navigation, create a provider order, confirm a payment, or establish settlement.
 
+## TestBed TLS evidence
+
+A temporary credential-free GitHub Actions probe was run on 2026-10-13 (`Temporary Telebirr TestBed TLS probe`, run `38371392549`). It made only read-only HTTPS GET probes and used normal certificate verification; it did not send credentials, POST a request, create an order or initiate a payment.
+
+Observed from a clean GitHub-hosted Ubuntu 24.04 runner:
+
+- `https://developerportal.ethiotelebirr.et:38443/apiaccess/payment/gateway` resolved to the TestBed IP from the supplied Postman environment;
+- the hostname with ordinary TLS verification failed with curl exit 60 and `SSL certificate problem: unable to get local issuer certificate`;
+- forcing the documented hostname to the Postman TestBed IP produced the same certificate-chain failure;
+- connecting directly to the Postman TestBed IP with ordinary TLS verification also produced the same certificate-chain failure;
+- all three probes reported OpenSSL verification result 20 (`unable to get local issuer certificate`).
+
+Therefore the current approved execution environment cannot safely activate direct Telebirr TestBed networking using the supplied endpoint material. Enawuga will not use `verify=False`, curl `-k`, disabled certificate validation or an unapproved custom trust bypass. Provider networking remains fail-closed until Ethio telecom supplies/fixes a certificate chain trusted by the execution environment or provides an explicitly approved CA chain for the TestBed.
+
+The temporary probe workflow is evidence-only and is removed after capture so normal CI does not depend on provider reachability.
+
 ## Exact T9 validation
 
-Head validated before this evidence-only documentation update: `98ecb584118537ea5679436b1987276f3f2e8d73`.
+Head validated before the TLS evidence-only probe: `98ecb584118537ea5679436b1987276f3f2e8d73`.
 GitHub Actions run: `38308461486`.
 
 - Node 24.21.0 / npm 11.19.0;
@@ -101,7 +117,7 @@ Before enabling the first direct Telebirr sandbox preorder network mutation:
 
 1. confirm this account's exact C2B/Web Checkout subscription/scope;
 2. provision fresh/reissued sandbox credentials because the supplied export/demo credential material has been exposed in shared artifacts;
-3. confirm which supplied TestBed gateway form is authoritative in the execution environment and presents a valid TLS certificate — no insecure-TLS bypass is permitted;
+3. obtain a valid TestBed TLS trust chain for the approved execution environment — no insecure-TLS bypass is permitted;
 4. pin the exact current C2B `preOrder` response contract for the subscribed product;
 5. pin authoritative `queryOrder` response fields and status-value meanings before mapping any provider status to an Enawuga payment state;
 6. establish authoritative server-side `notify_url` authentication/signature, replay and retry behavior before treating callbacks as trusted authority;
