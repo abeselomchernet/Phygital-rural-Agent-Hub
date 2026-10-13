@@ -95,6 +95,7 @@ function registerSyntheticPartnerFiAdapters(
       configSchemaId: "CFG_SYNTHETIC_PARTNERFI_ALPHA_V1",
       implementationKey: "SYNTHETIC_PARTNERFI_ALPHA_CORE_V1",
       status: "REGISTERED_SYNTHETIC",
+      runtimeMode: "EXECUTABLE",
       evidenceRefs: ["EV-SYN-ALPHA-V1"],
     }),
     (): SyntheticPartnerFiCoreAdapter => ({
@@ -142,6 +143,7 @@ function registerSyntheticPartnerFiAdapters(
       configSchemaId: "CFG_SYNTHETIC_PARTNERFI_BETA_V1",
       implementationKey: "SYNTHETIC_PARTNERFI_BETA_CORE_V1",
       status: "REGISTERED_SYNTHETIC",
+      runtimeMode: "EXECUTABLE",
       evidenceRefs: ["EV-SYN-BETA-V1"],
     }),
     (): SyntheticPartnerFiCoreAdapter => ({
@@ -173,7 +175,7 @@ function registerSyntheticPartnerFiAdapters(
   );
 }
 
-function registerInactiveDirectProviderFoundations(registry: PartnerAdapterRegistry) {
+function registerBoundedDirectProviderFoundations(registry: PartnerAdapterRegistry) {
   registry.registerAdapter(
     adapterRegistration({
       adapterId: RUNTIME_ADAPTER_IDS.TELEBIRR_TESTBED_FOUNDATION,
@@ -184,7 +186,8 @@ function registerInactiveDirectProviderFoundations(registry: PartnerAdapterRegis
       supportedCapabilities: ["PAY.C2B_CREATE", "PAY.STATUS_QUERY"],
       configSchemaId: "CFG_TELEBIRR_TESTBED_FOUNDATION_V1",
       implementationKey: "TELEBIRR_TESTBED_FOUNDATION_V1",
-      status: "REGISTERED_DISABLED",
+      status: "REGISTERED_TESTBED",
+      runtimeMode: "FOUNDATION_ONLY",
       evidenceRefs: ["EV-TELEBIRR-FOUNDATION"],
     }),
   );
@@ -199,7 +202,8 @@ function registerInactiveDirectProviderFoundations(registry: PartnerAdapterRegis
       supportedCapabilities: ["PAY.C2B_CREATE", "PAY.STATUS_QUERY"],
       configSchemaId: "CFG_MPESA_ETHIOPIA_SANDBOX_FOUNDATION_V1",
       implementationKey: "MPESA_ETHIOPIA_SANDBOX_FOUNDATION_V1",
-      status: "REGISTERED_DISABLED",
+      status: "REGISTERED_SANDBOX",
+      runtimeMode: "FOUNDATION_ONLY",
       evidenceRefs: ["EV-MPESA-FOUNDATION"],
     }),
   );
@@ -228,6 +232,7 @@ function registerArifPay(
     credentialRef: requested ? "secretref_arifpay_sandbox" : null,
     implementationKey: "ARIFPAY_SANDBOX_V1",
     status: requested ? "REGISTERED_SANDBOX" : "REGISTERED_DISABLED",
+    runtimeMode: requested ? "EXECUTABLE" : "FOUNDATION_ONLY",
     evidenceRefs: ["EV-2026-10-12-ARIFPAY-S2"],
   });
 
@@ -263,7 +268,10 @@ function registerArifPay(
       providerOrgId: RUNTIME_PARTNER_IDS.ARIFPAY_SANDBOX,
       partnerClass: "PAYMENT_GATEWAY_SYSTEM_OPERATOR",
       environment: "sandbox",
-      serviceIds: [RUNTIME_SERVICE_IDS.ARIFPAY_C2B, RUNTIME_SERVICE_IDS.ARIFPAY_STATUS],
+      serviceIds: [
+        RUNTIME_SERVICE_IDS.ARIFPAY_C2B,
+        RUNTIME_SERVICE_IDS.ARIFPAY_STATUS,
+      ],
       adapterId: RUNTIME_ADAPTER_IDS.ARIFPAY_SANDBOX,
       supportedCapabilities: ["PAY.C2B_CREATE", "PAY.STATUS_QUERY"],
       status: requested ? "SANDBOX_BOUNDED" : "DISABLED",
@@ -277,7 +285,7 @@ export function createRuntimeAdapterRegistry(
 ) {
   const registry = new PartnerAdapterRegistry();
   registerSyntheticPartnerFiAdapters(registry, options.partnerLedgerPersistence);
-  registerInactiveDirectProviderFoundations(registry);
+  registerBoundedDirectProviderFoundations(registry);
   registerArifPay(registry, options);
   return registry;
 }
