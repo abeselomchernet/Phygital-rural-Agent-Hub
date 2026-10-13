@@ -214,6 +214,19 @@ export default function OperationsReconciliation() {
               </p>
               <p className="text-amber-200 text-xs font-bold">TLS trust gate unresolved · no direct payment or reconciliation control is exposed.</p>
             </div>
+            <div
+              className="rounded-xl border border-slate-700 bg-slate-950/60 p-4 space-y-2"
+              data-testid="mpesa-ethiopia-readiness"
+            >
+              <strong>Safaricom Ethiopia M-PESA</strong>
+              <p className="text-amber-200 text-xs font-bold">Contract verification pending</p>
+              <p className="text-slate-300">Sandbox foundation inactive · Networking disabled</p>
+              <ul className="text-slate-400 space-y-1">
+                <li>Initiation unavailable</li>
+                <li>Status reading unavailable</li>
+                <li>Callback authority unavailable</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
