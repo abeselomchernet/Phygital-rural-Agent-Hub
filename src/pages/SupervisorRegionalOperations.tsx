@@ -69,6 +69,19 @@ export default function SupervisorRegionalOperations() {
         </p>
       </section>
 
+      <section className="product-card" data-testid="supervisor-network-access">
+        <CapabilityBadge state="IMPLEMENTED" />
+        <h2>Role & object access</h2>
+        <p>
+          Stage 3 adds explicit synthetic network-object scopes. Supervisor and Partner
+          Admin roles can read only objects present in their server-side scope; bounded
+          provider reconciliation is a separate action and does not imply settlement.
+        </p>
+        <Link className="text-link" to="/network-operations">
+          Review Network Operations Access
+        </Link>
+      </section>
+
       <div className="product-grid">
         {stage3Modules.map((module) => (
           <section className="product-card" key={module.to}>

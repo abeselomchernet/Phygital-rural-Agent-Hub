@@ -15,7 +15,8 @@ import Farmer360 from "./pages/Farmer360";
 import GhostSyncQueue from "./pages/GhostSyncQueue";
 import OnboardAgent from "./pages/OnboardAgent";
 import SupervisorRegionalOperations from "./pages/SupervisorRegionalOperations";
-import OperationsReconciliation from "./pages/OperationsReconciliation";
+import OperationsNetworkOperations from "./pages/OperationsNetworkOperations";
+import NetworkOperationsAccess from "./pages/NetworkOperationsAccess";
 import PartnerEcosystem from "./pages/PartnerEcosystem";
 import NetworkLiquidity from "./pages/NetworkLiquidity";
 import CashFleetPlanning from "./pages/CashFleetPlanning";
@@ -61,6 +62,18 @@ export default function App() {
                     </p>
                     <Link to="/operations" className="text-link">
                       Open Operations & Reconciliation Center
+                    </Link>
+                  </section>
+                  <section className="product-card" data-testid="network-operations-home-card">
+                    <CapabilityBadge state="IMPLEMENTED" />
+                    <h2>Network operations access</h2>
+                    <p>
+                      Stage 3 synthetic role/object scopes for Supervisor and Partner
+                      Admin network-operations views. No cash movement, dispatch,
+                      PartnerFI posting or settlement authority is created.
+                    </p>
+                    <Link to="/network-operations" className="text-link">
+                      Review Network Operations Access
                     </Link>
                   </section>
                   <section className="product-card" data-testid="partner-ecosystem-home-card">
@@ -118,7 +131,8 @@ export default function App() {
           <Route path="/queue" element={<GhostSyncQueue />} />
           <Route path="/onboard" element={<OnboardAgent />} />
           <Route path="/supervisor" element={<SupervisorRegionalOperations />} />
-          <Route path="/operations" element={<OperationsReconciliation />} />
+          <Route path="/operations" element={<OperationsNetworkOperations />} />
+          <Route path="/network-operations" element={<NetworkOperationsAccess />} />
           <Route path="/partners" element={<PartnerEcosystem />} />
           <Route path="/liquidity" element={<NetworkLiquidity />} />
           <Route path="/cash-fleet" element={<CashFleetPlanning />} />
