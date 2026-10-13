@@ -18,6 +18,7 @@ import SupervisorPortal from "./pages/SupervisorPortal";
 import OperationsReconciliation from "./pages/OperationsReconciliation";
 import PartnerEcosystem from "./pages/PartnerEcosystem";
 import NetworkLiquidity from "./pages/NetworkLiquidity";
+import CashFleetPlanning from "./pages/CashFleetPlanning";
 import DataMule from "./pages/DataMule";
 import LiveTranscription from "./pages/LiveTranscription";
 import DemoArchitecture from "./pages/SovereignNode";
@@ -83,6 +84,18 @@ export default function App() {
                       Open Network Liquidity Console
                     </Link>
                   </section>
+                  <section className="product-card" data-testid="cash-fleet-home-card">
+                    <CapabilityBadge state="SYNTHETIC DEMO" />
+                    <h2>Cash Fleet planning</h2>
+                    <p>
+                      Synthetic Cash Fleet and FMCG-route liquidity matching. Planning
+                      capacity is hypothetical; no custody, dispatch, handover or cash
+                      movement is authorized.
+                    </p>
+                    <Link to="/cash-fleet" className="text-link">
+                      Open Cash Fleet Planning Console
+                    </Link>
+                  </section>
                 </div>
                 <ServicePortfolio />
               </>
@@ -96,6 +109,7 @@ export default function App() {
           <Route path="/operations" element={<OperationsReconciliation />} />
           <Route path="/partners" element={<PartnerEcosystem />} />
           <Route path="/liquidity" element={<NetworkLiquidity />} />
+          <Route path="/cash-fleet" element={<CashFleetPlanning />} />
           <Route path="/data-mule" element={<DataMule />} />
           <Route path="/transcription" element={<LiveTranscription />} />
           <Route path="/node-status" element={<DemoArchitecture />} />
