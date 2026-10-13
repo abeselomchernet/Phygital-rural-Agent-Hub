@@ -27,6 +27,17 @@
   align-items: center;
 }
 
+.queue-summary > div {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+.queue-summary strong {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
 @media (max-width: 700px) {
   .product-nav-group {
     width: 100%;
