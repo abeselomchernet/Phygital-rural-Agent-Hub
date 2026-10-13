@@ -1,10 +1,10 @@
 # Safaricom Ethiopia M-PESA sandbox foundation
 
-Status: Draft / Ethiopia sandbox contract evidence retrieved / runtime networking still inactive / synthetic data only.
+Status: Draft / Ethiopia sandbox contract evidence retrieved / token runtime verified / payment runtime inactive / synthetic data only.
 
 Date checked: 2026-10-13.
 
-This workstream now has provider-supplied Safaricom Ethiopia sandbox evidence for the token endpoint and several product endpoints. The runtime remains deliberately unmounted: no M-PESA payment route, customer payment initiation, callback authority, status mapping or PartnerFI mutation is enabled by this PR.
+This workstream now has provider-supplied Safaricom Ethiopia sandbox evidence for the token endpoint and several product endpoints, plus successful external runtime verification of the sandbox token contract. The payment runtime remains deliberately unmounted: no M-PESA payment route, customer payment initiation, callback authority, status mapping or PartnerFI mutation is enabled by this PR.
 
 ## Evidence now established
 
@@ -87,24 +87,33 @@ The neutral attempt store remains an unmounted foundation. Existing ArifPay and 
 
 ## Controlled token smoke status
 
-A credentialed token-generation smoke was attempted on 2026-10-13 using the supplied sandbox application credentials without printing or persisting the credential or returned token. The execution environment could not resolve `apisandbox.safaricom.et` (`curl` exit 6 / HTTP status `000`), so no request reached the provider and no runtime contract verification was obtained from that environment.
+The Codex cloud execution environment could not reach `apisandbox.safaricom.et` because its restricted outbound proxy denied the HTTPS CONNECT tunnel. That failure remains environment-specific and did not evaluate provider authentication.
 
-This is an environment/network limitation, not evidence of a Safaricom API failure. Runtime token verification remains pending in an execution environment that permits DNS/egress to the pinned Ethiopia sandbox host.
+A successful credentialed token-generation smoke was then completed on 2026-10-13 from a local Windows runtime using the current sandbox application credentials without printing or persisting the credential or returned access token.
+
+Before the credentialed call, the local runtime resolved `apisandbox.safaricom.et` to an Ethiopia sandbox address, completed TLS successfully, and received an HTTP `404` from the provider root path, establishing direct HTTPS reachability. The existing sanitized smoke utility then returned:
+
+- `ok: true`;
+- provider `MPESA_ETHIOPIA_DIRECT`;
+- environment `sandbox`;
+- token type `Bearer`;
+- expiry `3599` seconds.
+
+This verifies the documented Ethiopia sandbox token contract at runtime. It does not verify any payment-initiation, payout, callback, status, reversal, balance, PartnerFI posting or settlement behavior.
 
 ## Remaining activation gates
 
 Before M-PESA payment initiation is mounted, at minimum:
 
-1. complete a successful token-generation smoke against `apisandbox.safaricom.et` with current sandbox credentials;
-2. verify TLS/redirect behavior from the intended execution environment;
-3. confirm the exact app-product assignment for the narrow first payment flow;
-4. pin the Ethiopia USSD Push password derivation using successful sandbox evidence;
-5. confirm approved synthetic Ethiopia payer/MSISDN fixtures and formatting;
-6. verify initiation request/response correlation using `MerchantRequestID` and `CheckoutRequestID`;
-7. establish callback authenticity/replay/retry rules or retain callbacks as non-authoritative evidence;
-8. verify transaction-status semantics before mapping provider state;
-9. define provider idempotency/retry behavior for uncertain initiation outcomes;
-10. preserve strict sandbox/production host and credential separation.
+1. verify TLS/redirect behavior from the intended hosted sandbox execution environment;
+2. confirm the exact app-product assignment for the narrow first payment flow;
+3. pin the Ethiopia USSD Push password derivation using successful sandbox evidence;
+4. confirm approved synthetic Ethiopia payer/MSISDN fixtures and formatting;
+5. verify initiation request/response correlation using `MerchantRequestID` and `CheckoutRequestID`;
+6. establish callback authenticity/replay/retry rules or retain callbacks as non-authoritative evidence;
+7. verify transaction-status semantics before mapping provider state;
+8. define provider idempotency/retry behavior for uncertain initiation outcomes;
+9. preserve strict sandbox/production host and credential separation.
 
 ## Explicit safety boundary
 
