@@ -1,0 +1,254 @@
+import { z } from "zod";
+
+import {
+  PartnerContractEnvironmentSchema,
+  PartnerContractRoleSchema,
+  PartnerOrgIdSchema,
+  type PartnerContractRole,
+} from "./partnerCapabilityContract";
+import {
+  PartnerServiceManifestSchema,
+  type PartnerServiceManifest,
+} from "./partnerServiceCatalog";
+import type {
+  PartnerAdapterRegistration,
+  PartnerRouteRegistration,
+} from "./adapterRegistry";
+
+const SafeTextSchema = z
+  .string()
+  .min(1)
+  .max(180)
+  .refine((value) => !/[<>]/.test(value), "HTML-like markup is not allowed");
+
+export const WorkspaceNavigationItemSchema = z
+  .object({
+    id: z.string().regex(/^[a-z0-9-]+$/),
+    label: SafeTextSchema.max(80),
+    path: z.string().regex(/^\/[a-z0-9\-/:]*$/),
+  })
+  .strict();
+
+export const WorkspaceNavigationGroupSchema = z
+  .object({
+    id: z.string().regex(/^[a-z0-9-]+$/),
+    label: SafeTextSchema.max(80),
+    items: z.array(WorkspaceNavigationItemSchema).max(16),
+  })
+  .strict();
+
+export const WorkspaceProviderStateSchema = z
+  .object({
+    providerKey: z.string().min(2).max(64),
+    environment: PartnerContractEnvironmentSchema,
+    registrationState: z.string().min(3).max(64),
+    runtimeMode: z.enum(["FOUNDATION_ONLY", "EXECUTABLE"]),
+    routeState: z.enum(["NOT_MOUNTED", "BOUNDED_ROUTE_AVAILABLE"]),
+    displayState: z.enum([
+      "Implemented · Synthetic data",
+      "Sandbox integrated",
+      "TestBed integrated",
+      "Foundation implemented · route activation gated",
+      "Partner authorization required",
+      "Suspended",
+    ]),
+  })
+  .strict();
+
+export const WorkspaceManifestSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    partnerOrgId: PartnerOrgIdSchema,
+    partnerDisplayName: SafeTextSchema.max(120),
+    role: PartnerContractRoleSchema,
+    environment: PartnerContractEnvironmentSchema,
+    regionId: z.string().min(3).max(96),
+    navigation: z.array(WorkspaceNavigationGroupSchema).max(8),
+    services: PartnerServiceManifestSchema.shape.services,
+    providerStates: z.array(WorkspaceProviderStateSchema).max(32),
+    boundaries: z
+      .object({
+        uiIsAuthorization: z.literal(false),
+        providerSuccessIsSettlement: z.literal(false),
+        productionAuthorityGranted: z.literal(false),
+      })
+      .strict(),
+  })
+  .strict();
+
+export type WorkspaceManifest = z.infer<typeof WorkspaceManifestSchema>;
+export type WorkspaceProviderState = z.infer<typeof WorkspaceProviderStateSchema>;
+
+const home = { id: "home", label: "Home", path: "/" } as const;
+
+const navigationByRole: Record<
+  Extract<PartnerContractRole, "AGENT" | "SUPERVISOR" | "OPERATIONS" | "PARTNER_ADMIN">,
+  z.infer<typeof WorkspaceNavigationGroupSchema>[]
+> = {
+  AGENT: [
+    {
+      id: "field-workflows",
+      label: "Field workflows",
+      items: [
+        home,
+        { id: "agent-terminal", label: "Agent Terminal", path: "/kiosk" },
+        { id: "farmer-360", label: "Farmer 360", path: "/farmer-360" },
+        { id: "requests", label: "Requests & offline queue", path: "/queue" },
+        { id: "readiness", label: "Agent readiness", path: "/onboard" },
+        { id: "learning", label: "Agent learning", path: "/academy" },
+      ],
+    },
+    {
+      id: "field-tools",
+      label: "Field tools",
+      items: [
+        { id: "data-mule", label: "Data Mule", path: "/data-mule" },
+        { id: "conversation", label: "Conversation", path: "/transcription" },
+      ],
+    },
+  ],
+  SUPERVISOR: [
+    {
+      id: "regional-operations",
+      label: "Regional operations",
+      items: [
+        home,
+        { id: "supervisor", label: "Regional overview", path: "/supervisor" },
+        { id: "network-access", label: "Network access", path: "/network-operations" },
+        { id: "network-liquidity", label: "Network Liquidity", path: "/liquidity" },
+        { id: "cash-fleet", label: "Cash Fleet", path: "/cash-fleet" },
+        { id: "fmcg", label: "FMCG", path: "/fmcg" },
+      ],
+    },
+    {
+      id: "evidence",
+      label: "Evidence",
+      items: [
+        { id: "partners", label: "Partner status", path: "/partners" },
+        { id: "architecture", label: "Demo architecture", path: "/node-status" },
+      ],
+    },
+  ],
+  OPERATIONS: [
+    {
+      id: "operations",
+      label: "Operations & reconciliation",
+      items: [
+        home,
+        { id: "operations-center", label: "Operations Center", path: "/operations" },
+        { id: "network-access", label: "Network access", path: "/network-operations" },
+        { id: "partners", label: "Provider & partner status", path: "/partners" },
+        { id: "queue", label: "Offline exceptions", path: "/queue" },
+      ],
+    },
+    {
+      id: "evidence",
+      label: "Evidence",
+      items: [
+        { id: "architecture", label: "Demo architecture", path: "/node-status" },
+      ],
+    },
+  ],
+  PARTNER_ADMIN: [
+    {
+      id: "partner-administration",
+      label: "Partner administration",
+      items: [
+        home,
+        { id: "partners", label: "Partner Ecosystem", path: "/partners" },
+        { id: "network-access", label: "Access & scopes", path: "/network-operations" },
+        { id: "operations-center", label: "Operations evidence", path: "/operations" },
+      ],
+    },
+    {
+      id: "evidence",
+      label: "Evidence & architecture",
+      items: [
+        { id: "architecture", label: "Demo architecture", path: "/node-status" },
+      ],
+    },
+  ],
+};
+
+function isBoundedRoute(route: PartnerRouteRegistration) {
+  return ["SYNTHETIC_BOUNDED", "SANDBOX_BOUNDED", "TESTBED_BOUNDED"].includes(
+    route.status,
+  );
+}
+
+export function buildWorkspaceProviderStates(input: {
+  role: PartnerContractRole;
+  adapters: readonly PartnerAdapterRegistration[];
+  routes: readonly PartnerRouteRegistration[];
+}): WorkspaceProviderState[] {
+  if (input.role !== "OPERATIONS" && input.role !== "PARTNER_ADMIN") return [];
+
+  return input.adapters
+    .filter((adapter) =>
+      ["ARIFPAY", "TELEBIRR_DIRECT", "MPESA_ETHIOPIA_DIRECT"].includes(
+        adapter.providerKey,
+      ),
+    )
+    .map((adapter) => {
+      const routeAvailable = input.routes.some(
+        (route) => route.adapterId === adapter.adapterId && isBoundedRoute(route),
+      );
+      let displayState: WorkspaceProviderState["displayState"];
+      if (adapter.status === "SUSPENDED") displayState = "Suspended";
+      else if (adapter.runtimeMode === "FOUNDATION_ONLY")
+        displayState = "Foundation implemented · route activation gated";
+      else if (adapter.environment === "sandbox" && routeAvailable)
+        displayState = "Sandbox integrated";
+      else if (adapter.environment === "testbed" && routeAvailable)
+        displayState = "TestBed integrated";
+      else if (adapter.environment === "synthetic" && routeAvailable)
+        displayState = "Implemented · Synthetic data";
+      else displayState = "Partner authorization required";
+
+      return WorkspaceProviderStateSchema.parse({
+        providerKey: adapter.providerKey,
+        environment: adapter.environment,
+        registrationState: adapter.status,
+        runtimeMode: adapter.runtimeMode,
+        routeState: routeAvailable ? "BOUNDED_ROUTE_AVAILABLE" : "NOT_MOUNTED",
+        displayState,
+      });
+    });
+}
+
+export function generateWorkspaceManifest(input: {
+  partnerOrgId: string;
+  partnerDisplayName: string;
+  role: Extract<
+    PartnerContractRole,
+    "AGENT" | "SUPERVISOR" | "OPERATIONS" | "PARTNER_ADMIN"
+  >;
+  environment: "synthetic" | "sandbox" | "testbed";
+  regionId: string;
+  serviceManifest: PartnerServiceManifest;
+  providerStates?: readonly WorkspaceProviderState[];
+}): WorkspaceManifest {
+  if (input.serviceManifest.partnerOrgId !== input.partnerOrgId)
+    throw new Error("WORKSPACE_SERVICE_PARTNER_MISMATCH");
+  if (input.serviceManifest.role !== input.role)
+    throw new Error("WORKSPACE_SERVICE_ROLE_MISMATCH");
+  if (input.serviceManifest.regionId !== input.regionId)
+    throw new Error("WORKSPACE_SERVICE_REGION_MISMATCH");
+
+  return WorkspaceManifestSchema.parse({
+    schemaVersion: 1,
+    partnerOrgId: input.partnerOrgId,
+    partnerDisplayName: input.partnerDisplayName,
+    role: input.role,
+    environment: input.environment,
+    regionId: input.regionId,
+    navigation: navigationByRole[input.role],
+    services: input.serviceManifest.services,
+    providerStates: input.providerStates ?? [],
+    boundaries: {
+      uiIsAuthorization: false,
+      providerSuccessIsSettlement: false,
+      productionAuthorityGranted: false,
+    },
+  });
+}
