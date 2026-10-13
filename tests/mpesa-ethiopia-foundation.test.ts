@@ -8,6 +8,13 @@ import {
   mpesaEthiopiaSandboxFoundation,
 } from "../src/domain/mpesaEthiopiaSandbox";
 import {
+  generateMpesaEthiopiaSandboxToken,
+  MPESA_ETHIOPIA_MAX_RESPONSE_BYTES,
+  MPESA_ETHIOPIA_SANDBOX_BASE_URL,
+  MpesaEthiopiaSandboxTokenConfigSchema,
+  type MpesaEthiopiaSandboxTokenConfig,
+} from "../src/domain/mpesaEthiopiaToken";
+import {
   DurablePaymentAttemptStore,
   SyntheticPaymentAttemptRequestSchema,
   type PaymentAttemptPersistence,
@@ -28,7 +35,16 @@ const baseRequest: PaymentAttemptRequest = {
   environment: "sandbox",
   product: "synthetic-c2b",
   merchantConfigRef: "synthetic-merchant-config-v1",
-  providerContractRef: "synthetic-contract-unverified",
+  providerContractRef: "synthetic-et-sandbox-contract-evidence-v1",
+};
+
+const tokenConfig: MpesaEthiopiaSandboxTokenConfig = {
+  mode: "sandbox",
+  networkEnabled: false,
+  baseUrl: MPESA_ETHIOPIA_SANDBOX_BASE_URL,
+  consumerKey: "synthetic-consumer-key",
+  consumerSecret: "synthetic-consumer-secret",
+  timeoutMs: 1_000,
 };
 
 class MemoryPersistence implements PaymentAttemptPersistence {
@@ -49,26 +65,112 @@ function alternateUuid(seed: number) {
   return `30000000-0000-4000-8000-${String(seed).padStart(12, "0")}`;
 }
 
-test("M-PESA Ethiopia foundation is metadata-only, unverified and network-disabled", () => {
+test("M-PESA Ethiopia foundation records retrieved contract evidence but remains network-disabled", () => {
   assert.deepEqual(mpesaEthiopiaSandboxFoundation, {
     provider: "MPESA_ETHIOPIA_DIRECT",
     jurisdiction: "ET",
     environment: "sandbox",
     networkEnabled: false,
-    contractStatus: "UNVERIFIED",
+    contractStatus: "EVIDENCE_RETRIEVED",
+    tokenContract: "documented",
     initiation: "unavailable",
-    status: "unavailable",
-    notification: "unavailable",
+    statusRead: "unavailable",
+    notifications: "unavailable",
   });
   assert.equal("endpoint" in mpesaEthiopiaSandboxFoundation, false);
   assert.equal("credential" in mpesaEthiopiaSandboxFoundation, false);
   assert.throws(
     () => createMpesaEthiopiaSandboxFoundation({ networkEnabled: true }),
-    /MPESA_ETHIOPIA_CONTRACT_UNVERIFIED/,
+    /MPESA_ETHIOPIA_FOUNDATION_INACTIVE/,
   );
   assert.throws(
     () => createMpesaEthiopiaSandboxFoundation({ endpoint: "https://example.invalid" }),
-    /MPESA_ETHIOPIA_CONTRACT_UNVERIFIED/,
+    /MPESA_ETHIOPIA_FOUNDATION_INACTIVE/,
+  );
+});
+
+test("M-PESA token contract pins the Ethiopia sandbox host and cannot enable itself", async () => {
+  assert.equal(
+    MpesaEthiopiaSandboxTokenConfigSchema.safeParse({
+      ...tokenConfig,
+      baseUrl: "https://sandbox.safaricom.co.ke",
+    }).success,
+    false,
+  );
+
+  let called = false;
+  const fetchImpl = (async () => {
+    called = true;
+    throw new Error("must not call");
+  }) as typeof fetch;
+  await assert.rejects(
+    generateMpesaEthiopiaSandboxToken(tokenConfig, fetchImpl),
+    /MPESA_ETHIOPIA_SANDBOX_NETWORK_DISABLED/,
+  );
+  assert.equal(called, false);
+});
+
+test("M-PESA token client uses only the pinned GET contract and returns bounded token metadata", async () => {
+  const fetchImpl = (async (input: string | URL | Request, init?: RequestInit) => {
+    assert.equal(
+      String(input),
+      "https://apisandbox.safaricom.et/v1/token/generate?grant_type=client_credentials",
+    );
+    assert.equal(init?.method, "GET");
+    assert.equal(init?.redirect, "manual");
+    assert.equal(
+      new Headers(init?.headers).get("Authorization"),
+      `Basic ${Buffer.from("synthetic-consumer-key:synthetic-consumer-secret").toString("base64")}`,
+    );
+    return new Response(
+      JSON.stringify({
+        access_token: "synthetic-access-token",
+        token_type: "Bearer",
+        expires_in: "3599",
+      }),
+      { status: 200, headers: { "Content-Type": "application/json" } },
+    );
+  }) as typeof fetch;
+
+  assert.deepEqual(
+    await generateMpesaEthiopiaSandboxToken(
+      { ...tokenConfig, networkEnabled: true },
+      fetchImpl,
+    ),
+    {
+      access_token: "synthetic-access-token",
+      token_type: "Bearer",
+      expires_in: "3599",
+    },
+  );
+});
+
+test("M-PESA token client rejects redirects and oversized responses", async () => {
+  await assert.rejects(
+    generateMpesaEthiopiaSandboxToken(
+      { ...tokenConfig, networkEnabled: true },
+      (async () =>
+        new Response(null, {
+          status: 302,
+          headers: { Location: "https://example.invalid" },
+        })) as typeof fetch,
+    ),
+    /MPESA_ETHIOPIA_TOKEN_REDIRECT_REJECTED/,
+  );
+
+  await assert.rejects(
+    generateMpesaEthiopiaSandboxToken(
+      { ...tokenConfig, networkEnabled: true },
+      (async () =>
+        new Response("{}", {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json",
+            "Content-Length": String(MPESA_ETHIOPIA_MAX_RESPONSE_BYTES + 1),
+          },
+        })) as typeof fetch,
+    ),
+    /MPESA_ETHIOPIA_TOKEN_RESPONSE_TOO_LARGE/,
   );
 });
 
@@ -87,6 +189,7 @@ test("neutral attempt reservation is idempotent and changed request fields fail 
     { currency: "USD" },
     { product: "synthetic-other-product" },
     { merchantConfigRef: "synthetic-merchant-config-v2" },
+    { providerContractRef: "synthetic-et-sandbox-contract-evidence-v2" },
     { provider: "ARIFPAY" as const },
   ]) {
     assert.throws(
@@ -209,9 +312,10 @@ test("M-PESA foundation has no mounted API route", async () => {
   }
 });
 
-test("M-PESA and neutral attempt modules have no PartnerFI mutation dependency", () => {
+test("M-PESA modules have no PartnerFI mutation dependency", () => {
   for (const relative of [
     "../src/domain/mpesaEthiopiaSandbox.ts",
+    "../src/domain/mpesaEthiopiaToken.ts",
     "../src/domain/paymentAttempt.ts",
     "../src/domain/paymentOrchestration.ts",
     "../src/server/payment-attempt-persistence.ts",
