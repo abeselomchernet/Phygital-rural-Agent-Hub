@@ -1,15 +1,16 @@
-version: "1.1"
+version: "1.2"
 as_of: "2026-10-13"
 repository:
   full_name: "abeselomchernet/Phygital-rural-Agent-Hub"
   visibility: "private"
   default_branch: "main"
-  baseline_sha: "0028b079c1c641535e00db78b58f29bb442136ae"
+  baseline_sha: "edfba4823cc6be9b5f001b8d0f83fb24728335d8"
 program:
-  current_stage: "STAGE_3_PARTNER_ECOSYSTEM_AND_NETWORK_LIQUIDITY"
-  previous_completed_stage: "STAGE_2_ARIFPAY_SANDBOX_INTEGRATION"
-  next_substantive_stage: "STAGE_4_GOVERNED_ET_RESIDENT_STAGING_FOUNDATION"
+  current_stage: "STAGE_4_GOVERNED_ET_RESIDENT_STAGING_FOUNDATION"
+  previous_completed_stage: "STAGE_3_PARTNER_ECOSYSTEM_AND_NETWORK_LIQUIDITY"
+  next_substantive_stage: "STAGE_5_EXTERNAL_PARTNER_STAGING"
   evidence_model: "gate_based_not_calendar_based"
+  stage_4_entry_decision: "APPROVE_WITH_CONDITIONS_EFFECTIVE_ON_GOVERNANCE_PR_MERGE"
 current_boundaries:
   real_customer_pii: false
   real_funds: false
@@ -21,6 +22,7 @@ current_boundaries:
   remote_ghostsync_for_real_data: false
   direct_telebirr_payment_initiation: false
   mpesa_ethiopia_payment_initiation: false
+  stage_4_environment_approved_as_et_resident: false
 completed:
   - "P0-A merged"
   - "P0-B merged"
@@ -29,26 +31,17 @@ completed:
   - "UI claims review"
   - "Stage 1 clean environment re-validation completed"
   - "Stage 1 post-P0-B closure recorded"
-  - "P0 backlog synchronized to distinguish bounded implementation from remaining external/production gates"
   - "Stage 2 ArifPay sandbox C2B orchestration and reconciliation merged in PR #5"
   - "Direct Telebirr inactive/TestBed foundation merged in PR #6; activation remains provider-gated"
   - "M-PESA Ethiopia inactive sandbox contract/correlation foundation merged in PR #7"
   - "M-PESA Ethiopia sandbox token contract verified from an external local runtime without exposing token or credentials"
-stage_1_evidence:
-  workflow_name: "Synthetic prototype validation"
-  workflow_run_number: 97
-  workflow_run_id: 38261103443
-  node: "v24.21.0"
-  npm: "11.19.0"
-  npm_ci: "PASS_576_PACKAGES"
-  production_audit: "PASS_0_VULNERABILITIES"
-  lint: "PASS"
-  unit_domain_api_tests: "PASS_59_OF_59"
-  build: "PASS"
-  docker_build: "PASS"
-  chromium_e2e: "PASS_12_OF_12"
-  data_mode: "synthetic"
-  external_telemetry: false
+  - "Stage 3 Partner Ecosystem foundation and provider UI truth-sync merged in PR #10"
+  - "Stage 3 Partner Ecosystem primary navigation refinement merged in PR #11"
+  - "Stage 3 synthetic NLC/LCI decision-support foundation merged in PR #12"
+  - "Stage 3 synthetic Cash Fleet and liquidity-match planning merged in PR #13"
+  - "Stage 3 bounded FMCG inventory/logistics foundation merged in PR #14"
+  - "Stage 3 Supervisor / Regional Operations claims truth-sync merged in PR #15"
+  - "Stage 3 network-operations role/object authorization and UX merged in PR #16"
 stage_2_exit_evidence:
   arifpay_pr: 5
   arifpay_merge_sha: "023a0919a44a28241711331a2dfc115e530d2294"
@@ -65,52 +58,67 @@ provider_foundation_evidence:
     merge_sha: "0028b079c1c641535e00db78b58f29bb442136ae"
     state: "INACTIVE_SANDBOX_FOUNDATION_TOKEN_VERIFIED"
     token_contract: "VERIFIED_BEARER_EXPIRES_IN_3599"
-main_validation:
+stage_3_exit_evidence:
+  partner_ecosystem_pr: 10
+  partner_ecosystem_nav_pr: 11
+  nlc_lci_pr: 12
+  cash_fleet_liquidity_match_pr: 13
+  fmcg_inventory_logistics_pr: 14
+  supervisor_truth_sync_pr: 15
+  network_operations_authorization_pr: 16
+  canonical_main_sha: "edfba4823cc6be9b5f001b8d0f83fb24728335d8"
   workflow_name: "Synthetic prototype validation"
-  workflow_run_number: 245
-  workflow_run_id: 38426151886
+  workflow_run_number: 265
+  workflow_run_id: 38443851184
   result: "PASS"
-  production_audit: "PASS_0_PRODUCTION_FINDINGS"
+  production_audit: "PASS"
   lint: "PASS"
   tests: "PASS"
   build: "PASS"
   docker_build: "PASS"
   chromium_e2e: "PASS"
+  claims_review: "PASS_WITH_LOCKED_AUTHORITY_BOUNDARIES"
+  gate_review: "docs/governance/STAGE_3_EXIT_GATE_REVIEW.md"
+  decision: "APPROVE_WITH_CONDITIONS"
+main_validation:
+  workflow_name: "Synthetic prototype validation"
+  workflow_run_number: 265
+  workflow_run_id: 38443851184
+  result: "PASS"
   data_mode: "synthetic"
   external_telemetry: false
   non_blocking_observations:
-    - "development/tooling graph: 23 findings (2 low, 4 moderate, 17 high)"
+    - "development/tooling graph findings remain tracked separately from production audit"
     - "existing Vite >500kB chunk advisory"
-stage_3_objective: "Build reusable synthetic partner-ecosystem and network-liquidity decision-support architecture without real cash movement or regulated posting."
+stage_4_objective: "Stand up and evidence a governed Ethiopia-resident non-production staging foundation while all regulated financial capabilities remain locked."
 immediate_actions:
-  - id: "S3-A"
-    action: "Implement the partner organization and capability-switch model with explicit partner class, route provenance and enablement state"
+  - id: "S4-A"
+    action: "Define the approved ET-resident non-production staging topology and capture physical compute/ingress, database, backup, audit-store and logging/monitoring data paths"
     mutation_allowed: true
-  - id: "S3-B"
-    action: "Build the Partner Ecosystem Console on the governed backend; code presence must remain distinct from capability activation"
+  - id: "S4-B"
+    action: "Define and evidence encryption/key custody, IAM/MFA/break-glass, access review and operational ownership/RACI"
     mutation_allowed: true
-  - id: "S3-C"
-    action: "Implement synthetic Network Liquidity Coverage / Liquidity Coverage Index decision-support metrics for 2h, 4h, 8h and EOD horizons"
+  - id: "S4-C"
+    action: "Implement or configure staging-only observability, retention/deletion controls and incident-response evidence without real customer data"
     mutation_allowed: true
-  - id: "S3-D"
-    action: "Implement synthetic cash-fleet planning and liquidity-match simulation with no custody, dispatch authority or real cash movement"
+  - id: "S4-D"
+    action: "Produce backup/restore and DR/RPO/RTO rehearsal evidence using synthetic data only"
     mutation_allowed: true
-  - id: "S3-E"
-    action: "Implement bounded FMCG partner, inventory and logistics models with strict data minimization"
+  - id: "S4-E"
+    action: "Complete subprocessor/support-access review and Ethiopia residency evidence register for the selected staging stack"
     mutation_allowed: true
-  - id: "S3-F"
-    action: "Expand role/object authorization and Supervisor/Operations UX for synthetic network operations"
-    mutation_allowed: true
-  - id: "S3-G"
-    action: "Produce Stage 3 validation, claims review and gate evidence before any Stage 4 transition"
+  - id: "S4-F"
+    action: "Run Stage 4 validation, claims review and gate review before any Stage 5 external partner staging"
     mutation_allowed: false
 stop_conditions:
-  - "production credential encountered during synthetic Stage 3 work"
-  - "real customer data requested before data/residency gate"
-  - "provider acceptance mapped directly to PartnerFI settlement without contract"
-  - "cash movement requested without approved custody/authority model"
+  - "real customer PII requested before explicit data/residency approval"
+  - "real funds or liabilities introduced into Stage 4"
+  - "production provider credential encountered before an approved later-stage activation gate"
+  - "live PartnerFI posting/account mutation requested"
+  - "cash custody, dispatch, handover or movement requested without approved authority model"
   - "NLC/LCI represented as regulatory LCR or prudential compliance"
   - "provider route provenance hidden or collapsed"
-  - "code presence or configuration interpreted as capability authorization"
+  - "code presence or environment availability interpreted as financial capability authorization"
+  - "ET residency claimed before physical/data-path evidence is accepted"
   - "Telebirr TestBed networking enabled before TLS/provider gates are satisfied"
   - "M-PESA payment initiation enabled before the remaining Ethiopia sandbox activation gates are satisfied"
