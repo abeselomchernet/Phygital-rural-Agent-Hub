@@ -29,20 +29,7 @@ Forbidden:
 
 **Goal:** establish a clean private coding environment and synchronize forward documentation.
 
-Required actions:
-
-- verify current `main`;
-- configure correct Git identity;
-- Node 24 / npm 11 baseline;
-- `npm ci`, production audit, lint, tests, build, E2E;
-- no initial code changes during environment setup;
-- add post-merge closure record;
-- synchronize stale backlog wording without rewriting historical evidence.
-
-Exit evidence:
-
-- clean validation report;
-- closure PR reviewed and merged.
+Exit evidence: clean validation report and merged closure/governance records.
 
 ## Stage 2 - ArifPay sandbox integration
 
@@ -50,63 +37,35 @@ Exit evidence:
 
 **Goal:** prove one external payment-gateway integration without crossing into production.
 
-Minimum scope:
-
-- `PaymentGatewayAdapter` contract;
-- `ArifPaySandboxAdapter`;
-- hard sandbox-only configuration;
-- one C2B flow first;
-- success/failure/idempotency/network/uncertain-result tests;
-- callback/verification mapped into existing reconciliation state;
-- Operations/Reconciliation UX for sandbox transactions;
-- no client-side secret exposure.
-
-Expand only after core flow is stable to selected B2C/W2B/OTP rails.
-
-Forbidden:
-
-- production ArifPay host/keys;
-- real customer PII;
-- representing sandbox success as real cash-in/cash-out.
-
-Exit evidence:
-
-- external sandbox test record;
-- callback/reconciliation tests;
-- security review;
-- provider-provenance mapping;
-- Draft PR reviewed and merged.
+Exit evidence included bounded external sandbox evidence, reconciliation tests, security review, provider-provenance mapping and explicit separation from PartnerFI settlement authority.
 
 ## Stage 3 - Partner Ecosystem & Network Liquidity (synthetic)
 
-**Status:** ACTIVE as of 2026-10-13.
+**Status:** COMPLETE for the governed synthetic scope.
 
 **Goal:** build the reusable product architecture for multiple partner classes and field liquidity planning.
 
-Scope:
+Completed scope:
 
-- partner organization / capability-switch model;
-- Partner Ecosystem Console;
-- Network Liquidity Coverage / Liquidity Coverage Index;
-- cash-fleet planning;
-- FMCG partner/inventory/logistics model;
-- liquidity-match simulation;
-- role/object authorization expansion;
-- Supervisor Hub network-operations UX.
+- partner organization / capability-switch model and Partner Ecosystem Console — PR #10;
+- primary Partner Ecosystem navigation — PR #11;
+- Network Liquidity Coverage / Liquidity Coverage Index with 2H/4H/8H/EOD synthetic horizons — PR #12;
+- synthetic Cash Fleet planning and liquidity-match simulation — PR #13;
+- bounded FMCG partner/inventory/logistics model — PR #14;
+- Supervisor / Regional Operations claims truth-sync — PR #15;
+- network-operations role/action/object authorization and Supervisor/Operations access UX — PR #16.
 
-Important terminology:
+Important terminology remains binding: use **Network Liquidity Coverage (NLC)** or **Liquidity Coverage Index (LCI)** rather than unqualified `LCR` unless a licensed partner formally defines that metric. Synthetic demo thresholds are not partner-approved operating limits or prudential compliance claims.
 
-Use **Network Liquidity Coverage (NLC)** or **Liquidity Coverage Index (LCI)** rather than unqualified `LCR` unless a licensed partner formally defines that metric. Do not imply prudential regulatory LCR compliance.
+No real cash movement, custody, PartnerFI posting or provider activation was introduced.
 
-No real cash movement.
-
-Provider-specific foundations already present in the repository remain independently gated. Stage 3 does not activate direct Telebirr, M-PESA Ethiopia payment initiation, production ArifPay, PartnerFI posting or any other regulated financial capability.
+Stage 3 exit evidence is recorded in `STAGE_3_EXIT_GATE_REVIEW.md`. Canonical post-Stage-3 `main` validation is run #265 (`38443851184`) on `edfba4823cc6be9b5f001b8d0f83fb24728335d8`, result PASS.
 
 ## Stage 4 - Governed ET-resident staging foundation
 
-**Status:** PLANNED / LOCKED pending Stage 3 exit evidence.
+**Status:** ACTIVE ON MERGE OF THE STAGE 3 EXIT / STAGE 4 ENTRY GOVERNANCE TRANSITION; APPROVED WITH CONDITIONS.
 
-**Goal:** stand up an approved non-production environment whose evidence can satisfy the B6 evidence register.
+**Goal:** stand up and evidence an approved non-production environment whose evidence can satisfy the staging evidence register while all regulated financial capabilities remain locked.
 
 Required evidence categories:
 
@@ -123,21 +82,45 @@ Required evidence categories:
 - DR/RPO/RTO;
 - operational ownership/RACI.
 
-The environment can be technically operational while financial capabilities remain locked.
+Allowed Stage 4 work:
 
-Exit evidence: completed evidence register with approvals for staging scope.
+- infrastructure-as-code or equivalent reproducible non-production environment definition;
+- ET-residency evidence capture for compute, storage, databases, backup, audit and observability paths;
+- staging IAM/MFA/break-glass/access-review controls;
+- key-management and encryption evidence;
+- synthetic-only backup/restore and DR rehearsals;
+- synthetic-only observability, incident-response and retention/deletion validation;
+- operational RACI and access/support/subprocessor review.
+
+Still forbidden in Stage 4:
+
+- real customer PII before explicit approved data/residency scope;
+- real funds or liabilities;
+- production provider credentials;
+- live PartnerFI posting/account mutation;
+- live cash custody, dispatch, handover or movement;
+- direct Telebirr or M-PESA payment activation merely because infrastructure exists;
+- live identity-provider access without a later approved staging contract;
+- claims that an operational environment is approved ET-resident staging before the required evidence is accepted;
+- regulated pilot or production operation.
+
+The environment may be technically operational while financial capabilities remain locked.
+
+Exit evidence: completed Stage 4 evidence register, synthetic staging validation, security/claims review and explicit Stage 4 gate decision before Stage 5.
 
 ## Stage 5 - External partner staging
+
+**Status:** PLANNED / LOCKED pending Stage 4 exit evidence.
 
 **Goal:** connect approved test/staging environments for the partners required by the pilot design.
 
 Possible tracks:
 
-- PartnerFI account/authorization API.
-- ArifPay or other payment staging.
-- approved identity staging.
-- SMS/USSD staging.
-- FMCG/distributor staging.
+- PartnerFI account/authorization API;
+- ArifPay or other payment staging;
+- approved identity staging;
+- SMS/USSD staging;
+- FMCG/distributor staging;
 - fleet/cash logistics rehearsal using non-live/test value or controlled simulations.
 
 Requirements:
@@ -182,7 +165,7 @@ Controls:
 - pilot evidence log;
 - no automatic expansion to new regions/services.
 
-Cash fleet may become live only if custody, handover, security, insurance/operating policy, accounting and PartnerFI authority are approved.
+Cash Fleet may become live only if custody, handover, security, insurance/operating policy, accounting and PartnerFI authority are approved.
 
 ## Stage 8 - Production readiness and launch
 
