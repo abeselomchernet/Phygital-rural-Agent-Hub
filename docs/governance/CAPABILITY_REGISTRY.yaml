@@ -1,4 +1,4 @@
-version: "1.1"
+version: "1.2"
 as_of: "2026-10-13"
 capabilities:
   - id: "customer_identity_core"
@@ -38,25 +38,25 @@ capabilities:
     unlock_requires: ["encrypted_edge", "authenticated_receiver", "residency_evidence", "migration_policy"]
 
   - id: "partner_ecosystem_core"
-    current: "governance_defined"
-    next: "synthetic_implemented"
+    current: "synthetic_implemented_and_merged"
+    next: "staging_evidence_and_partner_specific_calibration"
     target: "partner_operational"
     authority_note: "Partner registration and code presence do not imply service activation or regulated authority."
-    unlock_requires: ["partner_org_schema", "capability_switch_model", "route_provenance", "role_object_authorization", "claims_review"]
+    unlock_requires: ["partner_contracts", "approved_capability_switch_owners", "staging_route_evidence", "claims_review"]
 
   - id: "network_liquidity_coverage"
-    current: "governance_defined"
-    next: "synthetic_implemented"
+    current: "synthetic_implemented_and_merged"
+    next: "partner_calibration_in_governed_staging"
     target: "operational_decision_support"
-    authority_note: "Use NLC/LCI terminology; do not represent it as prudential regulatory LCR."
-    unlock_requires: ["metric_definition", "forecast_horizons", "partner_calibration", "approved_data_feeds"]
+    authority_note: "Use NLC/LCI terminology; current thresholds are synthetic test policy, not prudential regulatory LCR or partner-approved limits."
+    unlock_requires: ["approved_data_feeds", "partner_calibration", "threshold_approval", "staging_evidence"]
 
   - id: "cash_fleet_planning"
-    current: "governance_defined"
-    next: "synthetic_implemented"
+    current: "synthetic_planning_implemented_and_merged"
+    next: "non_live_staging_rehearsal_after_infrastructure_gate"
     target: "operational_dispatch"
-    authority_note: "Stage 3 permits planning/simulation only; no real cash custody or dispatch authority."
-    unlock_requires: ["fleet_roles", "custody_policy", "limits", "security_process", "reconciliation"]
+    authority_note: "Current implementation is planning/simulation only; no real cash custody, dispatch or handover authority."
+    unlock_requires: ["fleet_roles", "custody_policy", "limits", "security_process", "reconciliation", "partnerfi_authority"]
 
   - id: "cash_fleet_live_handover"
     current: "disabled"
@@ -64,17 +64,31 @@ capabilities:
     unlock_requires: ["cash_owner", "custody_contract", "authorized_handlers", "handover_evidence", "incident_policy", "accounting_reconciliation", "insurance_or_approved_operating_policy", "partnerfi_authority"]
 
   - id: "fmcg_commerce"
-    current: "governance_defined"
-    next: "synthetic_implemented"
+    current: "synthetic_inventory_logistics_implemented_and_merged"
+    next: "partner_specific_non_live_staging"
     target: "partner_operational"
-    authority_note: "FMCG partners must not receive broad KYC or unrelated bank-balance data."
-    unlock_requires: ["partner_contract", "catalog_scope", "data_scope", "commercial_settlement_model"]
+    authority_note: "Current data scope is purpose-limited synthetic inventory/route/restock planning. No broad KYC, customer bank balances, live ordering, dispatch or settlement authority."
+    unlock_requires: ["partner_contract", "catalog_scope", "approved_data_scope", "commercial_settlement_model", "staging_evidence"]
 
   - id: "fmcg_liquidity_matching"
-    current: "simulation_only"
-    next: "synthetic_stage_3_expansion"
+    current: "simulation_only_implemented"
+    next: "governed_non_live_staging_rehearsal"
     target: "pilot_authorized"
     unlock_requires: ["eligible_partner_model", "cash_custody_authority", "regulated_digital_posting", "dual_reconciliation"]
+
+  - id: "network_operations_authorization"
+    current: "synthetic_role_action_object_scoping_implemented_and_merged"
+    next: "staging_iam_mapping_after_stage_4_controls"
+    target: "institutionally_authorized_access_control"
+    authority_note: "Synthetic roles and object scopes are local development controls and do not establish institutional or regulated authority."
+    unlock_requires: ["approved_identity_source", "staging_iam", "mfa", "access_review", "partner_role_matrix"]
+
+  - id: "supervisor_network_operations_ux"
+    current: "synthetic_truth_synced_and_merged"
+    next: "staging_observability_and_role_evidence"
+    target: "operational_supervisor_workspace"
+    authority_note: "The current Supervisor/Operations surfaces expose planning/evidence boundaries and do not grant financial or cash authority."
+    unlock_requires: ["staging_iam", "approved_operational_data", "partner_role_matrix", "claims_review"]
 
   - id: "mobile_money_routes"
     current: "provider_specific_sandbox_foundations_bounded"
@@ -87,3 +101,10 @@ capabilities:
     current: "synthetic_request_only"
     target: "pilot_authorized"
     unlock_requires: ["partnerfi_authority", "agent_approval", "limits", "liquidity_controls", "cash_custody", "reconciliation"]
+
+  - id: "et_resident_staging_foundation"
+    current: "governance_unlocked_not_yet_evidenced"
+    next: "build_and_evidence_non_production_staging"
+    target: "approved_et_resident_non_production_staging"
+    authority_note: "An operational environment is not an approved ET-resident staging environment until the required physical/data-path, security, IAM, key-custody, backup/DR, retention, incident and RACI evidence is accepted."
+    unlock_requires: ["compute_ingress_location_evidence", "database_location_evidence", "backup_location_and_restore_evidence", "audit_store_controls", "key_custody", "logging_monitoring_paths", "iam_mfa_break_glass", "access_review", "incident_response", "retention_deletion", "subprocessor_support_access", "dr_rpo_rto", "operational_raci"]
