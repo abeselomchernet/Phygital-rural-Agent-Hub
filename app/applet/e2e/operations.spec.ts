@@ -33,6 +33,20 @@ test("operations reconciliation workspace is first-class navigation but privileg
   );
   await expect(page.getByRole("button", { name: /telebirr/i })).toHaveCount(0);
 
+  const mpesa = page.getByTestId("mpesa-ethiopia-readiness");
+  await expect(mpesa).toContainText("Safaricom Ethiopia M-PESA");
+  await expect(mpesa).toContainText("Contract verification pending");
+  await expect(mpesa).toContainText("Sandbox foundation inactive");
+  await expect(mpesa).toContainText("Networking disabled");
+  await expect(mpesa).toContainText("Initiation unavailable");
+  await expect(mpesa).toContainText("Status reading unavailable");
+  await expect(mpesa).toContainText("Callback authority unavailable");
+  await expect(page.getByRole("button", { name: /m-pesa|mpesa/i })).toHaveCount(0);
+
+  const controlledProviderCheck = page.getByText("Controlled provider check").locator("..");
+  await expect(controlledProviderCheck).toContainText("ArifPay only");
+  await expect(controlledProviderCheck).toContainText("PartnerFI").toHaveCount(0);
+
   await page
     .getByRole("button", { name: "Start synthetic supervisor session" })
     .click();
