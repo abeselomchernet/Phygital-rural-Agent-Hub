@@ -112,7 +112,7 @@ GitHub Actions run: `38308461486`.
 Post-probe cleanup head: `f4d47f756ea78318f11b8dd5e2bfa58547e56907`.
 GitHub Actions run: `38371613799` — success across production audit, lint, **115/115 tests**, build, Docker and **13/13 Chromium E2E**.
 
-Subsequent commits in this evidence section are documentation-only and do not alter the validated runtime behavior.
+Later commits in this evidence section are documentation-only and do not alter validated runtime behavior.
 
 Existing full development/tooling findings remain 23 (2 low, 4 moderate, 17 high). The existing Vite >500 kB bundle advisory remains non-blocking.
 
