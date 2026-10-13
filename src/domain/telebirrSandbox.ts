@@ -215,15 +215,18 @@ export function canonicalizeTelebirrRequest(input: TelebirrSignableRequest) {
 
 /**
  * Current portal documentation demonstrates SHA-256 with RSA MGF1 (RSA-PSS).
- * RSA-PSS signatures are intentionally randomized; only canonicalization is
- * deterministic. The private key remains server-side.
+ * The pinned examples use ordinary RSA key pairs with PSS signing. Restricted
+ * rsa-pss private-key parameter profiles remain unsupported until provider
+ * evidence pins their hash/MGF/salt semantics explicitly.
  */
 export function signTelebirrRequest(
   input: TelebirrSignableRequest,
   privateKey: string,
 ) {
   const key = createPrivateKey(normalizeTelebirrPrivateKey(privateKey));
-  if (key.asymmetricKeyType !== "rsa" && key.asymmetricKeyType !== "rsa-pss")
+  if (key.asymmetricKeyType === "rsa-pss")
+    throw new Error("TELEBIRR_PRIVATE_KEY_RSA_PSS_RESTRICTED_UNSUPPORTED");
+  if (key.asymmetricKeyType !== "rsa")
     throw new Error("TELEBIRR_PRIVATE_KEY_RSA_REQUIRED");
   const modulusLength = key.asymmetricKeyDetails?.modulusLength;
   if (!modulusLength)
@@ -269,40 +272,70 @@ function raceAbort<T>(operation: Promise<T>, signal: AbortSignal): Promise<T> {
   });
 }
 
+function cancelBodyWithoutWaiting(body: ReadableStream<Uint8Array> | null) {
+  if (!body) return;
+  try {
+    void body.cancel().catch(() => undefined);
+  } catch {
+    // Cleanup is best-effort and must never delay the caller's controlled error.
+  }
+}
+
+function cancelReaderWithoutWaiting(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+) {
+  try {
+    void reader.cancel().catch(() => undefined);
+  } catch {
+    // Cleanup is best-effort and must never delay the caller's controlled error.
+  }
+}
+
+function abortAndDiscardResponse(
+  controller: AbortController,
+  response: Response,
+) {
+  if (!controller.signal.aborted) controller.abort();
+  cancelBodyWithoutWaiting(response.body);
+}
+
 async function readBoundedJson(
   response: Response,
-  signal: AbortSignal,
+  controller: AbortController,
   invalidCode: string,
   tooLargeCode: string,
 ): Promise<unknown> {
   const declared = response.headers.get("content-length");
   if (declared !== null) {
     const bytes = Number(declared);
-    if (Number.isFinite(bytes) && bytes > TELEBIRR_MAX_RESPONSE_BYTES)
+    if (Number.isFinite(bytes) && bytes > TELEBIRR_MAX_RESPONSE_BYTES) {
+      abortAndDiscardResponse(controller, response);
       throw new Error(tooLargeCode);
+    }
   }
-  if (!response.body) throw new Error(invalidCode);
+  if (!response.body) {
+    if (!controller.signal.aborted) controller.abort();
+    throw new Error(invalidCode);
+  }
 
   const reader = response.body.getReader();
   const chunks: Uint8Array[] = [];
   let total = 0;
   try {
     while (true) {
-      const { done, value } = await raceAbort(reader.read(), signal);
+      const { done, value } = await raceAbort(reader.read(), controller.signal);
       if (done) break;
       total += value.byteLength;
       if (total > TELEBIRR_MAX_RESPONSE_BYTES) {
-        await reader.cancel();
+        if (!controller.signal.aborted) controller.abort();
+        cancelReaderWithoutWaiting(reader);
         throw new Error(tooLargeCode);
       }
       chunks.push(value);
     }
   } catch (error) {
-    try {
-      await reader.cancel();
-    } catch {
-      // Best effort only. The caller still fails closed.
-    }
+    if (!controller.signal.aborted) controller.abort();
+    cancelReaderWithoutWaiting(reader);
     throw error;
   }
 
@@ -427,18 +460,22 @@ export class TelebirrSandboxTokenClient {
       if (
         response.redirected ||
         (response.status >= 300 && response.status < 400)
-      )
+      ) {
+        abortAndDiscardResponse(controller, response);
         throw new Error("TELEBIRR_TOKEN_REDIRECT_REJECTED");
-      if (!response.ok)
+      }
+      if (!response.ok) {
+        abortAndDiscardResponse(controller, response);
         throw new Error(
           response.status === 401 || response.status === 403
             ? "TELEBIRR_TOKEN_AUTH_REJECTED"
             : "TELEBIRR_TOKEN_REQUEST_REJECTED",
         );
+      }
 
       const raw = await readBoundedJson(
         response,
-        controller.signal,
+        controller,
         "TELEBIRR_TOKEN_RESPONSE_INVALID",
         "TELEBIRR_TOKEN_RESPONSE_TOO_LARGE",
       );
@@ -504,18 +541,22 @@ export class TelebirrSandboxQueryOrderClient {
       if (
         response.redirected ||
         (response.status >= 300 && response.status < 400)
-      )
+      ) {
+        abortAndDiscardResponse(controller, response);
         throw new Error("TELEBIRR_QUERY_ORDER_REDIRECT_REJECTED");
-      if (!response.ok)
+      }
+      if (!response.ok) {
+        abortAndDiscardResponse(controller, response);
         throw new Error(
           response.status === 401 || response.status === 403
             ? "TELEBIRR_QUERY_ORDER_AUTH_REJECTED"
             : "TELEBIRR_QUERY_ORDER_REQUEST_REJECTED",
         );
+      }
 
       const raw = await readBoundedJson(
         response,
-        controller.signal,
+        controller,
         "TELEBIRR_QUERY_ORDER_RESPONSE_INVALID",
         "TELEBIRR_QUERY_ORDER_RESPONSE_TOO_LARGE",
       );
