@@ -27,6 +27,8 @@ test("operations reconciliation workspace is first-class navigation but privileg
   await expect(readiness).toContainText("Payment provider readiness");
   await expect(readiness).toContainText("Direct Telebirr · TestBed foundation");
   await expect(readiness).toContainText("Networking disabled");
+  await expect(readiness).toContainText("T1–T10");
+  await expect(readiness).toContainText("merged as an inactive TestBed foundation");
   await expect(readiness).toContainText("TLS trust gate unresolved");
   await expect(readiness).toContainText(
     "no direct payment or reconciliation control is exposed",
@@ -35,16 +37,19 @@ test("operations reconciliation workspace is first-class navigation but privileg
 
   const mpesa = page.getByTestId("mpesa-ethiopia-readiness");
   await expect(mpesa).toContainText("Safaricom Ethiopia M-PESA");
-  await expect(mpesa).toContainText("Contract verification pending");
-  await expect(mpesa).toContainText("Sandbox foundation inactive");
-  await expect(mpesa).toContainText("Networking disabled");
+  await expect(mpesa).toContainText("Token contract verified");
+  await expect(mpesa).toContainText("Inactive sandbox foundation");
+  await expect(mpesa).toContainText("application payment networking disabled");
+  await expect(mpesa).toContainText("Controlled external token smoke");
   await expect(mpesa).toContainText("Initiation unavailable");
   await expect(mpesa).toContainText("Status reading unavailable");
   await expect(mpesa).toContainText("Callback authority unavailable");
+  await expect(mpesa).toContainText("PartnerFI settlement/posting unavailable");
   await expect(page.getByRole("button", { name: /m-pesa|mpesa/i })).toHaveCount(0);
 
   await expect(page.getByText("Controlled provider check")).toBeVisible();
   await expect(page.getByText(/ArifPay only\. Supervisor\/Partner Admin only\./)).toBeVisible();
+  await expect(page.getByText(/Direct Telebirr and M-PESA remain inactive and non-interactive here\./)).toBeVisible();
 
   await page
     .getByRole("button", { name: "Start synthetic supervisor session" })
