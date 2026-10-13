@@ -156,9 +156,9 @@ export default function OperationsReconciliation() {
             <h1 className="text-2xl font-black">Operations & Reconciliation Center</h1>
             <p className="mt-2 text-slate-300">
               Governed provider-operations workspace. ArifPay sandbox reconciliation is implemented;
-              direct Telebirr is visible only as an inactive TestBed-readiness foundation. Wishland
-              software observes gateway evidence while PartnerFI remains the future regulated authority
-              for customer funds and settlement.
+              direct Telebirr and Safaricom Ethiopia M-PESA are visible only as inactive provider
+              foundations. Wishland software observes gateway/provider evidence while PartnerFI remains
+              the future regulated authority for customer funds and settlement.
             </p>
           </div>
         </div>
@@ -210,7 +210,7 @@ export default function OperationsReconciliation() {
                 </span>
               </div>
               <p className="text-slate-300">
-                T1–T9 safety, signing, correlation, queryOrder transport and checkout-handoff primitives are implemented on the Draft provider branch.
+                T1–T10 safety, signing, correlation, queryOrder transport, checkout-handoff and readiness primitives are merged as an inactive TestBed foundation.
               </p>
               <p className="text-amber-200 text-xs font-bold">TLS trust gate unresolved · no direct payment or reconciliation control is exposed.</p>
             </div>
@@ -218,13 +218,21 @@ export default function OperationsReconciliation() {
               className="rounded-xl border border-slate-700 bg-slate-950/60 p-4 space-y-2"
               data-testid="mpesa-ethiopia-readiness"
             >
-              <strong>Safaricom Ethiopia M-PESA</strong>
-              <p className="text-amber-200 text-xs font-bold">Contract verification pending</p>
-              <p className="text-slate-300">Sandbox foundation inactive · Networking disabled</p>
+              <div className="flex items-center justify-between gap-3">
+                <strong>Safaricom Ethiopia M-PESA</strong>
+                <span className="rounded-full border border-emerald-800 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-emerald-300">
+                  Token contract verified
+                </span>
+              </div>
+              <p className="text-slate-300">Inactive sandbox foundation · application payment networking disabled</p>
+              <p className="text-slate-400 text-xs">
+                Controlled external token smoke reached the Ethiopia sandbox successfully. Token authentication evidence does not establish a payment, callback authority or settlement.
+              </p>
               <ul className="text-slate-400 space-y-1">
                 <li>Initiation unavailable</li>
                 <li>Status reading unavailable</li>
                 <li>Callback authority unavailable</li>
+                <li>PartnerFI settlement/posting unavailable</li>
               </ul>
             </div>
           </div>
@@ -237,7 +245,7 @@ export default function OperationsReconciliation() {
             <h2 className="font-black text-lg">Controlled provider check</h2>
             <p className="text-sm text-slate-400 mt-1">
               ArifPay only. Supervisor/Partner Admin only. The browser never supplies an ArifPay session ID;
-              the server resolves it from the durable checkout record. Direct Telebirr remains inactive here.
+              the server resolves it from the durable checkout record. Direct Telebirr and M-PESA remain inactive and non-interactive here.
             </p>
           </div>
 
