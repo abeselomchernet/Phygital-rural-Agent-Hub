@@ -67,9 +67,9 @@ test("Alpha and Beta Agents receive different services through one workspace gen
   assert.equal(beta.services.some((service) => service.name === "Cash In"), false);
 });
 
-test("role navigation is responsibility-specific and Ardi is not universal navigation", () => {
+test("role navigation is responsibility and service scoped, with Ardi absent from universal navigation", () => {
   const alpha = agentWorkspace("alpha");
-  const emptySupervisorServiceManifest = generatePartnerServiceManifest({
+  const supervisorServiceManifest = generatePartnerServiceManifest({
     catalog: SYNTHETIC_ALPHA_SERVICE_CATALOG,
     contract: SYNTHETIC_PARTNERFI_ALPHA,
     principal: SYNTHETIC_REFERENCE_PRINCIPALS.alphaSupervisor,
@@ -84,16 +84,20 @@ test("role navigation is responsibility-specific and Ardi is not universal navig
     role: "SUPERVISOR",
     environment: "synthetic",
     regionId: SYNTHETIC_REGION_IDS.ADAMA,
-    serviceManifest: emptySupervisorServiceManifest,
+    serviceManifest: supervisorServiceManifest,
   });
 
-  const agentPaths = alpha.navigation.flatMap((group) => group.items.map((item) => item.path));
+  const agentPaths = alpha.navigation.flatMap((group) =>
+    group.items.map((item) => item.path),
+  );
   const supervisorPaths = supervisor.navigation.flatMap((group) =>
     group.items.map((item) => item.path),
   );
   assert.ok(agentPaths.includes("/kiosk"));
   assert.equal(agentPaths.includes("/operations"), false);
   assert.ok(supervisorPaths.includes("/liquidity"));
+  assert.equal(supervisorPaths.includes("/cash-fleet"), false);
+  assert.equal(supervisorPaths.includes("/fmcg"), false);
   assert.equal(supervisorPaths.includes("/kiosk"), false);
   assert.equal([...agentPaths, ...supervisorPaths].includes("/ardi-engine"), false);
 });
@@ -105,7 +109,9 @@ test("provider readiness distinguishes registered foundations from active routes
     adapters: registry.adapterMetadata(),
     routes: registry.routeMetadata(),
   });
-  const byProvider = Object.fromEntries(states.map((state) => [state.providerKey, state]));
+  const byProvider = Object.fromEntries(
+    states.map((state) => [state.providerKey, state]),
+  );
 
   assert.equal(byProvider.TELEBIRR_DIRECT.environment, "testbed");
   assert.equal(byProvider.TELEBIRR_DIRECT.runtimeMode, "FOUNDATION_ONLY");
