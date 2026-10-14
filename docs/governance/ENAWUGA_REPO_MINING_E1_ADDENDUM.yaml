@@ -1,4 +1,4 @@
-version: "0.1"
+version: "0.2"
 as_of: "2026-10-15"
 status: "FUTURE_ENGINEERING_ADDENDUM_NOT_CURRENT_CAPABILITY_EVIDENCE"
 parent_backlog: "ENAWUGA_FUTURE_PRODUCT_BACKLOG.yaml"
@@ -11,10 +11,16 @@ review_sources:
     ref: "codex/clean-demo"
     reviewed_head: "cde08a088ca608265a34e14d0ec66cdf2b139e74"
     classification: "SEPARATE_MODEL6_FAMILY_GENERIC_EVIDENCE_PATTERN_LIBRARY"
+  - repository: "abeselomchernet/sovereign_core"
+    ref: "main"
+    reviewed_head: "8fceaa6d6393d2e9c59808f9ffcf4c0e56e66a17"
+    deployment_reviewed: "https://sovereign-core-five.vercel.app/static/index.html"
+    classification: "HISTORICAL_ENAWUGA_SOVEREIGN_CORE_SYNTHETIC_PILOT_PATTERN_LIBRARY"
 
 authority:
   implementation_source: "Phygital-rural-Agent-Hub main + current governance pack"
-  rule: "Pattern reuse never imports historical authority or merges Model6 into Enawuga."
+  rule: "Pattern reuse never imports historical authority, promotes legacy screens, or merges Model6 into Enawuga."
+  vercel_note: "A Vercel production-target deployment label is hosting metadata only; it is not Enawuga production financial authority or Ethiopia-resident Stage-4 hosting evidence."
 
 revised_e1:
   id: "E1_HUB_DOMAIN_CORE"
@@ -27,8 +33,12 @@ revised_e1:
         - "HubOperator"
         - "HubDevice"
         - "HubPartnerMembership"
-        - "server-enforced organization/role/object scope"
+        - "server-enforced organization/tenant/role/object/purpose/assignment scope"
         - "synthetic fixtures"
+        - "denial behavior that does not reveal protected resource existence"
+      source_patterns:
+        - "sovereign_core route authorization matrix"
+        - "sovereign_core synthetic tenant/role/assignment isolation"
 
     - id: "E1B_WORKFLOW_EVENT_EVIDENCE_ENVELOPE"
       deliverables:
@@ -36,8 +46,10 @@ revised_e1:
         - "runId"
         - "idempotencyKey"
         - "canonicalContentDigest"
+        - "createdAt / expiresAt when workflow intent can become stale"
         - "hubId / partnerOrgId references"
         - "serviceId / capabilityId / routeId references when applicable"
+        - "actor/role/purpose references as evidence, never client-side authority"
         - "transportState separated from authorityState"
         - "provenance"
         - "evidenceRef"
@@ -45,6 +57,7 @@ revised_e1:
       source_patterns:
         - "enawuga-nexus trace/event timeline"
         - "model6-demo run/correlation identity separation"
+        - "sovereign_core offline replay envelope and server reauthorization sequence"
 
     - id: "E1C_SYNTHETIC_PROVENANCE_EVIDENCE_MANIFEST"
       deliverables:
@@ -55,42 +68,56 @@ revised_e1:
         - "capturedFromLive flag"
         - "explicit zero/false non-evidence assertions"
         - "checksums/version references"
+        - "evidence package owner/retention metadata where applicable"
         - "export tests"
       source_patterns:
         - "model6-demo provenance contract"
         - "model6-demo machine-readable evidence manifest"
+        - "sovereign_core deterministic fixture catalog"
+        - "sovereign_core audit package manifest/checksum pattern"
 
     - id: "E1D_OPERATIONS_TRACE_READ_MODEL"
       deliverables:
         - "correlation search"
         - "ordered event timeline"
         - "queue/retry/conflict states"
+        - "typed denial/deferred outcomes"
         - "evidence references"
-        - "no raw logs/secrets in normal UI"
+        - "no raw logs/secrets/provider payloads in normal UI"
         - "role-gated non-mutating Stage-4 action placeholders"
       source_patterns:
         - "enawuga-nexus EventQueue / TraceView / AuditTrail concepts"
         - "model6-demo Evidence & Operations surface separation"
+        - "sovereign_core redacted role-safe projections"
 
     - id: "E1E_IDEMPOTENCY_CONCURRENCY_CERTIFICATION"
       tests:
         - "identical retry -> one logical workflow / duplicate no-op"
         - "same idempotency key + changed canonical content -> conflict/review"
         - "out-of-order event -> deterministic state"
+        - "stale/expired queued intent -> reject and require fresh authorization"
+        - "changed actor/role/tenant/purpose/assignment -> reject queued replay"
         - "restart persistence where canonical persistence boundary requires it"
         - "no cross-partner or cross-Hub idempotency collision"
         - "no silent route/provider fallback after possible mutation"
         - "ambiguous outcome -> reconciliation required; never assumed success"
+        - "closed capability gate -> reject before provider/network call"
       source_patterns:
         - "enawuga-nexus deterministic reference/audit experiments"
         - "model6-demo conflicting retry detection"
+        - "sovereign_core offline replay negative-case matrix"
+        - "sovereign_core external-provider fail-closed contract"
 
 outcome_vocabulary_candidate:
   - "ACCEPTED_FOR_PROCESSING"
   - "DUPLICATE_NOOP"
   - "CONFLICT_REVIEW_REQUIRED"
   - "PENDING_EXTERNAL_EVIDENCE"
+  - "REJECTED_INVALID"
+  - "REJECTED_EXPIRED"
+  - "REJECTED_SCOPE"
   - "REJECTED_POLICY"
+  - "ACTION_DEFERRED"
   - "RECONCILIATION_REQUIRED"
 
 provenance_candidate:
@@ -119,7 +146,48 @@ adapter_descriptor_candidate:
     - "certificationStatus"
     - "evidenceRefs"
 
+capability_gate_pattern:
+  source: "sovereign_core deferred route/provider/write contracts"
+  required_before_enablement:
+    - "route/capability contract"
+    - "server-side tenant/organization/role/object/purpose/assignment rules as applicable"
+    - "synthetic fixtures and negative cases"
+    - "forbidden-field/privacy tests"
+    - "idempotency and audit design for mutation"
+    - "offline replay decision when applicable"
+    - "provider/network boundary decision when applicable"
+    - "rollback/reconciliation behavior"
+    - "explicit stage approval"
+  rule: "A UI control, legacy page, route stub, provider registration, sandbox response, or synthetic simulation never self-authorizes a capability."
+
+synthetic_runtime_pattern:
+  source: "sovereign_core SyntheticRuntime"
+  desired_properties:
+    - "one controlled behavior layer for synthetic interactions"
+    - "canonical fixture graph"
+    - "typed denials"
+    - "no HTTP client/provider credential/database/filesystem/queue/production fallback"
+    - "network-boundary tests fail if synthetic routes attempt external access"
+    - "simulation response explicitly states no external side effect"
+
+journey_acceptance_pattern:
+  source: "sovereign_core P3 cross-surface synthetic journey"
+  rule: "Future Enawuga Hub demos should prove coherent bounded journeys across authorized projections, not isolated screenshots."
+  required_evidence:
+    - "deterministic reset/start state"
+    - "server-enforced scope"
+    - "causal event/evidence chain"
+    - "explicit no-external-side-effect assertion in Stage 4"
+    - "repeatability"
+    - "negative tenant/role cases"
+
 later_epic_adjustments:
+  E2_HUB_SERVICE_COMPOSITION:
+    add:
+      - "per-capability enablement gate"
+      - "route authorization/denial matrix"
+      - "legacy UI presence never treated as capability evidence"
+
   E3_HUB_LIQUIDITY_INTELLIGENCE:
     add:
       - "time-series friendly snapshots"
@@ -130,6 +198,9 @@ later_epic_adjustments:
 
   E4_OFFLINE_OPERATIONS_EVIDENCE:
     add:
+      - "client queue treated as untrusted intent"
+      - "server reauthorization at replay time"
+      - "expiry/purpose/assignment checks"
       - "correlation timeline"
       - "duplicate/conflict detection"
       - "queue age/retry evidence"
@@ -141,12 +212,26 @@ later_epic_adjustments:
       - "machine-readable evidence manifest"
       - "explicit negative/non-evidence assertions"
       - "fixture/run provenance"
+      - "evidence package integrity/checksum references"
+      - "bounded cross-surface journey evidence"
+
+  E8_OPERATOR_DEVICE_READINESS:
+    add:
+      - "read-only device projection before any control capability"
+      - "device assignment and role-scope denial tests"
+      - "telemetry provenance contract before ingestion"
+    prohibit:
+      - "remote control/firmware/provider command authority inferred from legacy screens"
 
   E9_NEUTRALITY_GOVERNANCE:
     add:
       - "route-decision correlationId"
       - "policy/rule version references"
       - "decision evidenceRef"
+
+localization_future_pattern:
+  source: "sovereign_core English/Amharic/Oromo quick-reference and i18n assets"
+  note: "Useful future rural-access UX pattern; not part of E1 domain authority and not evidence of complete localization quality."
 
 quarantine:
   from_enawuga_nexus:
@@ -171,6 +256,18 @@ quarantine:
     - "Model6 digital-twin semantics"
     - "Model6 deployment topology as Enawuga authority"
 
+  from_sovereign_core:
+    - "historical Sovereign Core/SOS naming as current architecture"
+    - "legacy Hub Ledger First screens as current capability evidence"
+    - "ARDI/Agri Score as Enawuga core dependency"
+    - "CICO/Ekub/PAYG/payment controls as current live authority"
+    - "KinetiQ/AgriTrust/IoT/device-control screens as current integration evidence"
+    - "Fayda/live identity implications"
+    - "Hyperledger/Fabric artifacts as current audit architecture"
+    - "Vercel production-target label as financial-production evidence"
+    - "Vercel deployment as Ethiopia-resident Stage-4 hosting evidence"
+    - "historical private-key/CA material, database dumps/backups, environment files, logs, backup source files, committed dependencies"
+
 security_follow_up:
   required: true
-  note: "Historical enawuga-nexus contains certificate/private-key-shaped and backup artifacts. Perform a separate secret-history and credential-rotation review before external sharing or reuse. Do not migrate secret material."
+  note: "Historical enawuga-nexus and sovereign_core contain credential/key-shaped, CA, backup/database, environment/log or temporary artifacts. Perform a separate secret-history, exposure, credential-rotation and repository-hygiene review before external sharing, reuse or any change in repository visibility. Do not migrate secret material."
