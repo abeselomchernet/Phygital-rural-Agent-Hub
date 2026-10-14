@@ -1,0 +1,176 @@
+version: "0.1"
+as_of: "2026-10-15"
+status: "FUTURE_ENGINEERING_ADDENDUM_NOT_CURRENT_CAPABILITY_EVIDENCE"
+parent_backlog: "ENAWUGA_FUTURE_PRODUCT_BACKLOG.yaml"
+review_sources:
+  - repository: "abeselomchernet/enawuga-nexus"
+    ref: "main"
+    reviewed_head: "6a4d87d653a7bde77ca78c4316773c56460abad6"
+    classification: "HISTORICAL_EXPERIMENTAL_ENAWUGA_PATTERN_LIBRARY"
+  - repository: "abeselomchernet/model6-demo"
+    ref: "codex/clean-demo"
+    reviewed_head: "cde08a088ca608265a34e14d0ec66cdf2b139e74"
+    classification: "SEPARATE_MODEL6_FAMILY_GENERIC_EVIDENCE_PATTERN_LIBRARY"
+
+authority:
+  implementation_source: "Phygital-rural-Agent-Hub main + current governance pack"
+  rule: "Pattern reuse never imports historical authority or merges Model6 into Enawuga."
+
+revised_e1:
+  id: "E1_HUB_DOMAIN_CORE"
+  stage_4_safe: true
+  synthetic_only_now: true
+  workstreams:
+    - id: "E1A_HUB_AGGREGATE_SCOPE"
+      deliverables:
+        - "Hub aggregate and lifecycle"
+        - "HubOperator"
+        - "HubDevice"
+        - "HubPartnerMembership"
+        - "server-enforced organization/role/object scope"
+        - "synthetic fixtures"
+
+    - id: "E1B_WORKFLOW_EVENT_EVIDENCE_ENVELOPE"
+      deliverables:
+        - "correlationId"
+        - "runId"
+        - "idempotencyKey"
+        - "canonicalContentDigest"
+        - "hubId / partnerOrgId references"
+        - "serviceId / capabilityId / routeId references when applicable"
+        - "transportState separated from authorityState"
+        - "provenance"
+        - "evidenceRef"
+        - "explicit outcome and limitation"
+      source_patterns:
+        - "enawuga-nexus trace/event timeline"
+        - "model6-demo run/correlation identity separation"
+
+    - id: "E1C_SYNTHETIC_PROVENANCE_EVIDENCE_MANIFEST"
+      deliverables:
+        - "versioned fixture manifest"
+        - "synthetic/staging classification"
+        - "datasetVersion"
+        - "sourceType"
+        - "capturedFromLive flag"
+        - "explicit zero/false non-evidence assertions"
+        - "checksums/version references"
+        - "export tests"
+      source_patterns:
+        - "model6-demo provenance contract"
+        - "model6-demo machine-readable evidence manifest"
+
+    - id: "E1D_OPERATIONS_TRACE_READ_MODEL"
+      deliverables:
+        - "correlation search"
+        - "ordered event timeline"
+        - "queue/retry/conflict states"
+        - "evidence references"
+        - "no raw logs/secrets in normal UI"
+        - "role-gated non-mutating Stage-4 action placeholders"
+      source_patterns:
+        - "enawuga-nexus EventQueue / TraceView / AuditTrail concepts"
+        - "model6-demo Evidence & Operations surface separation"
+
+    - id: "E1E_IDEMPOTENCY_CONCURRENCY_CERTIFICATION"
+      tests:
+        - "identical retry -> one logical workflow / duplicate no-op"
+        - "same idempotency key + changed canonical content -> conflict/review"
+        - "out-of-order event -> deterministic state"
+        - "restart persistence where canonical persistence boundary requires it"
+        - "no cross-partner or cross-Hub idempotency collision"
+        - "no silent route/provider fallback after possible mutation"
+        - "ambiguous outcome -> reconciliation required; never assumed success"
+      source_patterns:
+        - "enawuga-nexus deterministic reference/audit experiments"
+        - "model6-demo conflicting retry detection"
+
+outcome_vocabulary_candidate:
+  - "ACCEPTED_FOR_PROCESSING"
+  - "DUPLICATE_NOOP"
+  - "CONFLICT_REVIEW_REQUIRED"
+  - "PENDING_EXTERNAL_EVIDENCE"
+  - "REJECTED_POLICY"
+  - "RECONCILIATION_REQUIRED"
+
+provenance_candidate:
+  classification:
+    - "SYNTHETIC"
+    - "STAGING"
+    - "OBSERVED_PILOT"
+    - "EXTERNALLY_VERIFIED"
+  required_fields:
+    - "datasetVersion"
+    - "sourceType"
+    - "capturedFromLive"
+    - "generatedAt"
+    - "runId"
+    - "evidenceRefs"
+
+adapter_descriptor_candidate:
+  note: "Extends rather than replaces the current Adapter Registry."
+  fields:
+    - "adapterId"
+    - "adapterVersion"
+    - "supportedPartnerCapabilityContractVersions"
+    - "supportedEnvironments"
+    - "supportedFunctions"
+    - "correlationAndIdempotencySemantics"
+    - "certificationStatus"
+    - "evidenceRefs"
+
+later_epic_adjustments:
+  E3_HUB_LIQUIDITY_INTELLIGENCE:
+    add:
+      - "time-series friendly snapshots"
+      - "source freshness/confidence"
+    prohibit:
+      - "historical prudential LCR terminology"
+      - "automatic cross-rail movement authority"
+
+  E4_OFFLINE_OPERATIONS_EVIDENCE:
+    add:
+      - "correlation timeline"
+      - "duplicate/conflict detection"
+      - "queue age/retry evidence"
+      - "ambiguous outcome -> reconciliation required"
+    terminology_rule: "Historical Ghost/GhostSync naming is pattern archaeology, not the canonical contract."
+
+  E6_PILOT_EVIDENCE_ENGINE:
+    add:
+      - "machine-readable evidence manifest"
+      - "explicit negative/non-evidence assertions"
+      - "fixture/run provenance"
+
+  E9_NEUTRALITY_GOVERNANCE:
+    add:
+      - "route-decision correlationId"
+      - "policy/rule version references"
+      - "decision evidenceRef"
+
+quarantine:
+  from_enawuga_nexus:
+    - "Sovereign Nexus / Sovereign API naming"
+    - "direct M-PESA to Telebirr swap/rebalance semantics"
+    - "automated liquidity movement claims"
+    - "prudential/regulatory LCR wording"
+    - "Hyperledger-established audit claims"
+    - "Fayda/live identity authority implications"
+    - "ARDI as Enawuga core dependency"
+    - "marketplace settlement authority"
+    - "historical credentials/certificates/private keys/backups/temp data"
+
+  from_model6_demo:
+    - "ARDI/reputation"
+    - "shadow-ledger semantics"
+    - "Fabric anchoring"
+    - "loan decision engine"
+    - "lending/receivables"
+    - "ABS/securitization/pooling/waterfall"
+    - "investor institution/customer domain model"
+    - "Model6 digital-twin semantics"
+    - "Model6 deployment topology as Enawuga authority"
+
+security_follow_up:
+  required: true
+  note: "Historical enawuga-nexus contains certificate/private-key-shaped and backup artifacts. Perform a separate secret-history and credential-rotation review before external sharing or reuse. Do not migrate secret material."
