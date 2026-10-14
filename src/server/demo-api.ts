@@ -3,6 +3,13 @@ import type { Express } from "express";
 import { z } from "zod";
 import type { PartnerAdapterRegistry } from "../domain/adapterRegistry";
 import {
+  HubIdSchema,
+  syntheticHubs,
+  syntheticHubDevices,
+  syntheticHubOperators,
+  syntheticHubPartnerMemberships,
+} from "../domain/hubDomain";
+import {
   CustomerStore,
   type CustomerStorePersistence,
 } from "../domain/customer";
@@ -197,6 +204,35 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
         evaluatedAt: new Date().toISOString(),
       }),
     ),
+  );
+  app.get("/api/demo/hubs", (_req, res) =>
+    respond(res, () => {
+      const session = res.locals.syntheticSession;
+      auth.requireRole(session, ["AGENT", "SUPERVISOR", "OPERATIONS", "PARTNER_ADMIN"]);
+      return {
+        hubs: syntheticHubs.filter((hub) => session.allowedHubIds.includes(hub.hubId)),
+        authorityBoundary:
+          "Read-only synthetic Hub configuration; visibility is not financial, payment, custody, settlement or pilot authority.",
+      };
+    }),
+  );
+  app.get("/api/demo/hubs/:hubId", (req, res) =>
+    respond(res, () => {
+      const session = res.locals.syntheticSession;
+      auth.requireRole(session, ["AGENT", "SUPERVISOR", "OPERATIONS", "PARTNER_ADMIN"]);
+      const hubId = HubIdSchema.parse(req.params.hubId);
+      auth.requireHub(session, hubId);
+      const hub = syntheticHubs.find((entry) => entry.hubId === hubId);
+      if (!hub) throw new Error("SYNTHETIC_HUB_NOT_FOUND");
+      return {
+        hub,
+        operators: syntheticHubOperators.filter((entry) => entry.hubId === hubId),
+        devices: syntheticHubDevices.filter((entry) => entry.hubId === hubId),
+        partnerMemberships: syntheticHubPartnerMemberships.filter((entry) => entry.hubId === hubId),
+        authorityBoundary:
+          "Read-only synthetic Hub configuration; child readiness and membership records grant no live regulated authority.",
+      };
+    }),
   );
   app.post("/api/demo/session/logout", (req, res) => {
     auth.revoke(res.locals.syntheticSession);

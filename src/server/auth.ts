@@ -9,6 +9,12 @@ import {
   type NetworkOperationsObjectId,
 } from "../domain/networkOperationsAuthorization";
 import {
+  HubIdSchema,
+  hubIdsForAccessContext,
+  isHubReadAuthorized,
+  type HubId,
+} from "../domain/hubDomain";
+import {
   SYNTHETIC_PARTNER_IDS,
   SYNTHETIC_REFERENCE_PRINCIPALS,
   SYNTHETIC_REGION_IDS,
@@ -40,6 +46,7 @@ export interface SyntheticPrincipal {
   role: SyntheticRole;
   allowedCustomerIds: readonly string[];
   allowedNetworkObjectIds: readonly NetworkOperationsObjectId[];
+  allowedHubIds: readonly HubId[];
   workspaceContext: SyntheticWorkspaceContext;
 }
 
@@ -170,6 +177,7 @@ export class SyntheticAuthService {
     allowedCustomerIds: readonly string[],
     allowedNetworkObjectIds: readonly NetworkOperationsObjectId[] = defaultNetworkObjectIdsForRole(role),
     workspaceContext: SyntheticWorkspaceContext = defaultSyntheticWorkspaceContextForRole(role),
+    allowedHubIds?: readonly HubId[],
   ) {
     const userId =
       role === "AGENT"
@@ -179,6 +187,12 @@ export class SyntheticAuthService {
           : role === "OPERATIONS"
             ? "synthetic-operations-01"
             : "synthetic-partner-admin-01";
+    const resolvedHubIds = allowedHubIds ?? hubIdsForAccessContext({
+      userId,
+      role,
+      regionId: workspaceContext.regionId,
+      partnerOrgMemberships: workspaceContext.partnerOrgMemberships,
+    });
     const session: StoredSession = {
       sessionId: randomUUID(),
       csrfToken: randomUUID(),
@@ -188,6 +202,7 @@ export class SyntheticAuthService {
       allowedNetworkObjectIds: allowedNetworkObjectIds.map((objectId) =>
         NetworkOperationsObjectIdSchema.parse(objectId),
       ),
+      allowedHubIds: resolvedHubIds.map((hubId) => HubIdSchema.parse(hubId)),
       workspaceContext: {
         activePartnerOrgId: workspaceContext.activePartnerOrgId,
         partnerOrgMemberships: [...workspaceContext.partnerOrgMemberships],
@@ -273,6 +288,25 @@ export class SyntheticAuthService {
     }
   }
 
+  requireHub(session: StoredSession, hubId: HubId) {
+    const parsedHubId = HubIdSchema.parse(hubId);
+    const authorized =
+      session.allowedHubIds.includes(parsedHubId) &&
+      isHubReadAuthorized(
+        {
+          userId: session.userId,
+          role: session.role,
+          regionId: session.workspaceContext.regionId,
+          partnerOrgMemberships: session.workspaceContext.partnerOrgMemberships,
+        },
+        parsedHubId,
+      );
+    if (!authorized) {
+      this.record("OBJECT_ACCESS_DENIED", "DENY", session);
+      throw new SyntheticAuthError("OBJECT_ACCESS_DENIED", 403);
+    }
+  }
+
   requireCsrf(req: Request, session: StoredSession) {
     const supplied = req.get("x-csrf-token") ?? "";
     if (!supplied || !safeEqual(supplied, session.csrfToken)) {
@@ -293,6 +327,7 @@ export class SyntheticAuthService {
       role: session.role,
       allowedCustomerIds: [...session.allowedCustomerIds],
       allowedNetworkObjectIds: [...session.allowedNetworkObjectIds],
+      allowedHubIds: [...session.allowedHubIds],
       workspaceContext: {
         activePartnerOrgId: session.workspaceContext.activePartnerOrgId,
         partnerOrgMemberships: [...session.workspaceContext.partnerOrgMemberships],
