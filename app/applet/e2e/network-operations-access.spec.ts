@@ -8,7 +8,9 @@ test.beforeEach(async ({ page }) => {
   );
 });
 
-test("network-operations access matrix exposes bounded read/reconcile scopes only", async ({ page }) => {
+test("network-operations access matrix exposes bounded read/reconcile scopes only", async ({
+  page,
+}) => {
   await page.goto("/network-operations");
 
   const workspace = page.getByTestId("network-operations-access");
@@ -19,14 +21,30 @@ test("network-operations access matrix exposes bounded read/reconcile scopes onl
   const boundary = page.getByTestId("network-ops-policy-boundary");
   await expect(boundary).toContainText("READ access");
   await expect(boundary).toContainText("provider-reconciliation access");
-  await expect(boundary).toContainText("no network-operations action for cash movement");
+  await expect(boundary).toContainText(
+    "no network-operations action for cash movement",
+  );
 
   const agent = page.getByTestId("role-agent");
-  await expect(agent).toContainText("No Stage 3 network-operations object access");
+  await expect(agent).toContainText(
+    "No Stage 3 network-operations object access",
+  );
 
   const supervisor = page.getByTestId("role-supervisor");
-  await expect(supervisor).toContainText("Network Liquidity Coverage / LCI planning");
+  await expect(supervisor).toContainText(
+    "Network Liquidity Coverage / LCI planning",
+  );
   await expect(supervisor).toContainText("Bounded provider reconciliation");
+
+  const operations = page.getByTestId("role-operations");
+  await expect(operations).toContainText(
+    "Partner ecosystem capability/evidence view",
+  );
+  await expect(operations).toContainText("Bounded provider reconciliation");
+  await expect(operations).not.toContainText(
+    "Network Liquidity Coverage / LCI planning",
+  );
+  await expect(operations).not.toContainText("Cash Fleet planning · East");
 
   await expect(
     page.getByRole("button", {
@@ -35,7 +53,9 @@ test("network-operations access matrix exposes bounded read/reconcile scopes onl
   ).toHaveCount(0);
 });
 
-test("Supervisor and Operations surfaces both expose the network-access boundary", async ({ page }) => {
+test("Supervisor and Operations surfaces both expose the network-access boundary", async ({
+  page,
+}) => {
   await page.goto("/supervisor");
   const supervisorAccess = page.getByTestId("supervisor-network-access");
   await expect(supervisorAccess).toContainText("Role & object access");

@@ -8,15 +8,39 @@ import {
   type NetworkOperationsAction,
   type NetworkOperationsObjectId,
 } from "../domain/networkOperationsAuthorization";
+import {
+  SYNTHETIC_PARTNER_IDS,
+  SYNTHETIC_REFERENCE_PRINCIPALS,
+  SYNTHETIC_REGION_IDS,
+  type getSyntheticReferencePartner,
+} from "../domain/syntheticReferencePartners";
 import { SyntheticAuditLog, type SyntheticAuditEventInput } from "./audit";
 
-export type SyntheticRole = "AGENT" | "SUPERVISOR" | "PARTNER_ADMIN";
+export type SyntheticRole =
+  | "AGENT"
+  | "SUPERVISOR"
+  | "OPERATIONS"
+  | "PARTNER_ADMIN";
+
+export interface SyntheticWorkspaceContext {
+  activePartnerOrgId: string;
+  partnerOrgMemberships: readonly string[];
+  regionId: string;
+  agentGroupIds: readonly string[];
+  serviceScopes: readonly string[];
+  objectScopes: readonly string[];
+}
 
 export interface SyntheticPrincipal {
-  userId: "synthetic-agent-01" | "synthetic-supervisor-01" | "synthetic-partner-admin-01";
+  userId:
+    | "synthetic-agent-01"
+    | "synthetic-supervisor-01"
+    | "synthetic-operations-01"
+    | "synthetic-partner-admin-01";
   role: SyntheticRole;
   allowedCustomerIds: readonly string[];
   allowedNetworkObjectIds: readonly NetworkOperationsObjectId[];
+  workspaceContext: SyntheticWorkspaceContext;
 }
 
 export interface SyntheticSessionView extends SyntheticPrincipal {
@@ -63,6 +87,68 @@ function cookieValue(req: Request, name: string) {
   return undefined;
 }
 
+function contextFromReferencePrincipal(
+  principal: (typeof SYNTHETIC_REFERENCE_PRINCIPALS)[keyof typeof SYNTHETIC_REFERENCE_PRINCIPALS],
+  activePartnerOrgId: string,
+  regionId: string,
+): SyntheticWorkspaceContext {
+  return {
+    activePartnerOrgId,
+    partnerOrgMemberships: [...principal.partnerOrgMemberships],
+    regionId,
+    agentGroupIds: [...principal.agentGroupIds],
+    serviceScopes: [...principal.serviceScopes],
+    objectScopes: [...principal.objectScopes],
+  };
+}
+
+export function defaultSyntheticWorkspaceContextForRole(
+  role: SyntheticRole,
+): SyntheticWorkspaceContext {
+  if (role === "AGENT")
+    return contextFromReferencePrincipal(
+      SYNTHETIC_REFERENCE_PRINCIPALS.alphaAgentAdama,
+      SYNTHETIC_PARTNER_IDS.PARTNERFI_ALPHA,
+      SYNTHETIC_REGION_IDS.ADAMA,
+    );
+  if (role === "SUPERVISOR")
+    return contextFromReferencePrincipal(
+      SYNTHETIC_REFERENCE_PRINCIPALS.alphaSupervisor,
+      SYNTHETIC_PARTNER_IDS.PARTNERFI_ALPHA,
+      SYNTHETIC_REGION_IDS.ADAMA,
+    );
+  return {
+    activePartnerOrgId: SYNTHETIC_PARTNER_IDS.PARTNERFI_ALPHA,
+    partnerOrgMemberships: [SYNTHETIC_PARTNER_IDS.PARTNERFI_ALPHA],
+    regionId: SYNTHETIC_REGION_IDS.ADAMA,
+    agentGroupIds: [],
+    serviceScopes: [],
+    objectScopes: [],
+  };
+}
+
+export function syntheticWorkspaceContextForReference(
+  reference: "ALPHA_AGENT_ADAMA" | "BETA_AGENT_ADAMA" | "ALPHA_SUPERVISOR_ADAMA",
+) {
+  if (reference === "BETA_AGENT_ADAMA")
+    return contextFromReferencePrincipal(
+      SYNTHETIC_REFERENCE_PRINCIPALS.betaAgentAdama,
+      SYNTHETIC_PARTNER_IDS.PARTNERFI_BETA,
+      SYNTHETIC_REGION_IDS.ADAMA,
+    );
+  if (reference === "ALPHA_SUPERVISOR_ADAMA")
+    return contextFromReferencePrincipal(
+      SYNTHETIC_REFERENCE_PRINCIPALS.alphaSupervisor,
+      SYNTHETIC_PARTNER_IDS.PARTNERFI_ALPHA,
+      SYNTHETIC_REGION_IDS.ADAMA,
+    );
+  return contextFromReferencePrincipal(
+    SYNTHETIC_REFERENCE_PRINCIPALS.alphaAgentAdama,
+    SYNTHETIC_PARTNER_IDS.PARTNERFI_ALPHA,
+    SYNTHETIC_REGION_IDS.ADAMA,
+  );
+}
+
 export class SyntheticAuthService {
   private sessions = new Map<string, StoredSession>();
   private counters = new Map<string, { startedAt: number; count: number }>();
@@ -83,13 +169,16 @@ export class SyntheticAuthService {
     role: SyntheticRole,
     allowedCustomerIds: readonly string[],
     allowedNetworkObjectIds: readonly NetworkOperationsObjectId[] = defaultNetworkObjectIdsForRole(role),
+    workspaceContext: SyntheticWorkspaceContext = defaultSyntheticWorkspaceContextForRole(role),
   ) {
     const userId =
       role === "AGENT"
         ? "synthetic-agent-01"
         : role === "SUPERVISOR"
           ? "synthetic-supervisor-01"
-          : "synthetic-partner-admin-01";
+          : role === "OPERATIONS"
+            ? "synthetic-operations-01"
+            : "synthetic-partner-admin-01";
     const session: StoredSession = {
       sessionId: randomUUID(),
       csrfToken: randomUUID(),
@@ -99,6 +188,14 @@ export class SyntheticAuthService {
       allowedNetworkObjectIds: allowedNetworkObjectIds.map((objectId) =>
         NetworkOperationsObjectIdSchema.parse(objectId),
       ),
+      workspaceContext: {
+        activePartnerOrgId: workspaceContext.activePartnerOrgId,
+        partnerOrgMemberships: [...workspaceContext.partnerOrgMemberships],
+        regionId: workspaceContext.regionId,
+        agentGroupIds: [...workspaceContext.agentGroupIds],
+        serviceScopes: [...workspaceContext.serviceScopes],
+        objectScopes: [...workspaceContext.objectScopes],
+      },
       expiresAtMs: Date.now() + this.sessionTtlMs,
     };
     this.sessions.set(session.sessionId, session);
@@ -196,6 +293,14 @@ export class SyntheticAuthService {
       role: session.role,
       allowedCustomerIds: [...session.allowedCustomerIds],
       allowedNetworkObjectIds: [...session.allowedNetworkObjectIds],
+      workspaceContext: {
+        activePartnerOrgId: session.workspaceContext.activePartnerOrgId,
+        partnerOrgMemberships: [...session.workspaceContext.partnerOrgMemberships],
+        regionId: session.workspaceContext.regionId,
+        agentGroupIds: [...session.workspaceContext.agentGroupIds],
+        serviceScopes: [...session.workspaceContext.serviceScopes],
+        objectScopes: [...session.workspaceContext.objectScopes],
+      },
       csrfToken: session.csrfToken,
       expiresAt: new Date(session.expiresAtMs).toISOString(),
       localDevelopmentAuth: true,

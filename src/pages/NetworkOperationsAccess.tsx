@@ -8,12 +8,14 @@ import {
 const roles: readonly NetworkOperationsRole[] = [
   "AGENT",
   "SUPERVISOR",
+  "OPERATIONS",
   "PARTNER_ADMIN",
 ];
 
 const roleLabel: Record<NetworkOperationsRole, string> = {
   AGENT: "Agent",
   SUPERVISOR: "Supervisor",
+  OPERATIONS: "Operations",
   PARTNER_ADMIN: "Partner Admin",
 };
 

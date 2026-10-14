@@ -12,7 +12,8 @@ import {
 const classLabel: Record<PartnerClass, string> = {
   FINANCIAL_INSTITUTION: "Financial Institution",
   PAYMENT_GATEWAY_SYSTEM_OPERATOR: "Payment Gateway / System Operator",
-  MOBILE_MONEY_PAYMENT_INSTRUMENT_ISSUER: "Mobile Money / Payment Instrument Issuer",
+  MOBILE_MONEY_PAYMENT_INSTRUMENT_ISSUER:
+    "Mobile Money / Payment Instrument Issuer",
   TELCO_COMMUNICATIONS: "Telco / Communications",
   IDENTITY_PROVIDER: "Identity Provider",
   FMCG_DISTRIBUTOR_MERCHANT: "FMCG / Distributor / Merchant",
@@ -21,6 +22,7 @@ const classLabel: Record<PartnerClass, string> = {
 
 const stateLabel: Record<CapabilitySwitchState, string> = {
   DISABLED: "Disabled",
+  FOUNDATION_ONLY: "Foundation only · route activation gated",
   SIMULATION_ONLY: "Simulation only",
   SANDBOX_BOUNDED: "Sandbox bounded",
 };
@@ -29,7 +31,10 @@ export default function PartnerEcosystem() {
   const summary = partnerEcosystemSummary();
 
   return (
-    <section className="max-w-6xl mx-auto space-y-6" data-testid="partner-ecosystem-console">
+    <section
+      className="max-w-6xl mx-auto space-y-6"
+      data-testid="partner-ecosystem-console"
+    >
       <div className="rounded-2xl border border-slate-800 bg-slate-950 p-6 text-slate-100 space-y-5">
         <div className="flex flex-wrap items-center gap-3">
           <CapabilityBadge state="IMPLEMENTED" />
@@ -40,31 +45,57 @@ export default function PartnerEcosystem() {
           <div>
             <h1 className="text-2xl font-black">Partner Ecosystem Console</h1>
             <p className="mt-2 text-slate-300">
-              Stage 3 read-only partner model. Partner classes, capability switches and route provenance are visible without activating real services, moving cash, posting to PartnerFI accounts or exposing production credentials.
+              Stage 3 read-only partner model. Partner classes, capability states and route provenance are visible without activating production services, moving cash, posting to PartnerFI accounts or exposing production credentials. A registered sandbox/TestBed foundation is shown separately from an activated payment route.
             </p>
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 text-sm" data-testid="partner-ecosystem-summary">
+        <div
+          className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5 text-sm"
+          data-testid="partner-ecosystem-summary"
+        >
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-            <p className="text-slate-500 uppercase tracking-widest text-[10px]">Partner organizations</p>
+            <p className="text-slate-500 uppercase tracking-widest text-[10px]">
+              Partner organizations
+            </p>
             <strong className="text-xl">{summary.partnerOrganizations}</strong>
             <p className="text-slate-400 mt-1">Synthetic/governance fixtures only.</p>
           </div>
           <div className="rounded-xl border border-emerald-900/70 bg-emerald-950/20 p-4">
-            <p className="text-slate-500 uppercase tracking-widest text-[10px]">Sandbox bounded</p>
+            <p className="text-slate-500 uppercase tracking-widest text-[10px]">
+              Sandbox bounded
+            </p>
             <strong className="text-xl">{summary.sandboxBounded}</strong>
-            <p className="text-slate-400 mt-1">Provider evidence, not settlement authority.</p>
-          </div>
-          <div className="rounded-xl border border-indigo-900/70 bg-indigo-950/20 p-4">
-            <p className="text-slate-500 uppercase tracking-widest text-[10px]">Simulation only</p>
-            <strong className="text-xl">{summary.simulationOnly}</strong>
-            <p className="text-slate-400 mt-1">Planning behavior with no operational dispatch.</p>
+            <p className="text-slate-400 mt-1">
+              Provider evidence, not settlement authority.
+            </p>
           </div>
           <div className="rounded-xl border border-amber-900/70 bg-amber-950/20 p-4">
-            <p className="text-slate-500 uppercase tracking-widest text-[10px]">Disabled switches</p>
+            <p className="text-slate-500 uppercase tracking-widest text-[10px]">
+              Foundation only
+            </p>
+            <strong className="text-xl">{summary.foundationOnly}</strong>
+            <p className="text-slate-400 mt-1">
+              Environment registered; payment route activation gated.
+            </p>
+          </div>
+          <div className="rounded-xl border border-indigo-900/70 bg-indigo-950/20 p-4">
+            <p className="text-slate-500 uppercase tracking-widest text-[10px]">
+              Simulation only
+            </p>
+            <strong className="text-xl">{summary.simulationOnly}</strong>
+            <p className="text-slate-400 mt-1">
+              Planning behavior with no operational dispatch.
+            </p>
+          </div>
+          <div className="rounded-xl border border-slate-700 bg-slate-900 p-4">
+            <p className="text-slate-500 uppercase tracking-widest text-[10px]">
+              Disabled capabilities
+            </p>
             <strong className="text-xl">{summary.disabled}</strong>
-            <p className="text-slate-400 mt-1">Code presence does not enable capability.</p>
+            <p className="text-slate-400 mt-1">
+              Code presence never enables authority.
+            </p>
           </div>
         </div>
       </div>
@@ -72,7 +103,9 @@ export default function PartnerEcosystem() {
       <div className="space-y-4">
         <div className="flex items-center gap-2 text-slate-100">
           <Building2 className="h-5 w-5 text-indigo-400" />
-          <h2 className="font-black text-lg">Partner organizations & capability switches</h2>
+          <h2 className="font-black text-lg">
+            Partner organizations & capability states
+          </h2>
         </div>
         <div className="grid gap-4 lg:grid-cols-2">
           {syntheticPartnerOrganizations.map((partner) => (
@@ -84,7 +117,9 @@ export default function PartnerEcosystem() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h3 className="font-black">{partner.displayName}</h3>
-                  <p className="text-xs text-slate-400 mt-1">{classLabel[partner.partnerClass]}</p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    {classLabel[partner.partnerClass]}
+                  </p>
                 </div>
                 <span className="rounded-full border border-slate-700 bg-slate-950 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-slate-300">
                   {partner.environment}
@@ -93,9 +128,14 @@ export default function PartnerEcosystem() {
 
               <div className="space-y-2">
                 {partner.capabilitySwitches.map((entry) => (
-                  <div key={entry.capability} className="rounded-xl border border-slate-800 bg-slate-950/70 p-3">
+                  <div
+                    key={entry.capability}
+                    className="rounded-xl border border-slate-800 bg-slate-950/70 p-3"
+                  >
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <strong className="font-mono text-xs">{entry.capability}</strong>
+                      <strong className="font-mono text-xs">
+                        {entry.capability}
+                      </strong>
                       <span className="text-[10px] font-black uppercase tracking-wide text-slate-300">
                         {stateLabel[entry.state]}
                       </span>
@@ -108,11 +148,15 @@ export default function PartnerEcosystem() {
               <dl className="grid gap-2 text-xs sm:grid-cols-2">
                 <div>
                   <dt className="text-slate-500">Permitted data</dt>
-                  <dd className="text-slate-300">{partner.permittedDataClasses.join(", ") || "None"}</dd>
+                  <dd className="text-slate-300">
+                    {partner.permittedDataClasses.join(", ") || "None"}
+                  </dd>
                 </div>
                 <div>
-                  <dt className="text-slate-500">Permitted routes</dt>
-                  <dd className="text-slate-300">{partner.permittedRoutes.join(", ") || "None"}</dd>
+                  <dt className="text-slate-500">Declared route reference</dt>
+                  <dd className="text-slate-300">
+                    {partner.permittedRoutes.join(", ") || "None"}
+                  </dd>
                 </div>
               </dl>
             </article>
@@ -120,21 +164,29 @@ export default function PartnerEcosystem() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-800 bg-slate-950 p-6 text-slate-100 space-y-4" data-testid="route-provenance">
+      <div
+        className="rounded-2xl border border-slate-800 bg-slate-950 p-6 text-slate-100 space-y-4"
+        data-testid="route-provenance"
+      >
         <div className="flex items-center gap-2">
           <ShieldCheck className="h-5 w-5 text-indigo-400" />
           <div>
             <h2 className="font-black text-lg">Route provenance</h2>
             <p className="text-sm text-slate-400 mt-1">
-              Direct provider foundations remain distinct from gateway-routed payment paths. The UI must not imply a direct contract where the actual integration route is through a gateway/operator.
+              Direct provider foundations remain distinct from gateway-routed payment paths. A declared route reference does not mean the route is mounted or executable, and the UI must not imply a direct contract where the actual integration route is through a gateway/operator.
             </p>
           </div>
         </div>
         <div className="space-y-3">
           {syntheticRouteProvenance.map((route) => (
-            <div key={route.routeId} className="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-2">
+            <div
+              key={route.routeId}
+              className="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-2"
+            >
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <code className="text-xs text-slate-200 break-all">{routeProvenanceLabel(route)}</code>
+                <code className="text-xs text-slate-200 break-all">
+                  {routeProvenanceLabel(route)}
+                </code>
                 <span className="text-[10px] font-black uppercase tracking-wide text-slate-300">
                   {stateLabel[route.state]}
                 </span>
@@ -148,10 +200,10 @@ export default function PartnerEcosystem() {
       <div className="grid gap-4 md:grid-cols-2">
         <div className="rounded-2xl border border-indigo-900/60 bg-indigo-950/20 p-5 text-slate-100">
           <div className="flex items-center gap-2 font-black">
-            <ToggleLeft className="h-5 w-5" /> Capability-switch rule
+            <ToggleLeft className="h-5 w-5" /> Capability-state rule
           </div>
           <p className="mt-2 text-sm text-slate-300">
-            A capability is not enabled because code, configuration or a provider contract exists. Activation requires the governed evidence, environment and authority gates for that specific capability.
+            Adapter/environment registration is not payment-route activation. A capability becomes executable only after its governed evidence, environment, adapter-runtime and authority gates pass.
           </p>
         </div>
         <div className="rounded-2xl border border-amber-900/60 bg-amber-950/20 p-5 text-slate-100">

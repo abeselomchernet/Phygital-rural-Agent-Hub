@@ -44,10 +44,19 @@ export const SyntheticAuditEventSchema = z
     outcome: z.enum(["ALLOW", "DENY", "SUCCESS", "FAIL", "PENDING"]),
     actor: z
       .object({
-        userId: z.enum(["synthetic-agent-01", "synthetic-supervisor-01", "synthetic-partner-admin-01", "mock-partner-provider", "system", "anonymous"]),
+        userId: z.enum([
+          "synthetic-agent-01",
+          "synthetic-supervisor-01",
+          "synthetic-operations-01",
+          "synthetic-partner-admin-01",
+          "mock-partner-provider",
+          "system",
+          "anonymous",
+        ]),
         role: z.enum([
           "AGENT",
           "SUPERVISOR",
+          "OPERATIONS",
           "PARTNER_ADMIN",
           "SYSTEM",
           "NONE",
