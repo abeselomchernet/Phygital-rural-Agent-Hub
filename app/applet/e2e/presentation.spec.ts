@@ -49,8 +49,12 @@ test("Farmer 360 is a read-only agent-assisted overview without customer transac
   page,
 }) => {
   const businessMutations: string[] = [];
+  const localAuthBootstraps: string[] = [];
   page.on("request", (r) => {
-    if (r.method() === "POST") businessMutations.push(r.url());
+    if (r.method() !== "POST") return;
+    const url = r.url();
+    if (url.endsWith("/api/demo/session/start")) localAuthBootstraps.push(url);
+    else businessMutations.push(url);
   });
   await page.goto("/farmer-360");
   await expect(
@@ -78,6 +82,9 @@ test("Farmer 360 is a read-only agent-assisted overview without customer transac
   await expect(page.getByTestId("partner-balance")).toHaveCount(0);
   await expect(page.getByText(/No real PII, Fayda lookup, bank balance/)).toBeVisible();
   expect(businessMutations).toEqual([]);
+  expect(localAuthBootstraps.length).toBeLessThanOrEqual(1);
+  for (const url of localAuthBootstraps)
+    expect(new URL(url).hostname).toBe("127.0.0.1");
 });
 test("readiness, transport and conversation concepts never invoke external operations", async ({
   page,
