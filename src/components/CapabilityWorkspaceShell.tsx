@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { Link } from "react-router-dom";
 import type { WorkspaceManifest } from "../domain/workspaceManifest";
 import {
@@ -10,13 +17,27 @@ import {
 import { PresentationShell } from "./ProductPresentation";
 import "./capability-workspace.css";
 
+const CapabilityWorkspaceContext = createContext<WorkspaceManifest | null>(null);
+
+export function useCapabilityWorkspace() {
+  return useContext(CapabilityWorkspaceContext);
+}
+
 const workspaceOptions: readonly {
   key: SyntheticWorkspaceKey;
   role: SyntheticWorkspaceRole;
   label: string;
 }[] = [
-  { key: "ALPHA_AGENT_ADAMA", role: "AGENT", label: "PartnerFI Alpha · Agent" },
-  { key: "BETA_AGENT_ADAMA", role: "AGENT", label: "PartnerFI Beta · Agent" },
+  {
+    key: "ALPHA_AGENT_ADAMA",
+    role: "AGENT",
+    label: "PartnerFI Alpha · Agent",
+  },
+  {
+    key: "BETA_AGENT_ADAMA",
+    role: "AGENT",
+    label: "PartnerFI Beta · Agent",
+  },
   {
     key: "ALPHA_SUPERVISOR_ADAMA",
     role: "SUPERVISOR",
@@ -52,7 +73,8 @@ function WorkspaceNavigation({ manifest }: { manifest: WorkspaceManifest }) {
           <span className="workspace-context-label">Active governed workspace</span>
           <strong>{manifest.partnerDisplayName}</strong>
           <span>
-            {manifest.role.replaceAll("_", " ")} · {manifest.regionId.replace("region_syn_", "")}
+            {manifest.role.replaceAll("_", " ")} ·{" "}
+            {manifest.regionId.replace("region_syn_", "")}
           </span>
         </div>
         <span className="workspace-state">Implemented · Synthetic data</span>
@@ -95,13 +117,18 @@ function WorkspaceServices({ manifest }: { manifest: WorkspaceManifest }) {
 function ProviderReadiness({ manifest }: { manifest: WorkspaceManifest }) {
   if (manifest.providerStates.length === 0) return null;
   return (
-    <section className="workspace-provider-grid" data-testid="workspace-provider-readiness">
+    <section
+      className="workspace-provider-grid"
+      data-testid="workspace-provider-readiness"
+    >
       {manifest.providerStates.map((provider) => (
         <article key={provider.providerKey} className="workspace-provider-card">
           <strong>{provider.providerKey.replaceAll("_", " ")}</strong>
           <span>{provider.displayState}</span>
           <small>
-            {provider.environment.toUpperCase()} · {provider.runtimeMode.replaceAll("_", " ")} · {provider.routeState.replaceAll("_", " ")}
+            {provider.environment.toUpperCase()} ·{" "}
+            {provider.runtimeMode.replaceAll("_", " ")} ·{" "}
+            {provider.routeState.replaceAll("_", " ")}
           </small>
         </article>
       ))}
@@ -112,7 +139,11 @@ function ProviderReadiness({ manifest }: { manifest: WorkspaceManifest }) {
   );
 }
 
-export default function CapabilityWorkspaceShell({ children }: { children: ReactNode }) {
+export default function CapabilityWorkspaceShell({
+  children,
+}: {
+  children: ReactNode;
+}) {
   const [manifest, setManifest] = useState<WorkspaceManifest | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [switching, setSwitching] = useState(false);
@@ -125,8 +156,14 @@ export default function CapabilityWorkspaceShell({ children }: { children: React
         const current = await loadCapabilityWorkspace();
         if (active) setManifest(current);
       } catch (cause) {
-        if (!(cause instanceof Error) || cause.message !== "WORKSPACE_SESSION_REQUIRED") {
-          if (active) setError("Workspace service unavailable; showing bounded presentation content.");
+        if (
+          !(cause instanceof Error) ||
+          cause.message !== "WORKSPACE_SESSION_REQUIRED"
+        ) {
+          if (active)
+            setError(
+              "Workspace service unavailable; showing bounded presentation content.",
+            );
           return;
         }
         try {
@@ -136,7 +173,10 @@ export default function CapabilityWorkspaceShell({ children }: { children: React
           });
           if (active) setManifest(agent);
         } catch {
-          if (active) setError("Workspace service unavailable; showing bounded presentation content.");
+          if (active)
+            setError(
+              "Workspace service unavailable; showing bounded presentation content.",
+            );
         }
       }
     };
@@ -158,7 +198,8 @@ export default function CapabilityWorkspaceShell({ children }: { children: React
       });
       setManifest(next);
     } catch (cause) {
-      const code = cause instanceof Error ? cause.message : "WORKSPACE_SESSION_UNAVAILABLE";
+      const code =
+        cause instanceof Error ? cause.message : "WORKSPACE_SESSION_UNAVAILABLE";
       setError(
         code === "PRIVILEGED_SYNTHETIC_ROLE_DISABLED"
           ? "This privileged synthetic role is locked in the current runtime. Enable it only in a controlled development/test environment."
@@ -170,50 +211,63 @@ export default function CapabilityWorkspaceShell({ children }: { children: React
   };
 
   return (
-    <div className="capability-workspace-runtime">
-      <PresentationShell>
-        <section className="workspace-switcher" aria-label="Synthetic partner workspace selector">
-          <label htmlFor="workspace-selector">Synthetic reference workspace</label>
-          <select
-            id="workspace-selector"
-            value={selectedKey}
-            disabled={switching}
-            onChange={(event) => void switchWorkspace(event.target.value as SyntheticWorkspaceKey)}
+    <CapabilityWorkspaceContext.Provider value={manifest}>
+      <div className="capability-workspace-runtime">
+        <PresentationShell>
+          <section
+            className="workspace-switcher"
+            aria-label="Synthetic partner workspace selector"
           >
-            {workspaceOptions.map((option) => (
-              <option key={option.key} value={option.key}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <span>
-            Same Enawuga UI; partner services and responsibilities come from governed policy.
-          </span>
-        </section>
-        {error && (
-          <p className="workspace-error" role="status">
-            {error}
-          </p>
-        )}
-        {manifest ? (
-          <>
-            <WorkspaceNavigation manifest={manifest} />
-            <WorkspaceServices manifest={manifest} />
-            <ProviderReadiness manifest={manifest} />
-          </>
-        ) : (
-          <nav className="workspace-nav workspace-nav-fallback" aria-label="Presentation navigation">
-            <div className="workspace-nav-group">
-              <span className="workspace-nav-label">Bounded presentation</span>
-              <Link to="/">Home</Link>
-              <Link to="/kiosk">Agent Terminal</Link>
-              <Link to="/onboard">Agent readiness</Link>
-              <Link to="/academy">Agent learning</Link>
-            </div>
-          </nav>
-        )}
-        {children}
-      </PresentationShell>
-    </div>
+            <label htmlFor="workspace-selector">
+              Synthetic reference workspace
+            </label>
+            <select
+              id="workspace-selector"
+              value={selectedKey}
+              disabled={switching}
+              onChange={(event) =>
+                void switchWorkspace(event.target.value as SyntheticWorkspaceKey)
+              }
+            >
+              {workspaceOptions.map((option) => (
+                <option key={option.key} value={option.key}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <span>
+              Same Enawuga UI; partner services and responsibilities come from
+              governed policy.
+            </span>
+          </section>
+          {error && (
+            <p className="workspace-error" role="status">
+              {error}
+            </p>
+          )}
+          {manifest ? (
+            <>
+              <WorkspaceNavigation manifest={manifest} />
+              <WorkspaceServices manifest={manifest} />
+              <ProviderReadiness manifest={manifest} />
+            </>
+          ) : (
+            <nav
+              className="workspace-nav workspace-nav-fallback"
+              aria-label="Presentation navigation"
+            >
+              <div className="workspace-nav-group">
+                <span className="workspace-nav-label">Bounded presentation</span>
+                <Link to="/">Home</Link>
+                <Link to="/kiosk">Agent Terminal</Link>
+                <Link to="/onboard">Agent readiness</Link>
+                <Link to="/academy">Agent learning</Link>
+              </div>
+            </nav>
+          )}
+          {children}
+        </PresentationShell>
+      </div>
+    </CapabilityWorkspaceContext.Provider>
   );
 }
