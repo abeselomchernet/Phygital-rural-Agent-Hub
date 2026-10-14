@@ -36,6 +36,51 @@ test("agents receive no Stage 3 network-operations scope", () => {
   assert.equal(summary.every((entry) => !entry.canReconcileProvider), true);
 });
 
+test("Operations is limited to partner/provider evidence and provider reconciliation", () => {
+  const providerObject = networkOperationsObjects.find(
+    (entry) => entry.kind === "PROVIDER_RECONCILIATION",
+  );
+  const partnerObject = networkOperationsObjects.find(
+    (entry) => entry.kind === "PARTNER_ECOSYSTEM",
+  );
+  const liquidityObject = networkOperationsObjects.find(
+    (entry) => entry.kind === "NETWORK_LIQUIDITY",
+  );
+  assert.ok(providerObject);
+  assert.ok(partnerObject);
+  assert.ok(liquidityObject);
+
+  const ids = defaultNetworkObjectIdsForRole("OPERATIONS");
+  assert.deepEqual(
+    new Set(ids),
+    new Set([partnerObject.objectId, providerObject.objectId]),
+  );
+  assert.equal(
+    isNetworkOperationsActionAuthorized(
+      "OPERATIONS",
+      providerObject.objectId,
+      "RECONCILE_PROVIDER",
+    ),
+    true,
+  );
+  assert.equal(
+    isNetworkOperationsActionAuthorized(
+      "OPERATIONS",
+      partnerObject.objectId,
+      "READ",
+    ),
+    true,
+  );
+  assert.equal(
+    isNetworkOperationsActionAuthorized(
+      "OPERATIONS",
+      liquidityObject.objectId,
+      "READ",
+    ),
+    false,
+  );
+});
+
 test("supervisor and partner admin can read bounded objects, but provider reconcile is limited to the provider object", () => {
   const providerObject = networkOperationsObjects.find(
     (entry) => entry.kind === "PROVIDER_RECONCILIATION",
@@ -88,7 +133,8 @@ test("server auth enforces both role policy and explicit object scope", () => {
   );
   auth.requireNetworkObject(narrowedSupervisor, liquidityObject.objectId, "READ");
   expectAuthError(
-    () => auth.requireNetworkObject(narrowedSupervisor, providerObject.objectId, "READ"),
+    () =>
+      auth.requireNetworkObject(narrowedSupervisor, providerObject.objectId, "READ"),
     "OBJECT_ACCESS_DENIED",
     403,
   );
@@ -99,6 +145,19 @@ test("server auth enforces both role policy and explicit object scope", () => {
         liquidityObject.objectId,
         "RECONCILE_PROVIDER",
       ),
+    "OBJECT_ACCESS_DENIED",
+    403,
+  );
+
+  const operations = auth.createSession("OPERATIONS", ["customer-a"]);
+  auth.requireNetworkObject(operations, providerObject.objectId, "READ");
+  auth.requireNetworkObject(
+    operations,
+    providerObject.objectId,
+    "RECONCILE_PROVIDER",
+  );
+  expectAuthError(
+    () => auth.requireNetworkObject(operations, liquidityObject.objectId, "READ"),
     "OBJECT_ACCESS_DENIED",
     403,
   );
