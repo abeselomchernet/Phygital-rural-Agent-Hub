@@ -1,32 +1,49 @@
 # Governance Evidence Register
 
-**Established:** 2026-10-13  
-**Scope:** Forward stage/provider/governance evidence for Enawuga / Phygital Rural Agent Hub.
+**Updated:** 2026-10-14  
+**Scope:** Forward stage/provider/platform governance evidence for Enawuga / Phygital Rural Agent Hub.
 
-This register records evidence used for internal engineering and stage-gate decisions. An `Accepted` decision here means accepted as evidence for the stated bounded engineering purpose. It does **not** mean regulatory approval, provider endorsement, PartnerFI authorization, production certification or permission to move real funds.
+An `Accepted` decision here means accepted as evidence for the stated bounded engineering purpose. It does **not** mean regulatory approval, provider endorsement, PartnerFI authorization, production certification or permission to move real funds.
 
-Historical validation documents remain immutable evidence of their original scope and are not rewritten by this register.
+## Evidence entries
 
-## Entries
+| Evidence ID | Category | Artifact / version | Decision | Conditions / interpretation | Related gate | Reference |
+|---|---|---|---|---|---|---|
+| EV-2026-10-12-ARIFPAY-S2 | Provider | ArifPay sandbox C2B integration | Accepted | Bounded sandbox gateway orchestration/reconciliation only. Provider success is not PartnerFI settlement. | Stage 2 exit | PR #5; merge `023a0919a44a28241711331a2dfc115e530d2294` |
+| EV-2026-10-13-TELEBIRR-FOUNDATION | Provider | Direct Telebirr TestBed T1-T10 foundation | Conditional | `REGISTERED_TESTBED` + `FOUNDATION_ONLY`; direct payment route remains unmounted pending TLS/provider-contract/payment-evidence/certification/activation gates. | Provider activation | PR #6; merge `75abae49b323d48ec9574dc086c65814726e3012`; PR #30 state model |
+| EV-2026-10-13-MPESA-TOKEN | Provider | M-PESA Ethiopia sandbox/token foundation | Accepted | `REGISTERED_SANDBOX` + `FOUNDATION_ONLY`; token/auth contract verified. Payment/status/callback routes remain unmounted. | Provider activation | PR #7; merge `0028b079c1c641535e00db78b58f29bb442136ae`; PR #30 state model |
+| EV-2026-10-13-STAGE3-GATE | Governance | Stage 2→3 transition | Accepted | Synthetic partner-platform/network-liquidity scope only. | Stage 3 entry | PR #9 and governance pack |
+| EV-2026-10-14-PARTNER-CONTRACT | Platform | Partner Capability Contract | Accepted | Strict machine-readable organization/capability/role/region/object/route/evidence policy. Does not create external authority. | Stage 3 exit | PR #20 + runtime PR #27 |
+| EV-2026-10-14-REFERENCE-PARTNERS | Platform | Heterogeneous Synthetic Reference Partners | Accepted | Multiple PartnerFI/provider classes with deliberately different capabilities; no real partnership claim. | Stage 3 exit | PR #21 + runtime PR #28 |
+| EV-2026-10-14-SERVICE-CATALOG | Platform | Partner Service Catalog | Accepted | Partner-owned services map to reusable workflows/capabilities/routes; publication alone does not authorize execution. | Stage 3 exit | PR #22 + runtime PR #29 |
+| EV-2026-10-14-ADAPTER-REGISTRY | Platform | Adapter Registry + Route Resolver | Accepted | Service/capability/route/adapter separation; provider foundations separated from executable routes; pinned route after submission/ambiguity. | Stage 3 exit | PR #24 + runtime PR #30 |
+| EV-2026-10-14-CAPABILITY-UI | Product | Capability-driven role/partner UI | Accepted | Server-resolved Workspace Manifest; Alpha/Beta Agents differ via policy using shared UI; Operations bounded separately; UI hiding is not authorization. | Stage 3 exit | PR #31 + runtime PR #32; exact-head run #336 `38552959492` |
+| EV-2026-10-14-ONBOARDING | Platform | Partner Onboarding state machine | Accepted | Configuration-only/new-adapter/new-domain paths separated; organization/capability lifecycle separated; Stage 3 blocks staging/live transitions. | Stage 3 exit | PR #33 + runtime PR #34; exact-head run #340 `38554247025` |
+| EV-2026-10-14-CERTIFICATION | Platform | Contract Certification runtime | Accepted | Deterministic L0/L1/L2 policy runner; foundation-only cannot certify executable capability scope; PASS carries `authorityGranted=false`. | Stage 3 exit | PR #35 + runtime PR #36; exact-head run #344 `38555417012` |
+| EV-2026-10-14-GAMMA-DOD | Platform acceptance | Synthetic PartnerFI Gamma configuration-only proof | Accepted | New PartnerFI contract/catalog/membership/route + existing adapter + existing workspace/certification runtime; no Gamma-specific core/UI fork. Synthetic architecture proof only. | Stage 3 exit | PR #37 exact head `7d5d9a597a986e51b8c3fc76477a4fe6279bf2c8`; run #346 `38556120717`; merge `2b19cf394c931feac5fa439661998986e526270b` |
+| EV-2026-10-14-MAIN-347 | Repository validation | Post-PartnerFI-Gamma `main` validation | Accepted | Full synthetic CI passed; does not establish production readiness. | Stage 3 exit | `main` `2b19cf394c931feac5fa439661998986e526270b`; run #347 `38559099782` |
 
-| Evidence ID | Category | Artifact / version | Owner | Review date | Decision | Conditions / interpretation | Related capability | Related stage gate | Storage / reference |
-|---|---|---|---|---|---|---|---|---|---|
-| EV-2026-10-12-ARIFPAY-S2 | Provider | Stage 2 ArifPay sandbox C2B integration | Wishland / Abeselom Girum Chernet | 2026-10-13 | Accepted | Accepted only for bounded sandbox gateway orchestration/reconciliation. Gateway success is evidence, never PartnerFI settlement. No production credentials, real PII or real funds. | `arifpay_gateway` | Stage 2 exit | PR #5; merge `023a0919a44a28241711331a2dfc115e530d2294`; sandbox network evidence recorded in PR |
-| EV-2026-10-13-TELEBIRR-FOUNDATION | Provider | Direct Telebirr TestBed T1-T10 inactive foundation | Wishland / Abeselom Girum Chernet | 2026-10-13 | Conditional | Accepted as an inactive/read-only foundation only. Direct initiation remains blocked by TLS trust, product scope, fresh credential and protocol/authenticity gates. No TLS bypass permitted. | `telebirr_direct` | Provider-specific future activation gate | PR #6; merge `75abae49b323d48ec9574dc086c65814726e3012` |
-| EV-2026-10-13-MPESA-TOKEN | Provider | Safaricom Ethiopia M-PESA sandbox token contract | Wishland / Abeselom Girum Chernet | 2026-10-13 | Accepted | Runtime token contract verified from an external local environment with sanitized output: provider `MPESA_ETHIOPIA_DIRECT`, sandbox, `Bearer`, expiry `3599`. This does not verify or authorize payment initiation, callbacks, settlement, B2C, status, reversal or balance transport. | `mpesa_ethiopia_direct` | Provider-specific future activation gate | PR #7; merge `0028b079c1c641535e00db78b58f29bb442136ae`; `docs/MPESA_ETHIOPIA_SANDBOX.md` |
-| EV-2026-10-13-MAIN-245 | Other | Canonical post-PR #7 `main` validation | GitHub Actions / Wishland | 2026-10-13 | Accepted | Synthetic validation only. Production dependency audit, lint, tests, build, Docker and Chromium E2E passed. Does not prove production readiness or external authorization. | repository baseline | Stage 2-to-3 transition | `Synthetic prototype validation` run #245 / `38426151886`; baseline `0028b079c1c641535e00db78b58f29bb442136ae` |
-| EV-2026-10-13-STAGE3-GATE | Other | Stage 2-to-3 governance transition | Wishland / Abeselom Girum Chernet | 2026-10-13 | Accepted | Stage 3 is synthetic partner-ecosystem/network-liquidity architecture only. Real PII, funds, cash custody, production credentials, direct-provider activation, PartnerFI posting and regulated operation remain locked. NLC/LCI must not be represented as regulatory LCR. | `partner_ecosystem_core`, `network_liquidity_coverage`, `cash_fleet_planning`, `fmcg_commerce` | Stage 3 entry | `PROGRAM_STATUS.yaml`, `CAPABILITY_REGISTRY.yaml`, `CURRENT_BASELINE.md`, `STAGE_GATE_ROADMAP.md` |
+## Stage 3 exit decision
 
-## Open evidence requirements for Stage 3 exit
+**PASS for the bounded synthetic scope.** See `STAGE_3_EXIT_GATE_REVIEW.md`.
 
-Stage 3 exit requires, at minimum:
+The evidence supports entry into Stage 4 infrastructure/evidence work. It does not unlock real PII, funds, cash movement, production credentials, provider-production routes, PartnerFI posting/settlement, live identity, regulated pilot or production mode.
 
-- synthetic partner organization/capability-switch implementation evidence;
-- explicit route-provenance tests and claims review;
-- NLC/LCI metric definition, horizon behavior and boundary tests;
-- synthetic cash-fleet and liquidity-match simulation evidence with no live custody/movement;
-- FMCG data-scope/minimization evidence;
-- role/object authorization tests for new network-operations surfaces;
-- Operations/Supervisor/Partner Ecosystem UX validation;
-- security/claims review confirming that no code/configuration is represented as financial authorization;
-- a green exact-head validation and an explicit Stage 3 gate review before Stage 4.
+## Open evidence requirements for Stage 4 exit
+
+Stage 4 must produce, at minimum:
+
+- physical compute/ingress location evidence for the chosen Ethiopia-resident non-production topology;
+- database primary/replica and backup location evidence;
+- restore rehearsal evidence;
+- audit-store controls;
+- encryption/key-custody design and implementation evidence;
+- logging/monitoring data-path evidence;
+- IAM/MFA/break-glass/access-review evidence;
+- incident-response evidence;
+- retention/deletion evidence;
+- subprocessor/support-access evidence;
+- DR/RPO/RTO evidence;
+- operational ownership/RACI;
+- exact-head and post-merge validation;
+- explicit Stage 4 exit gate review before any Stage 5 external partner staging.
