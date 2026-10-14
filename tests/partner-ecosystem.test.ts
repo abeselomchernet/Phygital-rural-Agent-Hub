@@ -16,15 +16,22 @@ test("synthetic partner organizations satisfy the governed Stage 3 schema", () =
     assert.match(partner.partnerOrgId, /^synthetic-/);
     assert.equal(partner.approvalEffectiveAt, null);
     assert.equal(partner.approvalExpiresAt, null);
-    assert.equal(partner.operationalContactRef, "NOT_STORED_IN_SYNTHETIC_FIXTURE");
-    assert.equal(partner.incidentContactRef, "NOT_STORED_IN_SYNTHETIC_FIXTURE");
+    assert.equal(
+      partner.operationalContactRef,
+      "NOT_STORED_IN_SYNTHETIC_FIXTURE",
+    );
+    assert.equal(
+      partner.incidentContactRef,
+      "NOT_STORED_IN_SYNTHETIC_FIXTURE",
+    );
   }
 });
 
-test("capability switches remain evidence-gated rather than implied by code presence", () => {
+test("capability states remain evidence-gated rather than implied by code presence", () => {
   const summary = partnerEcosystemSummary();
   assert.equal(summary.partnerOrganizations, 8);
   assert.equal(summary.sandboxBounded, 1);
+  assert.equal(summary.foundationOnly, 2);
   assert.equal(summary.simulationOnly, 1);
   assert.ok(summary.disabled > 0);
 
@@ -42,12 +49,14 @@ test("capability switches remain evidence-gated rather than implied by code pres
   );
   assert.ok(arifPay);
   assert.equal(
-    arifPay.capabilitySwitches.find((entry) => entry.capability === "ARIFPAY_C2B")?.state,
+    arifPay.capabilitySwitches.find(
+      (entry) => entry.capability === "ARIFPAY_C2B",
+    )?.state,
     "SANDBOX_BOUNDED",
   );
 });
 
-test("direct Telebirr and M-PESA payment initiation remain disabled", () => {
+test("direct Telebirr and M-PESA foundations are registered while payment routes remain activation-gated", () => {
   for (const [partnerOrgId, capability] of [
     ["synthetic-telebirr-direct", "TELEBIRR_DIRECT_C2B"],
     ["synthetic-mpesa-ethiopia", "MPESA_ETHIOPIA_DIRECT_C2B"],
@@ -56,10 +65,11 @@ test("direct Telebirr and M-PESA payment initiation remain disabled", () => {
       (entry) => entry.partnerOrgId === partnerOrgId,
     );
     assert.ok(partner);
-    assert.equal(
-      partner.capabilitySwitches.find((entry) => entry.capability === capability)?.state,
-      "DISABLED",
+    const state = partner.capabilitySwitches.find(
+      (entry) => entry.capability === capability,
     );
+    assert.equal(state?.state, "FOUNDATION_ONLY");
+    assert.match(state?.reason ?? "", /route.*gated|activation-gated/i);
   }
 });
 
@@ -69,24 +79,33 @@ test("cash fleet is planning-only and cannot imply dispatch or custody authority
   );
   assert.ok(fleet);
   assert.equal(
-    fleet.capabilitySwitches.find((entry) => entry.capability === "FLEET_ROUTE_PLANNING")?.state,
+    fleet.capabilitySwitches.find(
+      (entry) => entry.capability === "FLEET_ROUTE_PLANNING",
+    )?.state,
     "SIMULATION_ONLY",
   );
   assert.equal(
-    fleet.capabilitySwitches.find((entry) => entry.capability === "FLEET_DISPATCH")?.state,
+    fleet.capabilitySwitches.find(
+      (entry) => entry.capability === "FLEET_DISPATCH",
+    )?.state,
     "DISABLED",
   );
   assert.equal(
-    fleet.capabilitySwitches.find((entry) => entry.capability === "FLEET_CASH_HANDOVER")?.state,
+    fleet.capabilitySwitches.find(
+      (entry) => entry.capability === "FLEET_CASH_HANDOVER",
+    )?.state,
     "DISABLED",
   );
 });
 
-test("route provenance keeps direct provider routes distinct and carries authority boundaries", () => {
+test("route provenance keeps direct provider routes distinct and carries foundation boundaries", () => {
   assert.equal(syntheticRouteProvenance.length, 3);
   for (const route of syntheticRouteProvenance) {
     assert.equal(RouteProvenanceSchema.safeParse(route).success, true);
-    assert.match(routeProvenanceLabel(route), / -> .* -> .* -> Enawuga transaction$/);
+    assert.match(
+      routeProvenanceLabel(route),
+      / -> .* -> .* -> Enawuga transaction$/,
+    );
     assert.ok(route.authorityBoundary.length > 0);
   }
 
@@ -99,6 +118,8 @@ test("route provenance keeps direct provider routes distinct and carries authori
   assert.ok(telebirr);
   assert.ok(mpesa);
   assert.notEqual(telebirr.integrationRoute, mpesa.integrationRoute);
-  assert.equal(telebirr.state, "DISABLED");
-  assert.equal(mpesa.state, "DISABLED");
+  assert.equal(telebirr.state, "FOUNDATION_ONLY");
+  assert.equal(mpesa.state, "FOUNDATION_ONLY");
+  assert.match(telebirr.authorityBoundary, /route remains unmounted/i);
+  assert.match(mpesa.authorityBoundary, /routes remain unmounted/i);
 });
