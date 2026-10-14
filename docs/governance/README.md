@@ -50,6 +50,7 @@ When sources conflict, use this order:
 | `ARCHITECTURE_INTEGRATION_STANDARD.md` | Adapter, authority, callback, idempotency and route rules |
 | `LIQUIDITY_FLEET_FMCG_STANDARD.md` | NLC/LCI, Cash Fleet and FMCG design boundaries |
 | `SECURITY_DATA_RESIDENCY_CONTROL_STANDARD.md` | Security, residency, keys, audit and recovery controls |
+| `STAGE_4_ET_STAGING_TOPOLOGY_CONTRACT.md` | Stage 4 logical topology, required residency-evidence components and fail-closed evidence semantics |
 | `VALIDATION_EVIDENCE_STANDARD.md` | Required validation/evidence at every gate |
 | `ENGINEERING_EXECUTION_RUNBOOK.md` | Resume/branch/validate/handoff process |
 | `DECISION_EVIDENCE_TEMPLATES.md` | ADR/evidence/risk/gate templates |
