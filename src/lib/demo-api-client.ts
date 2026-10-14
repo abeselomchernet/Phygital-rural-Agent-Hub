@@ -1,8 +1,15 @@
-type SyntheticRole =
+export type SyntheticRole =
   | "AGENT"
   | "SUPERVISOR"
   | "OPERATIONS"
   | "PARTNER_ADMIN";
+
+export type SyntheticWorkspaceKey =
+  | "ALPHA_AGENT_ADAMA"
+  | "BETA_AGENT_ADAMA"
+  | "ALPHA_SUPERVISOR_ADAMA"
+  | "ALPHA_OPERATIONS_ADAMA"
+  | "ALPHA_PARTNER_ADMIN_ADAMA";
 
 type SessionView = {
   csrfToken: string;
@@ -13,6 +20,9 @@ type SessionView = {
 
 let csrfToken: string | null = null;
 let cachedRole: SyntheticRole | null = null;
+let sessionStartInFlight:
+  | { key: string; promise: Promise<SessionView> }
+  | null = null;
 
 async function parseJson(response: Response) {
   const type = response.headers.get("content-type") ?? "";
@@ -38,31 +48,54 @@ async function currentSession() {
 async function getOrStartAgentSession() {
   const existing = await currentSession();
   if (existing?.role === "AGENT") return existing;
-  return startDemoSession("AGENT");
+  return startDemoSession("AGENT", "ALPHA_AGENT_ADAMA");
 }
 
 /**
- * Explicit local synthetic role switch. Privileged roles are still rejected by
- * the server unless the runtime was intentionally started with privileged
- * synthetic roles enabled. No production identity/SSO semantics are implied.
+ * Explicit local synthetic role/workspace start. All callers share this one
+ * session bootstrap so a workspace boot cannot replace the cookie without also
+ * refreshing the CSRF cache used by business actions.
+ *
+ * Privileged roles are still rejected by the server unless the runtime was
+ * intentionally started with privileged synthetic roles enabled. No production
+ * identity/SSO semantics are implied.
  */
-export async function startDemoSession(role: SyntheticRole) {
-  const started = await fetch("/api/demo/session/start", {
-    method: "POST",
-    credentials: "same-origin",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ role }),
-  });
-  if (!started.ok) {
-    let code = "DEMO_SESSION_UNAVAILABLE";
-    try {
-      code = (await parseJson(started)).error ?? code;
-    } catch {
-      // Keep the generic local-demo error when the response is not JSON.
+export async function startDemoSession(
+  role: SyntheticRole,
+  workspaceKey?: SyntheticWorkspaceKey,
+) {
+  const requestKey = `${role}:${workspaceKey ?? "DEFAULT"}`;
+  if (sessionStartInFlight?.key === requestKey)
+    return sessionStartInFlight.promise;
+
+  const promise = (async () => {
+    const started = await fetch("/api/demo/session/start", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        role,
+        ...(workspaceKey ? { workspaceKey } : {}),
+      }),
+    });
+    if (!started.ok) {
+      let code = "DEMO_SESSION_UNAVAILABLE";
+      try {
+        code = (await parseJson(started)).error ?? code;
+      } catch {
+        // Keep the generic local-demo error when the response is not JSON.
+      }
+      throw new Error(code);
     }
-    throw new Error(code);
+    return remember((await parseJson(started)) as SessionView);
+  })();
+
+  sessionStartInFlight = { key: requestKey, promise };
+  try {
+    return await promise;
+  } finally {
+    if (sessionStartInFlight?.promise === promise) sessionStartInFlight = null;
   }
-  return remember((await parseJson(started)) as SessionView);
 }
 
 export async function demoApi(path: string, body?: unknown) {
@@ -80,7 +113,8 @@ export async function demoApiAs(
   path: string,
   body?: unknown,
 ) {
-  if (!csrfToken || cachedRole !== role) throw new Error("DEMO_ROLE_SESSION_REQUIRED");
+  if (!csrfToken || cachedRole !== role)
+    throw new Error("DEMO_ROLE_SESSION_REQUIRED");
   return sendDemoApi(path, body, role);
 }
 
@@ -107,7 +141,8 @@ async function sendDemoApi(
   if (response.status === 401) {
     csrfToken = null;
     cachedRole = null;
-    if (expectedRole !== "AGENT") throw new Error("DEMO_ROLE_SESSION_REQUIRED");
+    if (expectedRole !== "AGENT")
+      throw new Error("DEMO_ROLE_SESSION_REQUIRED");
     await getOrStartAgentSession();
     response = await send();
   }
@@ -126,4 +161,5 @@ async function sendDemoApi(
 export function clearCachedDemoSession() {
   csrfToken = null;
   cachedRole = null;
+  sessionStartInFlight = null;
 }
