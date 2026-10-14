@@ -148,6 +148,13 @@ export default function CapabilityWorkspaceShell({
   const [error, setError] = useState<string | null>(null);
   const [switching, setSwitching] = useState(false);
   const selectedKey = useMemo(() => defaultKeyFor(manifest), [manifest]);
+  const visibleWorkspaceOptions = useMemo(
+    () =>
+      workspaceOptions.filter(
+        (option) => option.role === (manifest?.role ?? "AGENT"),
+      ),
+    [manifest?.role],
+  );
 
   useEffect(() => {
     let active = true;
@@ -187,8 +194,11 @@ export default function CapabilityWorkspaceShell({
   }, []);
 
   const switchWorkspace = async (key: SyntheticWorkspaceKey) => {
-    const option = workspaceOptions.find((entry) => entry.key === key);
-    if (!option) return;
+    const option = visibleWorkspaceOptions.find((entry) => entry.key === key);
+    if (!option) {
+      setError("Workspace switch was rejected by the client role boundary.");
+      return;
+    }
     setSwitching(true);
     setError(null);
     try {
@@ -224,20 +234,20 @@ export default function CapabilityWorkspaceShell({
             <select
               id="workspace-selector"
               value={selectedKey}
-              disabled={switching}
+              disabled={switching || visibleWorkspaceOptions.length <= 1}
               onChange={(event) =>
                 void switchWorkspace(event.target.value as SyntheticWorkspaceKey)
               }
             >
-              {workspaceOptions.map((option) => (
+              {visibleWorkspaceOptions.map((option) => (
                 <option key={option.key} value={option.key}>
                   {option.label}
                 </option>
               ))}
             </select>
             <span>
-              Same Enawuga UI; partner services and responsibilities come from
-              governed policy.
+              Same Enawuga UI; only workspaces valid for the authenticated role are
+              offered, while partner services come from governed policy.
             </span>
           </section>
           {error && (
