@@ -59,6 +59,8 @@ When sources conflict, use this order:
 | `STAGE_3_EXIT_GATE_REVIEW.md` | Formal Stage 3 exit decision and retained locks |
 | `PROGRAM_STATUS.yaml` | Machine-readable current stage and next actions |
 | `CAPABILITY_REGISTRY.yaml` | Machine-readable capability maturity and unlock conditions |
+| `ENAWUGA_MARKET_DESIGN_PRODUCT_BLUEPRINT.md` | Research-to-product bridge for Hub domain, market-design capabilities, pilot evidence engine, corridor planning and future engineering sequence |
+| `ENAWUGA_FUTURE_PRODUCT_BACKLOG.yaml` | Machine-readable future backlog, paper-hypothesis quarantine, pilot gates and stage-safe implementation map |
 
 Partner-platform architecture documents under `docs/platform/` are normative implementation companions for Partner Capability Contract, Synthetic Reference Partners, Partner Service Catalog, Adapter Registry/Route Resolver, capability-driven UI, Partner Onboarding and Contract Certification.
 
@@ -68,9 +70,10 @@ Partner-platform architecture documents under `docs/platform/` are normative imp
 2. Verify current `main` SHA and post-merge CI against the recorded baseline.
 3. Read `CURRENT_BASELINE.md`, the active stage in `STAGE_GATE_ROADMAP.md`, and `CAPABILITY_REGISTRY.yaml`.
 4. Review the relevant platform/governance architecture before changing code.
-5. Preserve partner-platform abstractions; do not add institution-name branches for already-supported workflow types.
-6. Work on a dedicated branch and validate exact head before merge.
-7. Update evidence/register/release records for stage transitions or externally meaningful capability-state changes.
+5. For future Hub, corridor, economics or pilot-evidence development, read `ENAWUGA_MARKET_DESIGN_PRODUCT_BLUEPRINT.md` and `ENAWUGA_FUTURE_PRODUCT_BACKLOG.yaml`; treat paper-derived numbers as hypotheses/targets, never current product evidence.
+6. Preserve partner-platform abstractions; do not add institution-name branches for already-supported workflow types.
+7. Work on a dedicated branch and validate exact head before merge.
+8. Update evidence/register/release records for stage transitions or externally meaningful capability-state changes.
 
 ## Current program statement
 

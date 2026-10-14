@@ -1,0 +1,375 @@
+version: "0.1"
+as_of: "2026-10-14"
+status: "FUTURE_PRODUCT_BACKLOG_NOT_CURRENT_CAPABILITY_EVIDENCE"
+authority:
+  implementation_source: "canonical repository main + current governance pack"
+  research_inputs:
+    - "Enawuga market.pdf"
+    - "enawuga economics.pdf"
+  rule: "Research hypotheses never override current implementation truth or stage locks."
+
+program_context:
+  current_stage: "STAGE_4_GOVERNED_ET_RESIDENT_STAGING_FOUNDATION"
+  data_mode: "SYNTHETIC_ONLY"
+  live_financial_authority: false
+  real_customer_pii: false
+  real_funds: false
+  real_cash_movement: false
+  direct_telebirr_payment: false
+  mpesa_payment: false
+  live_partnerfi_posting: false
+  live_identity_provider: false
+
+architecture_invariants:
+  - "Wishland is technology/orchestration; licensed partners retain regulated authority."
+  - "SERVICE != CAPABILITY != ROUTE != ADAPTER"
+  - "Provider success != PartnerFI settlement"
+  - "Commercial tier != capability authority"
+  - "UI visibility != authorization"
+  - "Model output != observed outcome"
+  - "Scale decision requires explicit governance action"
+
+new_domain_entities:
+  - id: "hub"
+    priority: "P0_FUTURE"
+    status: "PROPOSED_PRODUCT_REQUIREMENT"
+    purpose: "First-class rural service-point aggregate"
+    stage_4_allowed: true
+    synthetic_only_now: true
+    minimum_children:
+      - "hub_operator"
+      - "hub_device"
+      - "hub_service_offering"
+      - "hub_partner_membership"
+      - "hub_liquidity_snapshot"
+      - "hub_revenue_attribution"
+      - "hub_incident"
+      - "evidence_references"
+
+  - id: "corridor"
+    priority: "P1_FUTURE"
+    status: "PROPOSED_PRODUCT_REQUIREMENT"
+    purpose: "Bounded geographic planning and expansion evidence"
+    stage_4_allowed: true
+    synthetic_only_now: true
+
+  - id: "pilot_program"
+    priority: "P0_FUTURE"
+    status: "PROPOSED_PRODUCT_REQUIREMENT"
+    purpose: "Container for pilot scope, gates, observations, evidence and decisions"
+    stage_4_allowed: true
+    synthetic_only_now: true
+
+  - id: "commercial_tier"
+    priority: "P2_FUTURE"
+    status: "PROPOSED_PRODUCT_REQUIREMENT"
+    purpose: "Pricing/support/reporting entitlement only"
+    authority_note: "Must never grant regulated capability"
+
+future_epics:
+  - id: "E1_HUB_DOMAIN_CORE"
+    priority: 1
+    status: "PROPOSED"
+    stage_4_safe: true
+    deliverables:
+      - "Hub aggregate and lifecycle"
+      - "HubOperator"
+      - "HubDevice"
+      - "HubPartnerMembership"
+      - "organization/object authorization"
+      - "synthetic fixtures"
+    acceptance:
+      - "server-enforced scope"
+      - "no live authority"
+      - "no partner-specific shared-core branch"
+
+  - id: "E2_HUB_SERVICE_COMPOSITION"
+    priority: 2
+    status: "PROPOSED"
+    stage_4_safe: true
+    dependencies: ["E1_HUB_DOMAIN_CORE"]
+    deliverables:
+      - "HubServiceOffering"
+      - "Service -> Capability -> Route -> Adapter -> Partner -> Environment binding"
+      - "capability-driven Hub workspace manifest"
+    acceptance:
+      - "service tile cannot exist without governed capability/route provenance"
+      - "configuration-only addition for already-supported workflow types"
+
+  - id: "E3_HUB_LIQUIDITY_INTELLIGENCE"
+    priority: 3
+    status: "PROPOSED"
+    stage_4_safe: true
+    dependencies: ["E1_HUB_DOMAIN_CORE"]
+    current_reuse:
+      - "network_liquidity_coverage"
+      - "cash_fleet_planning"
+    deliverables:
+      - "2h/4h/8h/EOD NLC/LCI"
+      - "freshness/confidence"
+      - "shortage/surplus classification"
+      - "synthetic replenishment recommendations"
+      - "eligible fleet/FMCG match simulation"
+    authority_note: "Operational decision support only; not prudential LCR and not cash dispatch authority."
+
+  - id: "E4_OFFLINE_OPERATIONS_EVIDENCE"
+    priority: 4
+    status: "PROPOSED"
+    stage_4_safe: true
+    current_reuse:
+      - "GhostSync"
+      - "local durability"
+      - "idempotency"
+      - "reconciliation"
+    deliverables:
+      - "queue aging"
+      - "sync receipt evidence"
+      - "conflict visibility"
+      - "retry/idempotency evidence"
+      - "transport vs authority state separation"
+
+  - id: "E5_HUB_ECONOMICS"
+    priority: 5
+    status: "PROPOSED"
+    stage_4_safe: true
+    dependencies: ["E1_HUB_DOMAIN_CORE", "E2_HUB_SERVICE_COMPOSITION"]
+    deliverables:
+      - "HubRevenueAttribution"
+      - "fixed/variable cost classification"
+      - "shareable/non-shareable cost classification"
+      - "model vs observed variance"
+      - "evidence class per value"
+    evidence_labels:
+      - "MODEL_ASSUMPTION"
+      - "MODEL_OUTPUT"
+      - "OBSERVED"
+      - "EXTERNALLY_VERIFIED"
+
+  - id: "E6_PILOT_EVIDENCE_ENGINE"
+    priority: 6
+    status: "PROPOSED"
+    stage_4_safe: true
+    deliverables:
+      - "PilotGateDefinition"
+      - "PilotTarget"
+      - "MetricObservation"
+      - "EvidenceArtifactReference"
+      - "GateReview"
+      - "GateDecision"
+      - "ScaleDecision"
+    rule: "Numeric threshold never self-authorizes scale."
+
+  - id: "E7_CORRIDOR_PLANNING"
+    priority: 7
+    status: "PROPOSED"
+    stage_4_safe: true
+    dependencies: ["E1_HUB_DOMAIN_CORE"]
+    deliverables:
+      - "candidate Hub map/model"
+      - "connectivity assumptions"
+      - "partner demand inputs"
+      - "logistics/liquidity feasibility"
+      - "evidence completeness"
+      - "bounded expansion recommendation"
+    authority_note: "Recommendation only; no geographic authorization."
+
+  - id: "E8_OPERATOR_DEVICE_READINESS"
+    priority: 8
+    status: "PROPOSED"
+    stage_4_safe: true
+    dependencies: ["E1_HUB_DOMAIN_CORE"]
+    deliverables:
+      - "training assignment/completion"
+      - "certification expiry"
+      - "device readiness"
+      - "support/escalation"
+      - "suspension and return-to-service"
+
+  - id: "E9_NEUTRALITY_GOVERNANCE"
+    priority: 9
+    status: "PROPOSED"
+    stage_4_safe: true
+    deliverables:
+      - "versioned scheme rules"
+      - "route-equivalence checks"
+      - "change approval history"
+      - "conflict-of-interest flags"
+      - "governance evidence references"
+
+  - id: "E10_INCLUSION_ANALYTICS"
+    priority: 10
+    status: "PROPOSED_REQUIRES_DATA_PURPOSE_REVIEW"
+    stage_4_safe: "synthetic_only"
+    unlock_requires:
+      - "approved purpose"
+      - "approved data fields"
+      - "privacy/legal review"
+      - "partner policy"
+    rule: "Aggregate by default; do not collect sensitive data solely for dashboards."
+
+  - id: "E11_PARTNER_COMMERCIAL_TIERS"
+    priority: 11
+    status: "PROPOSED"
+    stage_4_safe: true
+    deliverables:
+      - "pricing/support/reporting tier metadata"
+      - "separate commercial and authority models"
+    rule: "Higher tier cannot unlock capability."
+
+  - id: "E12_ADVISORY_SAFETY"
+    priority: 12
+    status: "FUTURE_GATED"
+    stage_4_safe: "design_and_synthetic_evaluation_only"
+    unlock_requires:
+      - "approved service owner"
+      - "approved knowledge corpus"
+      - "evaluation evidence"
+      - "human escalation"
+      - "later-stage authorization"
+
+pilot_gates:
+  - id: "P1_HUB_PROFITABILITY"
+    source: "Enawuga market design paper"
+    evidence_class: "PAPER_HYPOTHESIS"
+    paper_target: "> USD 150 average monthly net profit per Hub"
+    target_configurable: true
+    current_claim_allowed: false
+    metric_requirements:
+      - "revenue source provenance"
+      - "cost source provenance"
+      - "currency/period"
+      - "model vs observed label"
+
+  - id: "P2_HUB_RETENTION"
+    source: "Enawuga market design paper"
+    evidence_class: "PAPER_HYPOTHESIS"
+    paper_target: "< 10% Hub churn over pilot"
+    target_configurable: true
+    current_claim_allowed: false
+    metric_requirements:
+      - "explicit denominator"
+      - "measurement window"
+      - "reason codes"
+      - "exit vs suspension vs failed onboarding distinction"
+
+  - id: "P3_REVENUE_DIVERSIFICATION"
+    source: "Enawuga market design paper"
+    evidence_class: "PAPER_HYPOTHESIS"
+    paper_target: "> 40% revenue from value-added services excluding basic cash-in/cash-out"
+    target_configurable: true
+    current_claim_allowed: false
+    metric_requirements:
+      - "included/excluded category definition"
+      - "service/partner attribution"
+      - "model vs observed label"
+
+  - id: "P4_LIQUIDITY_SERVICE_CONTINUITY"
+    source: "Enawuga market design paper"
+    evidence_class: "PAPER_HYPOTHESIS"
+    paper_target: "99.9% continuity; no sustained shortfall > 30 minutes"
+    target_configurable: true
+    current_claim_allowed: false
+    terminology: "Hub NLC/LCI or service continuity; not prudential LCR"
+    metric_requirements:
+      - "forecast horizon"
+      - "shortfall definition"
+      - "freshness/confidence"
+      - "duration/severity"
+      - "customer impact"
+
+  - id: "P5_VALUE_ADDED_SERVICE_UPTAKE"
+    source: "Enawuga market design paper"
+    evidence_class: "PAPER_HYPOTHESIS"
+    paper_target: "> 20% resilience-product enrolment among eligible Hub customers"
+    target_configurable: true
+    current_claim_allowed: false
+    authority_note: "Partner-supplied product only; target changes with approved service."
+
+additional_gates:
+  - id: "P6_PARTNER_NEUTRALITY"
+    purpose: "Detect preferential or unauthorized partner treatment"
+  - id: "P7_OFFLINE_RECOVERY_INTEGRITY"
+    purpose: "Prove safe retry/sync/reconciliation behavior"
+  - id: "P8_DATA_ISOLATION"
+    purpose: "Prove organization/object/data-class isolation"
+  - id: "P9_OPERATOR_DEVICE_READINESS"
+    purpose: "Prove trained operator and approved device state"
+  - id: "P10_EVIDENCE_COMPLETENESS"
+    purpose: "Unknown evidence must remain UNKNOWN, never PASS"
+  - id: "P11_INCIDENT_RECOVERY_READINESS"
+    purpose: "Prove ownership, escalation, rollback and support paths"
+
+gate_status_vocabulary:
+  - "UNKNOWN"
+  - "COLLECTING"
+  - "PARTIAL"
+  - "MEETS_TARGET_UNREVIEWED"
+  - "MISSES_TARGET_UNREVIEWED"
+  - "EVIDENCE_ACCEPTED_MEETS_TARGET"
+  - "EVIDENCE_ACCEPTED_MISSES_TARGET"
+  - "WAIVED_WITH_REASON"
+  - "NOT_APPLICABLE"
+
+scale_decisions:
+  - "CONTINUE_PILOT"
+  - "REMEDIATE_AND_RETEST"
+  - "PAUSE"
+  - "STOP"
+  - "APPROVE_BOUNDED_EXPANSION"
+
+paper_claim_quarantine:
+  - claim: "17M potential customers"
+    label: "MODEL_ASSUMPTION"
+  - claim: "USD 1.68M Year-1 revenue"
+    label: "MODEL_OUTPUT"
+  - claim: "~40% delivery-cost reduction"
+    label: "MODEL_HYPOTHESIS"
+  - claim: "35 to 70 partners"
+    label: "MODEL_ASSUMPTION"
+  - claim: "> USD 150 Hub monthly profit"
+    label: "PILOT_TARGET"
+  - claim: "> 40% value-added revenue"
+    label: "PILOT_TARGET"
+  - claim: "99.9% liquidity/service continuity"
+    label: "PILOT_TARGET"
+  - claim: "> 20% resilience-product uptake"
+    label: "PILOT_TARGET"
+  - claim: "projected ARI improvement"
+    label: "RESEARCH_SCENARIO"
+  - claim: "historical Sovereign Nexus OS / ABS specific technical assertions"
+    label: "NEEDS_CURRENT_REPOSITORY_VERIFICATION"
+
+stage_mapping:
+  STAGE_4:
+    allowed:
+      - "domain schemas"
+      - "synthetic fixtures"
+      - "synthetic UI/workflows"
+      - "generic pilot evidence engine"
+      - "synthetic Hub economics"
+      - "synthetic corridor planning"
+      - "synthetic Hub NLC/LCI"
+      - "tests"
+    forbidden:
+      - "real PII"
+      - "real funds"
+      - "real cash movement"
+      - "live G2P execution"
+      - "production credentials"
+      - "live PartnerFI posting/settlement"
+      - "live identity provider"
+      - "direct Telebirr/M-PESA payment activation"
+      - "regulated pilot"
+
+  STAGE_5:
+    intent: "approved external partner test/staging integration"
+    authority: "non-production only unless separately gated"
+
+  STAGE_6:
+    intent: "named Hub/corridor/operator/partner/limit pilot-readiness approval"
+
+  STAGE_7:
+    intent: "controlled live pilot within written approved scope"
+
+  STAGE_8_PLUS:
+    intent: "production readiness and evidence-gated scale"
