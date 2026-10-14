@@ -1,73 +1,81 @@
 # Current Verified Baseline
 
-**As of:** 2026-10-13  
+**As of:** 2026-10-14  
 **Canonical repository:** `abeselomchernet/Phygital-rural-Agent-Hub`  
 **Visibility:** Private  
 **Canonical branch:** `main`  
-**Canonical baseline commit:** `0028b079c1c641535e00db78b58f29bb442136ae`
+**Canonical baseline commit:** `2b19cf394c931feac5fa439661998986e526270b`
 
 ## 1. Completed governed phases
 
-### P0-A - partner-led financial, identity and residency boundaries
+P0-A/P0-B established the bounded synthetic identity, financial-institution, GhostSync, authentication, object authorization, CSRF, local durability, reconciliation, audit and recovery boundaries. Stage 1 revalidated the clean private workspace. Stage 2 completed the bounded ArifPay sandbox integration for its governed scope.
 
-Merged. The project established:
+Stage 3 is now complete for its bounded synthetic product/platform scope. It implemented and validated:
 
-- immutable `customerId` as canonical customer reference;
-- phone as changeable operational alias;
-- explicit KYC state machine;
-- mock identity-provider boundary rather than transaction-time identity lookup;
-- `FinancialInstitutionAdapter` boundary with PartnerFI authority separate from Wishland;
-- GhostSync transport separated from financial state;
-- regulated execution fail-closed;
-- removal/closure of legacy unsafe mutation paths and misleading claims.
+- Partner Ecosystem and route-provenance views;
+- NLC / Liquidity Coverage Index decision support using non-regulatory terminology;
+- synthetic Cash Fleet/liquidity-match planning with no custody or dispatch authority;
+- bounded FMCG inventory/logistics planning;
+- role/object network-operations authorization;
+- truth-synced Agent, Farmer 360, Supervisor and Operations UX;
+- a versioned Partner Capability Contract;
+- heterogeneous Synthetic Reference Partners;
+- a Partner Service Catalog;
+- a governed Adapter Registry + Route Resolver;
+- capability-driven role/partner Workspace Manifests;
+- a governed Partner Onboarding state machine;
+- a deterministic Contract Certification runtime;
+- a configuration-only PartnerFI Gamma acceptance proof.
 
-### P0-B - authenticated durable synthetic staging foundation
+## 2. Partner-platform Definition of Done
 
-Merged. Bounded synthetic work includes:
+The approved product acceptance rule is:
 
-- server-verified synthetic sessions and role/object/CSRF controls;
-- durable local JSON persistence and restart-safe idempotency;
-- reconciliation state model with uncertain outcomes;
-- authenticated mock callback verification, replay/sequence/terminal-state protections;
-- redacted audit schema and recovery controls;
-- encrypted-edge interface/threat-model contract that fails closed where unsupported;
-- Ethiopia-resident staging evidence checklist;
-- active UI/claims review.
+> A new partner can be added through organization, service, capability, membership/scope, route and compatible certified-adapter configuration without rebuilding Agent Terminal, Farmer 360, Supervisor, Operations or the Enawuga core for an already-supported workflow type.
 
-### Stage 1 - workspace re-baseline and post-P0 closure
+PR #37 proves this at the **synthetic architecture level**. Synthetic PartnerFI Gamma was introduced only through a new Partner Capability Contract, Service Catalog, Agent membership/scope, route registration and reuse of an existing registered synthetic PartnerFI adapter. The existing Service Catalog manifest generator, Workspace Manifest generator and Contract Certification runtime were reused without a Gamma-specific Agent Terminal, route family or shared-UI branch.
 
-Complete. The clean hosted validation baseline was reproduced and the post-P0 closure was recorded without rewriting historical validation evidence.
+This does not claim that every future institution will require zero engineering. A genuinely new protocol may require a new certified adapter; a genuinely new reusable business capability may require shared domain development. Neither case should create a permanent one-partner product fork.
 
-### Stage 2 - ArifPay sandbox integration
+## 3. Provider foundation truth
 
-Complete for its governed scope. PR #5 merged the bounded ArifPay sandbox C2B orchestration/reconciliation slice with hard sandbox guards, pre-submit durable correlation, uncertainty handling, server-side session-ID reconciliation, Operations UX and explicit separation from PartnerFI settlement authority.
+### ArifPay
 
-Stage 2 did **not** authorize production provider credentials, real customer PII, real funds, cash custody, live PartnerFI posting or regulated operation.
-
-## 2. Additional merged provider foundations
-
-These are provider-specific foundations layered onto the bounded baseline; they do not expand regulated authority.
+ArifPay remains the bounded sandbox integration. It becomes executable only when its guarded sandbox runtime is configured. Gateway/provider success remains separate from PartnerFI settlement.
 
 ### Direct Telebirr
 
-PR #6 merged an inactive/TestBed foundation with strict configuration, guarded token/query primitives, canonical signing/builders, durable pre-submit correlation and read-only provider-readiness visibility. Networking/payment initiation remains disabled pending provider/TLS and protocol gates. Standard TLS verification failed against the supplied TestBed path; no TLS bypass is permitted.
+Direct Telebirr is represented as:
+
+- environment: TestBed;
+- adapter registration: `REGISTERED_TESTBED`;
+- runtime mode: `FOUNDATION_ONLY`;
+- direct payment route: not mounted.
+
+The implemented foundation does not become an active direct-payment route until its remaining TestBed TLS/provider-contract/payment-evidence and certification/activation gates pass.
 
 ### M-PESA Ethiopia direct
 
-PR #7 merged an inactive Ethiopia sandbox contract/correlation foundation with a hard-pinned Safaricom Ethiopia sandbox token client and provider-neutral attempt primitives. A controlled external local runtime successfully verified the documented token contract and returned sanitized metadata indicating `Bearer` with `expires_in=3599`.
+M-PESA Ethiopia is represented as:
 
-That token verification does **not** verify or authorize payment initiation, payout, callback authority, status mapping, reversal, account-balance transport, PartnerFI posting or settlement.
+- environment: Sandbox;
+- adapter registration: `REGISTERED_SANDBOX`;
+- runtime mode: `FOUNDATION_ONLY`;
+- token/authentication contract: verified in the bounded sandbox evidence set;
+- payment/status/callback routes: not mounted.
 
-## 3. Canonical validation evidence
+Token verification does not establish payment, callback, PartnerFI posting or settlement authority.
 
-The current `main` baseline `0028b079c1c641535e00db78b58f29bb442136ae` was validated by GitHub Actions `Synthetic prototype validation` run #245 (`38426151886`) on 2026-10-13.
+## 4. Canonical validation evidence
+
+The accepted post-Stage-3 `main` baseline `2b19cf394c931feac5fa439661998986e526270b` was validated by GitHub Actions `Synthetic prototype validation` run #347 (`38559099782`) on 2026-10-14.
 
 Result: **PASS**.
 
 Validated gates:
 
 - `npm ci`;
-- production dependency audit with 0 production findings;
+- production dependency audit;
 - TypeScript/lint;
 - unit/domain/API tests;
 - production build;
@@ -75,64 +83,32 @@ Validated gates:
 - Chromium installation;
 - Chromium E2E.
 
-The validation remains explicitly synthetic with external telemetry disabled. Known non-blocking observations remain the development/tooling graph's 23 findings (2 low, 4 moderate, 17 high) and the existing Vite >500 kB chunk advisory.
-
-## 4. Existing UI/product skeleton
-
-Current product surfaces provide the base to evolve rather than replace:
-
-- Agent Terminal;
-- Farmer 360 / customer workbench;
-- Supervisor Hub;
-- Operations & Reconciliation;
-- partner/provider readiness visibility;
-- GhostSync queue and Data Mule transport demonstration;
-- agent readiness/onboarding walkthrough;
-- node/architecture status view;
-- Academy/training;
-- conversation/transcription concept;
-- Ardi arithmetic illustration;
-- inventory and liquidity-planning demonstrations.
-
-Stage 3 should add Partner Ecosystem and network-liquidity capabilities into this governed product architecture rather than create ungoverned provider silos.
+PR #37's exact head `7d5d9a597a986e51b8c3fc76477a4fe6279bf2c8` also passed run #346 (`38556120717`) before merge.
 
 ## 5. Current hard boundaries
 
-The current repository remains a **bounded synthetic / sandbox-capable prototype**, not a live regulated financial deployment. It does not establish:
+The repository remains a bounded synthetic/sandbox-capable system. Stage 3 completion does **not** establish:
 
-- live bank/MFI connectivity or posting authority;
-- live Fayda/identity connectivity;
-- production payment-provider credentials;
-- direct Telebirr payment initiation;
-- M-PESA Ethiopia payment initiation;
 - real customer PII;
 - real customer funds or liabilities;
-- real cash-in/cash-out authority or physical cash custody;
-- approved Ethiopia-resident production/staging infrastructure;
-- approved production key custody;
-- production HA/DR;
-- live SMS/USSD/hardware control;
-- regulated pilot authorization.
+- real cash custody, dispatch or handover;
+- live PartnerFI account posting/settlement;
+- production provider credentials;
+- direct Telebirr or M-PESA payment initiation;
+- live identity-provider access;
+- production SSO/provisioning;
+- regulated pilot or production authorization.
 
-Provider acceptance or provider success MUST NOT be represented as PartnerFI settlement.
+Provider acceptance/success MUST NOT be represented as PartnerFI settlement. UI visibility, adapter registration, certification PASS and onboarding state MUST NOT be treated as external institutional authority.
 
 ## 6. Current program position
 
 The active substantive stage is now:
 
-> **Stage 3 - Partner Ecosystem & Network Liquidity (synthetic)**
+> **Stage 4 — Governed ET-resident staging foundation**
 
-Stage 3 is restricted to reusable synthetic product architecture and decision support:
+Stage 4 is infrastructure/evidence work only. Its purpose is to build and evidence a non-production Ethiopia-resident staging foundation while the financial/provider authority gates remain locked.
 
-1. partner organization and capability-switch model;
-2. Partner Ecosystem Console;
-3. route provenance across service provider, integration route, gateway/operator and Enawuga transaction;
-4. Network Liquidity Coverage / Liquidity Coverage Index using non-regulatory terminology;
-5. synthetic 2h/4h/8h/EOD liquidity horizons and operational states;
-6. synthetic cash-fleet planning and liquidity-match simulation;
-7. bounded FMCG partner/inventory/logistics models;
-8. role/object authorization expansion;
-9. Supervisor/Operations network-operations UX;
-10. no real cash movement, custody, regulated posting or provider activation.
+Required evidence includes compute/ingress location, database/replica location, backups and restore evidence, audit-store controls, encryption/key custody, IAM/MFA/break-glass/access review, logging/monitoring paths, incident response, retention/deletion, subprocessors/support access, DR/RPO/RTO and operational RACI.
 
-The next substantive stage after evidence-gated Stage 3 completion is Stage 4 - Governed ET-resident staging foundation.
+External partner staging remains Stage 5 and is not authorized by this transition.
