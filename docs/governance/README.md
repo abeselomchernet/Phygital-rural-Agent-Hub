@@ -1,68 +1,80 @@
 # Enawuga Implementation & Execution Governance Pack
 
-**Version:** 1.1  
-**Effective date:** 2026-10-13  
-**Repository baseline:** `abeselomchernet/Phygital-rural-Agent-Hub` @ `0028b079c1c641535e00db78b58f29bb442136ae`  
+**Version:** 1.3  
+**Effective date:** 2026-10-14  
+**Repository baseline:** `abeselomchernet/Phygital-rural-Agent-Hub` @ `2b19cf394c931feac5fa439661998986e526270b`  
 **Status:** Governing forward plan; does not itself authorize regulated operation.
 
 ## Purpose
 
-This package is the forward implementation and execution control set for Enawuga / Phygital Rural Agent Hub. It is designed so that an engineer, technical lead, partner-integration team, product designer, security reviewer, or program manager can enter the program at any later stage, determine the current approved state, and continue without reconstructing the project's history from chat transcripts.
+This package is the forward implementation and execution control set for Enawuga / Phygital Rural Agent Hub. It allows engineering, product, partner-integration, security and program teams to determine what is implemented, what is authorized, what remains gated and which evidence is required next.
 
-The pack governs how the project advances from the bounded synthetic/sandbox-capable prototype through partner-ecosystem development, governed Ethiopia-resident staging, partner staging, pilot authorization, production readiness and scale.
+## Product/platform statement
+
+Wishland provides governed shared agent-infrastructure software into which licensed institutions bring their own products, authority, accounts, rails and policies.
+
+The platform Definition of Done is that an already-supported partner/workflow can be introduced through organization, service, capability, role/scope, route and compatible certified-adapter configuration without rebuilding shared Agent, Farmer 360, Supervisor or Operations product surfaces.
+
+PR #37 proves this at the synthetic architecture level with Synthetic PartnerFI Gamma. This evidence does not claim a real institution, real customer/funds authority or production deployment.
 
 ## Authority hierarchy
 
 When sources conflict, use this order:
 
-1. **Executable repository evidence** - merged code, tests, CI, deployment evidence and immutable commit history establish what is actually implemented.
-2. **Approved external evidence** - signed contracts, written institutional approvals, approved infrastructure evidence, identity/payment-provider credentials and formal operating policies establish what is authorized externally.
-3. **Historical validation records** - P0-A/P0-B and subsequent validation/closure documents remain evidence of prior bounded stages and must not be rewritten to make the past look current.
-4. **This governance pack** - controls future implementation, stage gates, UX/product direction and engineering handoff.
-5. **Research reports and exploratory analysis** - advisory inputs only. They may inform design but do not prove implementation, compliance, approval, licensing, production readiness or partner commitments.
+1. executable repository evidence — merged code, tests, CI and immutable commit history establish what is implemented;
+2. approved external evidence — contracts, institutional approvals, infrastructure evidence, credentials and operating policies establish what is externally authorized;
+3. historical validation records — prior bounded evidence remains historically scoped and is not rewritten;
+4. this governance pack — governs future implementation, stage gates and engineering handoff;
+5. research/exploratory analysis — advisory only, never proof of implementation, approval or production readiness.
 
-## Normative language
+## Core invariants
 
-- **MUST / MUST NOT**: mandatory program control.
-- **SHOULD / SHOULD NOT**: default engineering practice; deviations require a recorded decision.
-- **MAY**: optional where stage conditions allow.
+- Wishland is the technology/orchestration layer; licensed partners retain their regulated authority.
+- Provider/gateway acceptance or success is not PartnerFI settlement.
+- Service, capability, route and adapter remain distinct concepts.
+- UI hiding is not authorization; protected actions remain server-enforced.
+- Environment registration is not runtime executability, route activation, production authorization or settlement authority.
+- `FOUNDATION_ONLY` integrations may be registered/tested without exposing an executable payment route.
+- NLC/LCI is non-regulatory decision support unless a licensed partner formally defines otherwise.
+- Stage transitions never unlock real PII, funds, cash movement, production provider credentials or regulated mode by implication.
 
 ## Package contents
 
 | Document | Purpose |
 |---|---|
 | `GOVERNANCE_CHARTER.md` | Program governance, decision rights and non-negotiable boundaries |
-| `CURRENT_BASELINE.md` | Current verified implementation baseline and known limitations |
-| `TARGET_PRODUCT_UX_BLUEPRINT.md` | Target portals, dashboards, workflows and UX principles |
-| `PARTNER_ECOSYSTEM_MODEL.md` | Bank/MFI, payment, telco/mobile-money, FMCG, fleet and other partner boundaries |
-| `STAGE_GATE_ROADMAP.md` | End-to-end stage sequence from current state to scaled production |
-| `ARCHITECTURE_INTEGRATION_STANDARD.md` | Adapter model, state authority, callbacks, idempotency and integration rules |
-| `LIQUIDITY_FLEET_FMCG_STANDARD.md` | Network liquidity, cash fleet and FMCG operating design |
-| `SECURITY_DATA_RESIDENCY_CONTROL_STANDARD.md` | Security, data classification, residency, key, audit and recovery controls |
-| `VALIDATION_EVIDENCE_STANDARD.md` | Test, evidence and exit criteria required at every gate |
-| `ENGINEERING_EXECUTION_RUNBOOK.md` | How a future engineer resumes, branches, validates, records and hands off work |
-| `DECISION_EVIDENCE_TEMPLATES.md` | ADR, evidence register, risk acceptance and gate review templates |
-| `EVIDENCE_REGISTER.md` | Forward evidence register for stage/provider/governance decisions |
-| `RELEASE_NOTES.md` | Forward governance release and stage-transition record |
+| `CURRENT_BASELINE.md` | Current verified implementation baseline and limitations |
+| `TARGET_PRODUCT_UX_BLUEPRINT.md` | Target portals, workflows and UX principles |
+| `PARTNER_ECOSYSTEM_MODEL.md` | Partner-class and authority boundaries |
+| `STAGE_GATE_ROADMAP.md` | Evidence-gated path from current state through staging/pilot/production |
+| `ARCHITECTURE_INTEGRATION_STANDARD.md` | Adapter, authority, callback, idempotency and route rules |
+| `LIQUIDITY_FLEET_FMCG_STANDARD.md` | NLC/LCI, Cash Fleet and FMCG design boundaries |
+| `SECURITY_DATA_RESIDENCY_CONTROL_STANDARD.md` | Security, residency, keys, audit and recovery controls |
+| `VALIDATION_EVIDENCE_STANDARD.md` | Required validation/evidence at every gate |
+| `ENGINEERING_EXECUTION_RUNBOOK.md` | Resume/branch/validate/handoff process |
+| `DECISION_EVIDENCE_TEMPLATES.md` | ADR/evidence/risk/gate templates |
+| `EVIDENCE_REGISTER.md` | Stage/provider/platform evidence register |
+| `RELEASE_NOTES.md` | Governance release/stage-transition record |
+| `STAGE_3_EXIT_GATE_REVIEW.md` | Formal Stage 3 exit decision and retained locks |
 | `PROGRAM_STATUS.yaml` | Machine-readable current stage and next actions |
 | `CAPABILITY_REGISTRY.yaml` | Machine-readable capability maturity and unlock conditions |
+
+Partner-platform architecture documents under `docs/platform/` are normative implementation companions for Partner Capability Contract, Synthetic Reference Partners, Partner Service Catalog, Adapter Registry/Route Resolver, capability-driven UI, Partner Onboarding and Contract Certification.
 
 ## How an engineer resumes work
 
 1. Read `PROGRAM_STATUS.yaml`.
-2. Confirm the repository `main` SHA and compare it to the recorded baseline.
-3. Read `CURRENT_BASELINE.md` and the active stage in `STAGE_GATE_ROADMAP.md`.
-4. Check `CAPABILITY_REGISTRY.yaml` for what may and may not be enabled.
-5. Review the relevant architecture/security/UX standard before changing code.
-6. Work on a dedicated branch; do not push directly to `main`.
-7. Produce the validation and evidence required by `VALIDATION_EVIDENCE_STANDARD.md`.
-8. Update the evidence register and release notes when a stage transition or externally relevant capability state changes.
-9. Open a Draft PR and stop at the specified review gate unless explicit approval to proceed is recorded.
+2. Verify current `main` SHA and post-merge CI against the recorded baseline.
+3. Read `CURRENT_BASELINE.md`, the active stage in `STAGE_GATE_ROADMAP.md`, and `CAPABILITY_REGISTRY.yaml`.
+4. Review the relevant platform/governance architecture before changing code.
+5. Preserve partner-platform abstractions; do not add institution-name branches for already-supported workflow types.
+6. Work on a dedicated branch and validate exact head before merge.
+7. Update evidence/register/release records for stage transitions or externally meaningful capability-state changes.
 
 ## Current program statement
 
-The current repository is a **bounded synthetic / sandbox-capable prototype**. Stage 2 - ArifPay Sandbox Integration is complete for its governed scope. Direct Telebirr remains an inactive/TestBed foundation and M-PESA Ethiopia remains an inactive sandbox foundation with the token contract verified; neither direct provider payment path is activated.
+Stage 3 — Partner Ecosystem & Network Liquidity (synthetic) has passed its bounded exit gate. The accepted `main` baseline is `2b19cf394c931feac5fa439661998986e526270b`; post-merge validation run #347 (`38559099782`) passed.
 
-The active substantive stage is **Stage 3 - Partner Ecosystem & Network Liquidity (synthetic)**. Stage 3 may implement partner organization/capability-switch architecture, Partner Ecosystem UX, NLC/LCI decision support, synthetic cash-fleet planning, FMCG/logistics models, liquidity-match simulation and expanded network-operations authorization/UX.
+The active substantive stage is **Stage 4 — Governed ET-resident staging foundation**. Stage 4 is infrastructure/evidence work only. Real customer data, real funds, real cash custody/movement, production provider credentials, direct Telebirr/M-PESA payment activation, live PartnerFI posting/settlement, live identity-provider access and regulated operation remain locked.
 
-Real customer data, real funds, real cash custody, production provider credentials, live identity-provider access, live PartnerFI posting and regulated financial operation remain gated. Provider acceptance or success must never be represented as PartnerFI settlement, and code presence must never be treated as capability authorization.
+Direct Telebirr is a `REGISTERED_TESTBED` + `FOUNDATION_ONLY` integration foundation with no mounted direct-payment route. M-PESA Ethiopia is a `REGISTERED_SANDBOX` + `FOUNDATION_ONLY` foundation with token/auth evidence but no mounted payment/status/callback routes. ArifPay remains the bounded sandbox integration when its guarded runtime is configured.

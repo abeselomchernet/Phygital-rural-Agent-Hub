@@ -2,118 +2,68 @@
 
 This roadmap is evidence-gated, not calendar-gated. No stage has a guaranteed duration.
 
-## Stage 0 - Current bounded synthetic baseline
+## Stage 0 — bounded synthetic baseline
 
-**Status:** COMPLETE / HISTORICAL BOUNDED BASELINE.
+**Status:** COMPLETE / HISTORICAL.
 
-Evidence: P0-A and P0-B merged; the current verified baseline is recorded in `CURRENT_BASELINE.md`.
+P0-A/P0-B established bounded synthetic identity, financial-institution, auth/object/CSRF, durability, reconciliation, audit, recovery and GhostSync boundaries.
 
-Allowed:
-
-- synthetic fixtures;
-- mocks;
-- local durable development state;
-- bounded synthetic authentication/reconciliation/audit behavior.
-
-Forbidden:
-
-- real customer PII;
-- real funds;
-- production provider credentials;
-- real cash custody;
-- claims of regulated deployment.
-
-## Stage 1 - Workspace re-baseline and post-P0 closure
+## Stage 1 — workspace re-baseline and post-P0 closure
 
 **Status:** COMPLETE.
 
-**Goal:** establish a clean private coding environment and synchronize forward documentation.
+The clean private workspace and full validation workflow were reproduced and the forward governance baseline was established.
 
-Required actions:
+## Stage 2 — ArifPay sandbox integration
 
-- verify current `main`;
-- configure correct Git identity;
-- Node 24 / npm 11 baseline;
-- `npm ci`, production audit, lint, tests, build, E2E;
-- no initial code changes during environment setup;
-- add post-merge closure record;
-- synchronize stale backlog wording without rewriting historical evidence.
+**Status:** COMPLETE for the governed bounded sandbox scope.
 
-Exit evidence:
+ArifPay C2B sandbox orchestration/reconciliation is implemented with sandbox-only guards, durable pre-submit correlation, uncertainty handling and provider-status reconciliation. Provider success is never PartnerFI settlement.
 
-- clean validation report;
-- closure PR reviewed and merged.
+## Stage 3 — Partner Ecosystem & Network Liquidity (synthetic)
 
-## Stage 2 - ArifPay sandbox integration
+**Status:** COMPLETE for the bounded synthetic scope as of 2026-10-14.
 
-**Status:** COMPLETE for the governed ArifPay sandbox scope; PR #5 merged.
+Completed scope includes:
 
-**Goal:** prove one external payment-gateway integration without crossing into production.
+- Partner Ecosystem and provider/route provenance;
+- NLC/LCI synthetic decision support;
+- Cash Fleet planning and liquidity-match simulation;
+- FMCG inventory/logistics planning;
+- role/object network-operations authorization;
+- truth-synced role product surfaces;
+- Partner Capability Contract;
+- heterogeneous Synthetic Reference Partners;
+- Partner Service Catalog;
+- Adapter Registry + Route Resolver;
+- capability-driven role/partner UI via server-resolved Workspace Manifest;
+- governed Partner Onboarding runtime;
+- deterministic Contract Certification runtime;
+- PartnerFI Gamma configuration-only acceptance proof.
 
-Minimum scope:
+### Stage 3 exit evidence
 
-- `PaymentGatewayAdapter` contract;
-- `ArifPaySandboxAdapter`;
-- hard sandbox-only configuration;
-- one C2B flow first;
-- success/failure/idempotency/network/uncertain-result tests;
-- callback/verification mapped into existing reconciliation state;
-- Operations/Reconciliation UX for sandbox transactions;
-- no client-side secret exposure.
+- exact-head PartnerFI Gamma acceptance CI: run #346 (`38556120717`) — PASS;
+- merged post-acceptance `main`: `2b19cf394c931feac5fa439661998986e526270b`;
+- post-merge `main` CI: run #347 (`38559099782`) — PASS;
+- formal review: `STAGE_3_EXIT_GATE_REVIEW.md`.
 
-Expand only after core flow is stable to selected B2C/W2B/OTP rails.
+The PartnerFI Gamma proof demonstrates that an already-supported PartnerFI workflow can be added by contract/catalog/membership/route configuration plus an existing compatible adapter without a partner-specific Agent Terminal, Supervisor/Operations fork or shared-core branch.
 
-Forbidden:
+Important: this is synthetic architecture acceptance, not real institutional onboarding or production authorization.
 
-- production ArifPay host/keys;
-- real customer PII;
-- representing sandbox success as real cash-in/cash-out.
+## Stage 4 — Governed ET-resident staging foundation
 
-Exit evidence:
+**Status:** ACTIVE / FOUNDATION ONLY.
 
-- external sandbox test record;
-- callback/reconciliation tests;
-- security review;
-- provider-provenance mapping;
-- Draft PR reviewed and merged.
-
-## Stage 3 - Partner Ecosystem & Network Liquidity (synthetic)
-
-**Status:** ACTIVE as of 2026-10-13.
-
-**Goal:** build the reusable product architecture for multiple partner classes and field liquidity planning.
-
-Scope:
-
-- partner organization / capability-switch model;
-- Partner Ecosystem Console;
-- Network Liquidity Coverage / Liquidity Coverage Index;
-- cash-fleet planning;
-- FMCG partner/inventory/logistics model;
-- liquidity-match simulation;
-- role/object authorization expansion;
-- Supervisor Hub network-operations UX.
-
-Important terminology:
-
-Use **Network Liquidity Coverage (NLC)** or **Liquidity Coverage Index (LCI)** rather than unqualified `LCR` unless a licensed partner formally defines that metric. Do not imply prudential regulatory LCR compliance.
-
-No real cash movement.
-
-Provider-specific foundations already present in the repository remain independently gated. Stage 3 does not activate direct Telebirr, M-PESA Ethiopia payment initiation, production ArifPay, PartnerFI posting or any other regulated financial capability.
-
-## Stage 4 - Governed ET-resident staging foundation
-
-**Status:** PLANNED / LOCKED pending Stage 3 exit evidence.
-
-**Goal:** stand up an approved non-production environment whose evidence can satisfy the B6 evidence register.
+**Goal:** stand up and evidence an approved non-production Ethiopia-resident staging foundation without expanding financial or provider authority.
 
 Required evidence categories:
 
 - physical compute/ingress location;
 - database primary/replica location;
 - backup location and restore evidence;
-- audit store controls;
+- audit-store controls;
 - encryption/key custody;
 - logging/monitoring data paths;
 - IAM/MFA/break-glass/access review;
@@ -123,93 +73,56 @@ Required evidence categories:
 - DR/RPO/RTO;
 - operational ownership/RACI.
 
-The environment can be technically operational while financial capabilities remain locked.
+Allowed:
 
-Exit evidence: completed evidence register with approvals for staging scope.
+- infrastructure-as-code and non-production topology work;
+- synthetic data only unless a later explicit gate says otherwise;
+- non-production network, IAM, encryption, observability, backup/restore and DR evidence;
+- deployment of already-bounded software for staging-foundation verification.
 
-## Stage 5 - External partner staging
+Still forbidden:
 
-**Goal:** connect approved test/staging environments for the partners required by the pilot design.
+- real customer PII;
+- real funds or liabilities;
+- production provider credentials;
+- live PartnerFI posting/settlement;
+- direct Telebirr or M-PESA payment activation;
+- real cash custody/movement/dispatch/handover;
+- production identity-provider access;
+- regulated pilot operation.
 
-Possible tracks:
+Provider states remain layered. `REGISTERED_TESTBED` / `REGISTERED_SANDBOX` does not imply executable route activation, production authorization or settlement authority.
 
-- PartnerFI account/authorization API.
-- ArifPay or other payment staging.
-- approved identity staging.
-- SMS/USSD staging.
-- FMCG/distributor staging.
-- fleet/cash logistics rehearsal using non-live/test value or controlled simulations.
+Exit evidence: complete Stage 4 infrastructure/evidence register and explicit gate review before Stage 5.
 
-Requirements:
+## Stage 5 — External partner staging
 
-- partner-specific adapter contracts;
-- credentials in secrets management;
-- end-to-end route provenance;
-- joint test cases;
-- reconciliation and incident procedures;
-- approved data classes.
+**Status:** LOCKED pending Stage 4 exit.
 
-## Stage 6 - Controlled pilot readiness
+**Goal:** connect approved partner test/staging environments using the Partner Capability Contract, Service Catalog, certified adapters, route resolver, onboarding workflow and certification evidence.
 
-**Goal:** prove the organization, technology and evidence are ready to request/enter a bounded live pilot.
+Possible tracks include PartnerFI staging, payment-provider staging, identity staging, communications, FMCG/distributor and fleet/logistics rehearsal.
 
-Must be complete before activation:
+## Stage 6 — Controlled pilot readiness
 
-- named scope, sites, agents, partners and limits;
-- written pilot authorization/agreements;
-- approved real-data paths;
-- approved cash custody model if cash is in scope;
-- identity/customer-consent process;
-- support/escalation/incident procedures;
-- monitoring and audit access;
-- training/readiness;
-- rollback/kill switches;
-- operational rehearsal and DR test;
-- unresolved risks formally accepted or closed.
+**Status:** LOCKED.
 
-## Stage 7 - Controlled live pilot
+Requires named scope/sites/agents/partners/limits, written pilot authorization, approved real-data/cash paths where relevant, support/incident/reconciliation procedures, training/readiness, rollback/kill switches and accepted/closed risks.
 
-**Goal:** operate real but bounded transactions under written scope.
+## Stage 7 — Controlled live pilot
 
-Controls:
+**Status:** LOCKED.
 
-- capability switches only for approved services;
-- small named user/agent population;
-- conservative limits;
-- real-time exception monitoring;
-- daily reconciliation;
-- incident reporting;
-- pilot evidence log;
-- no automatic expansion to new regions/services.
+Only written approved services, users/agents, limits and sites may operate. No automatic expansion to new partners, regions or capabilities.
 
-Cash fleet may become live only if custody, handover, security, insurance/operating policy, accounting and PartnerFI authority are approved.
+## Stage 8 — Production readiness and launch
 
-## Stage 8 - Production readiness and launch
+**Status:** LOCKED.
 
-Required:
+Requires production contracts/credentials, performance/capacity evidence, HA/DR, security review/remediation, SLO/SLA/on-call, change/release management, support/privacy operations, reconciliation contracts and explicit production authorization.
 
-- production contracts/credentials;
-- capacity/performance evidence;
-- HA/DR evidence;
-- security assessment and remediation;
-- operational SLO/SLA and on-call;
-- change/release management;
-- support/complaints processes;
-- privacy/retention operations;
-- partner reconciliation contracts;
-- production authorization decision.
+## Stage 9 — Scale and ecosystem expansion
 
-## Stage 9 - Scale and ecosystem expansion
+**Status:** FUTURE.
 
-Possible expansion:
-
-- additional financial institutions;
-- additional payment/mobile-money rails;
-- regional agent networks;
-- FMCG/distributor integrations;
-- agriculture services;
-- insurance/PAYG/voucher programs;
-- advanced liquidity optimization;
-- permitted analytics.
-
-Each new capability/partner repeats the relevant evidence and activation gate. Scale does not bypass governance.
+Every new partner/capability repeats the relevant contract, adapter, certification, onboarding and activation gates. Scale does not bypass governance.

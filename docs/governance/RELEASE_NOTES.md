@@ -2,72 +2,77 @@
 
 This file records forward governance/state transitions. It does not replace immutable historical validation records or authorize regulated operation.
 
-## 2026-10-13 - Governance v1.1 / Stage 3 entry
+## 2026-10-14 — Governance v1.3 / Stage 3 exit / Stage 4 entry
 
-### Baseline
+### Accepted baseline
 
-Canonical `main` baseline after PR #7:
+Canonical `main` baseline after the PartnerFI Gamma configuration-only acceptance proof:
 
-`0028b079c1c641535e00db78b58f29bb442136ae`
+`2b19cf394c931feac5fa439661998986e526270b`
 
-GitHub Actions `Synthetic prototype validation` run #245 (`38426151886`) completed successfully on this baseline.
+GitHub Actions `Synthetic prototype validation` run #347 (`38559099782`) completed successfully on this baseline.
+
+PR #37 exact head `7d5d9a597a986e51b8c3fc76477a4fe6279bf2c8` passed run #346 (`38556120717`) before merge.
 
 ### Stage transition
 
-- Stage 1 remains complete.
-- Stage 2 - ArifPay Sandbox Integration is complete for its governed bounded sandbox scope.
-- Stage 3 - Partner Ecosystem & Network Liquidity (synthetic) is now the active substantive stage.
-- Stage 4 - Governed ET-resident staging foundation remains locked pending Stage 3 exit evidence.
+- Stage 3 — Partner Ecosystem & Network Liquidity (synthetic): **COMPLETE for bounded synthetic scope**.
+- Stage 4 — Governed ET-resident staging foundation: **ACTIVE / FOUNDATION ONLY**.
+- Stage 5 — External partner staging: **LOCKED pending Stage 4 exit evidence**.
 
-### Provider status carried into Stage 3
+### Partner-platform work completed in Stage 3
 
-- **ArifPay:** bounded sandbox C2B orchestration/reconciliation is merged. Gateway evidence remains separate from PartnerFI settlement authority.
-- **Direct Telebirr:** inactive/TestBed foundation is merged. Direct payment initiation remains disabled pending TLS trust and provider-contract/protocol gates.
-- **M-PESA Ethiopia direct:** inactive sandbox foundation is merged. The documented token contract has been runtime-verified from an external local environment; payment initiation, callbacks, status, payout, reversal, balance and settlement behavior remain unverified/unmounted.
+Stage 3 now includes a complete bounded platform chain:
 
-These provider foundations are not Stage 3 activation work and do not become live merely because Stage 3 is active.
+`Partner Capability Contract → Synthetic Reference Partners → Partner Service Catalog → Adapter Registry/Route Resolver → Capability-driven Workspace Manifest/UI → Partner Onboarding → Contract Certification`.
 
-### Stage 3 approved engineering scope
+The architecture/design and runtime work were delivered as separate review units across PRs #19–#36.
 
-Stage 3 may implement:
+PR #37 then executed the approved platform Definition of Done using a brand-new Synthetic PartnerFI Gamma. Gamma was introduced through a new capability contract, service catalog, membership/scope and route while reusing an existing registered PartnerFI adapter plus the existing service/workspace/certification runtimes. No Gamma-specific Agent Terminal, Supervisor/Operations UI fork or shared-core branch was required.
 
-- partner organization and capability-switch models;
-- Partner Ecosystem Console;
-- provider/service route provenance;
-- Network Liquidity Coverage / Liquidity Coverage Index decision support;
-- 2h, 4h, 8h and EOD synthetic liquidity horizons;
-- Healthy / Watch / Rebalance / Critical operational states where supported by the defined metric;
-- synthetic Cash Fleet planning and liquidity-match simulation;
-- bounded FMCG partner/inventory/logistics models;
-- expanded role/object authorization;
-- Supervisor/Operations network-operations UX.
+This is accepted as **synthetic architecture proof**, not evidence of a real institutional integration or production authorization.
 
-### Locked boundaries
+### Provider truth carried forward
 
-Stage 3 does not authorize:
+- **ArifPay:** bounded sandbox integration; executable only when the guarded sandbox runtime is configured. Provider success is not PartnerFI settlement.
+- **Direct Telebirr:** `REGISTERED_TESTBED` + `FOUNDATION_ONLY`; direct payment route remains unmounted pending remaining TestBed and certification/activation gates.
+- **M-PESA Ethiopia direct:** `REGISTERED_SANDBOX` + `FOUNDATION_ONLY`; token/authentication contract verified; payment/status/callback routes remain unmounted.
+
+Adapter/environment registration is not route activation, production authorization or settlement authority.
+
+### Stage 4 approved scope
+
+Stage 4 may build/evidence:
+
+- Ethiopia-resident non-production compute/ingress topology;
+- database primary/replica and backup topology;
+- restore/recovery evidence;
+- audit-store controls;
+- encryption/key custody;
+- logging/monitoring data paths;
+- IAM/MFA/break-glass/access-review controls;
+- incident-response controls;
+- retention/deletion controls;
+- subprocessor/support-access controls;
+- DR/RPO/RTO evidence;
+- operational RACI;
+- infrastructure-as-code and synthetic deployment validation.
+
+### Locked boundaries carried into Stage 4
+
+Stage 4 does not authorize:
 
 - real customer PII;
-- real funds;
-- real cash custody or movement;
-- production payment/provider credentials;
-- direct Telebirr or M-PESA payment initiation;
-- live PartnerFI account/balance/posting mutation;
+- real funds or liabilities;
+- real cash custody, movement, dispatch or handover;
+- production provider credentials;
+- direct Telebirr/M-PESA payment activation;
+- live PartnerFI account posting/settlement;
 - live identity-provider access;
 - regulated pilot or production operation;
-- claims that NLC/LCI is prudential regulatory LCR;
-- claims that provider acceptance/success equals PartnerFI settlement;
-- capability activation merely because code/configuration exists.
+- treating NLC/LCI as prudential regulatory LCR;
+- treating UI visibility, adapter registration, onboarding state or certification PASS as external authority.
 
-### Governance files synchronized
+## 2026-10-13 — Governance v1.1 / Stage 3 entry
 
-This transition updates or establishes:
-
-- `PROGRAM_STATUS.yaml`;
-- `CAPABILITY_REGISTRY.yaml`;
-- `CURRENT_BASELINE.md`;
-- `STAGE_GATE_ROADMAP.md`;
-- governance-pack `README.md`;
-- `EVIDENCE_REGISTER.md`;
-- `RELEASE_NOTES.md`.
-
-The first substantive Stage 3 implementation should use a separate feature branch after this governance transition is reviewed and merged.
+Stage 2 ArifPay sandbox integration was completed for its bounded scope and Stage 3 synthetic Partner Ecosystem/Network Liquidity work was opened. The original Stage 3 entry records remain historical evidence of that transition.

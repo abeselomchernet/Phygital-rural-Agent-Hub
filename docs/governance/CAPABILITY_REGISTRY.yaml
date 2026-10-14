@@ -1,89 +1,128 @@
-version: "1.1"
-as_of: "2026-10-13"
+version: "1.3"
+as_of: "2026-10-14"
 capabilities:
-  - id: "customer_identity_core"
-    current: "synthetic_implemented"
-    target: "production_authorized"
-    unlock_requires: ["approved_identity_integration", "data_controls", "partner_policy"]
+  - id: "partner_capability_contract"
+    current: "implemented_and_validated"
+    evidence: ["PR_20", "PR_27"]
+    authority_note: "Machine-readable capability policy does not create external institutional authority."
+
+  - id: "synthetic_reference_partners"
+    current: "implemented_and_validated"
+    evidence: ["PR_21", "PR_28"]
+    authority_note: "Reference organizations are synthetic and deliberately heterogeneous."
+
+  - id: "partner_service_catalog"
+    current: "implemented_and_validated"
+    evidence: ["PR_22", "PR_29"]
+    authority_note: "Service publication does not itself authorize execution."
+
+  - id: "adapter_registry_route_resolver"
+    current: "implemented_and_validated"
+    evidence: ["PR_24", "PR_30"]
+    authority_note: "Environment registration, runtime executability and route activation are separate."
+
+  - id: "capability_driven_ui"
+    current: "implemented_and_validated_synthetic"
+    evidence: ["PR_31", "PR_32"]
+    authority_note: "Workspace visibility is presentation policy, never an authorization token."
+
+  - id: "partner_onboarding"
+    current: "implemented_and_validated_synthetic"
+    evidence: ["PR_33", "PR_34"]
+    authority_note: "Current Stage 3/4 policy prevents onboarding configuration from self-authorizing staging/production/live capability."
+
+  - id: "contract_certification"
+    current: "implemented_deterministic_l0_l1_l2_policy_runner"
+    evidence: ["PR_35", "PR_36"]
+    authority_note: "PASS is version-pinned evidence only; reports carry authorityGranted=false and never self-activate capabilities."
+
+  - id: "partner_platform_config_only_acceptance"
+    current: "passed_synthetic_architecture_level"
+    evidence: ["PR_37", "MAIN_RUN_347"]
+    authority_note: "Synthetic PartnerFI Gamma was added without partner-specific core/UI code by reusing existing contracts, service/workspace generators, route registry, adapter and certification runtime."
 
   - id: "partnerfi_adapter"
-    current: "mock_implemented"
+    current: "synthetic_adapter_contract_and_registry_implemented"
     target: "production_authorized"
-    unlock_requires: ["partnerfi_contract", "staging_api", "reconciliation_contract", "production_credentials"]
+    unlock_requires: ["real_partnerfi_contract", "approved_staging_api", "reconciliation_contract", "production_credentials", "later_stage_authorization"]
 
   - id: "arifpay_gateway"
-    current: "sandbox_implemented_and_merged"
-    next: "external_partner_staging_when_governed"
+    current: "sandbox_integrated_bounded"
     target: "production_authorized"
-    authority_note: "Gateway evidence never establishes PartnerFI settlement."
-    unlock_requires: ["security_review", "production_agreement", "production_credentials", "partnerfi_reconciliation_contract"]
+    authority_note: "Gateway success/evidence never establishes PartnerFI settlement."
+    unlock_requires: ["security_review", "production_agreement", "production_credentials", "partnerfi_reconciliation_contract", "later_stage_authorization"]
 
   - id: "telebirr_direct"
-    current: "inactive_testbed_foundation"
-    next: "provider_contract_and_tls_trust_verification"
+    current: "registered_testbed_foundation_only"
+    adapter_registration: "REGISTERED_TESTBED"
+    runtime_mode: "FOUNDATION_ONLY"
+    route_state: "PAYMENT_ROUTE_NOT_MOUNTED"
     target: "production_authorized"
-    authority_note: "No direct Telebirr payment initiation or reconciliation authority is enabled."
-    unlock_requires: ["subscribed_product_scope", "fresh_testbed_credentials", "valid_tls_trust_chain", "pinned_preorder_contract", "pinned_queryorder_semantics", "callback_authenticity_rules", "sandbox_payment_evidence"]
+    authority_note: "TestBed foundation registration is not payment-route activation."
+    unlock_requires: ["subscribed_product_scope", "fresh_testbed_credentials", "valid_tls_trust_chain", "pinned_payment_contract", "pinned_query_semantics", "callback_authenticity_rules", "sandbox_payment_evidence", "certified_executable_adapter", "route_activation_approval"]
 
   - id: "mpesa_ethiopia_direct"
-    current: "inactive_sandbox_foundation_token_verified"
-    next: "bounded_ethiopia_sandbox_initiation_evidence"
+    current: "registered_sandbox_foundation_token_verified"
+    adapter_registration: "REGISTERED_SANDBOX"
+    runtime_mode: "FOUNDATION_ONLY"
+    route_state: "PAYMENT_STATUS_CALLBACK_ROUTES_NOT_MOUNTED"
     target: "production_authorized"
-    authority_note: "Token verification does not authorize payment initiation, callbacks, settlement or PartnerFI mutation."
-    unlock_requires: ["approved_product_scope", "pinned_ussd_push_password_derivation", "approved_synthetic_et_msisdn_fixture", "initiation_correlation_evidence", "callback_authenticity_or_non_authoritative_policy", "status_semantics", "idempotency_retry_contract", "hosted_sandbox_network_evidence"]
+    authority_note: "Token verification does not authorize payment initiation, callback authority, PartnerFI posting or settlement."
+    unlock_requires: ["approved_product_scope", "approved_synthetic_et_msisdn_fixture", "payment_initiation_contract", "status_semantics", "callback_authenticity_or_non_authoritative_policy", "idempotency_retry_contract", "certified_executable_adapter", "route_activation_approval"]
+
+  - id: "partner_ecosystem_core"
+    current: "synthetic_implemented_and_validated"
+    evidence: ["PR_10", "PR_32"]
+    target: "partner_operational"
+    authority_note: "Partner registration/code presence do not imply service activation or regulated authority."
+
+  - id: "network_liquidity_coverage"
+    current: "synthetic_implemented_and_validated"
+    evidence: ["PR_12", "PR_32"]
+    target: "operational_decision_support"
+    authority_note: "Use NLC/LCI terminology; not prudential regulatory LCR."
+    unlock_requires: ["approved_partner_data_feeds", "partner_calibration", "stage_specific_authorization"]
+
+  - id: "cash_fleet_planning"
+    current: "synthetic_planning_implemented_and_validated"
+    evidence: ["PR_13", "PR_32"]
+    target: "operational_dispatch"
+    authority_note: "No real cash custody, movement, dispatch or handover authority."
+    unlock_requires: ["fleet_roles", "custody_policy", "limits", "security_process", "reconciliation", "partnerfi_authority"]
+
+  - id: "cash_fleet_live_handover"
+    current: "disabled"
+    target: "pilot_authorized"
+    unlock_requires: ["cash_owner", "custody_contract", "authorized_handlers", "handover_evidence", "incident_policy", "accounting_reconciliation", "approved_operating_policy", "partnerfi_authority"]
+
+  - id: "fmcg_commerce"
+    current: "synthetic_inventory_and_planning_implemented"
+    evidence: ["PR_14", "PR_32"]
+    target: "partner_operational"
+    authority_note: "No live order, dispatch, commercial settlement or unrelated KYC/bank-balance access."
 
   - id: "ghostsync_remote"
     current: "disabled_for_real_data"
     target: "authorized_secure_transport"
     unlock_requires: ["encrypted_edge", "authenticated_receiver", "residency_evidence", "migration_policy"]
 
-  - id: "partner_ecosystem_core"
-    current: "governance_defined"
-    next: "synthetic_implemented"
-    target: "partner_operational"
-    authority_note: "Partner registration and code presence do not imply service activation or regulated authority."
-    unlock_requires: ["partner_org_schema", "capability_switch_model", "route_provenance", "role_object_authorization", "claims_review"]
-
-  - id: "network_liquidity_coverage"
-    current: "governance_defined"
-    next: "synthetic_implemented"
-    target: "operational_decision_support"
-    authority_note: "Use NLC/LCI terminology; do not represent it as prudential regulatory LCR."
-    unlock_requires: ["metric_definition", "forecast_horizons", "partner_calibration", "approved_data_feeds"]
-
-  - id: "cash_fleet_planning"
-    current: "governance_defined"
-    next: "synthetic_implemented"
-    target: "operational_dispatch"
-    authority_note: "Stage 3 permits planning/simulation only; no real cash custody or dispatch authority."
-    unlock_requires: ["fleet_roles", "custody_policy", "limits", "security_process", "reconciliation"]
-
-  - id: "cash_fleet_live_handover"
-    current: "disabled"
-    target: "pilot_authorized"
-    unlock_requires: ["cash_owner", "custody_contract", "authorized_handlers", "handover_evidence", "incident_policy", "accounting_reconciliation", "insurance_or_approved_operating_policy", "partnerfi_authority"]
-
-  - id: "fmcg_commerce"
-    current: "governance_defined"
-    next: "synthetic_implemented"
-    target: "partner_operational"
-    authority_note: "FMCG partners must not receive broad KYC or unrelated bank-balance data."
-    unlock_requires: ["partner_contract", "catalog_scope", "data_scope", "commercial_settlement_model"]
-
-  - id: "fmcg_liquidity_matching"
-    current: "simulation_only"
-    next: "synthetic_stage_3_expansion"
-    target: "pilot_authorized"
-    unlock_requires: ["eligible_partner_model", "cash_custody_authority", "regulated_digital_posting", "dual_reconciliation"]
-
-  - id: "mobile_money_routes"
-    current: "provider_specific_sandbox_foundations_bounded"
-    next: "retain_separate_provider_routes_and_provenance"
-    target: "production_authorized"
-    authority_note: "Direct M-PESA, direct Telebirr and gateway-routed mobile-money paths remain separate integration routes."
-    unlock_requires: ["route_provenance", "gateway_or_direct_contract", "provider_scope", "production_approval"]
-
   - id: "agent_cash_in_cash_out"
-    current: "synthetic_request_only"
+    current: "synthetic_partner_capability_and_request_workflow_only"
     target: "pilot_authorized"
-    unlock_requires: ["partnerfi_authority", "agent_approval", "limits", "liquidity_controls", "cash_custody", "reconciliation"]
+    unlock_requires: ["partnerfi_authority", "agent_approval", "limits", "liquidity_controls", "cash_custody", "reconciliation", "later_stage_authorization"]
+
+stage_4_foundation_capabilities:
+  - id: "et_resident_compute_and_ingress"
+    current: "not_evidenced"
+  - id: "et_resident_database_and_backup"
+    current: "not_evidenced"
+  - id: "key_custody_and_encryption"
+    current: "not_evidenced"
+  - id: "iam_mfa_break_glass"
+    current: "not_evidenced"
+  - id: "logging_monitoring_audit_store"
+    current: "not_evidenced"
+  - id: "backup_restore_dr_rpo_rto"
+    current: "not_evidenced"
+  - id: "incident_retention_subprocessor_raci"
+    current: "not_evidenced"
