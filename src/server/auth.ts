@@ -1,6 +1,14 @@
 import { randomUUID, timingSafeEqual } from "node:crypto";
 import type { Request, Response } from "express";
 import {
+  SYNTHETIC_HUB_IDS,
+  SYNTHETIC_HUB_TENANT_IDS,
+  authorizeSyntheticHubAccess,
+  projectAuthorizedHub,
+  type HubAccessPurpose,
+  type HubId,
+} from "../domain/hub";
+import {
   NetworkOperationsActionSchema,
   NetworkOperationsObjectIdSchema,
   defaultNetworkObjectIdsForRole,
@@ -23,12 +31,15 @@ export type SyntheticRole =
   | "PARTNER_ADMIN";
 
 export interface SyntheticWorkspaceContext {
+  tenantId: string;
   activePartnerOrgId: string;
   partnerOrgMemberships: readonly string[];
   regionId: string;
   agentGroupIds: readonly string[];
   serviceScopes: readonly string[];
   objectScopes: readonly string[];
+  hubAssignments: readonly HubId[];
+  hubPurposeScopes: readonly HubAccessPurpose[];
 }
 
 export interface SyntheticPrincipal {
@@ -87,18 +98,37 @@ function cookieValue(req: Request, name: string) {
   return undefined;
 }
 
+function hubAssignmentsForRegion(regionId: string): readonly HubId[] {
+  if (regionId === SYNTHETIC_REGION_IDS.ADAMA)
+    return [SYNTHETIC_HUB_IDS.ADAMA_SHARED];
+  if (regionId === SYNTHETIC_REGION_IDS.ARISI)
+    return [SYNTHETIC_HUB_IDS.ARISI_ALPHA];
+  return [];
+}
+
+function hubPurposeScopesForRole(role: SyntheticRole): readonly HubAccessPurpose[] {
+  if (role === "AGENT") return ["HUB_VIEW", "HUB_OPERATE"];
+  if (role === "SUPERVISOR") return ["HUB_VIEW", "HUB_SUPERVISE"];
+  if (role === "OPERATIONS") return ["HUB_VIEW", "HUB_PARTNER_REVIEW"];
+  return ["HUB_VIEW", "HUB_PARTNER_REVIEW", "HUB_ADMINISTER"];
+}
+
 function contextFromReferencePrincipal(
   principal: (typeof SYNTHETIC_REFERENCE_PRINCIPALS)[keyof typeof SYNTHETIC_REFERENCE_PRINCIPALS],
   activePartnerOrgId: string,
   regionId: string,
+  role: SyntheticRole,
 ): SyntheticWorkspaceContext {
   return {
+    tenantId: SYNTHETIC_HUB_TENANT_IDS.STAGE4,
     activePartnerOrgId,
     partnerOrgMemberships: [...principal.partnerOrgMemberships],
     regionId,
     agentGroupIds: [...principal.agentGroupIds],
     serviceScopes: [...principal.serviceScopes],
     objectScopes: [...principal.objectScopes],
+    hubAssignments: [...hubAssignmentsForRegion(regionId)],
+    hubPurposeScopes: [...hubPurposeScopesForRole(role)],
   };
 }
 
@@ -110,20 +140,25 @@ export function defaultSyntheticWorkspaceContextForRole(
       SYNTHETIC_REFERENCE_PRINCIPALS.alphaAgentAdama,
       SYNTHETIC_PARTNER_IDS.PARTNERFI_ALPHA,
       SYNTHETIC_REGION_IDS.ADAMA,
+      role,
     );
   if (role === "SUPERVISOR")
     return contextFromReferencePrincipal(
       SYNTHETIC_REFERENCE_PRINCIPALS.alphaSupervisor,
       SYNTHETIC_PARTNER_IDS.PARTNERFI_ALPHA,
       SYNTHETIC_REGION_IDS.ADAMA,
+      role,
     );
   return {
+    tenantId: SYNTHETIC_HUB_TENANT_IDS.STAGE4,
     activePartnerOrgId: SYNTHETIC_PARTNER_IDS.PARTNERFI_ALPHA,
     partnerOrgMemberships: [SYNTHETIC_PARTNER_IDS.PARTNERFI_ALPHA],
     regionId: SYNTHETIC_REGION_IDS.ADAMA,
     agentGroupIds: [],
     serviceScopes: [],
     objectScopes: [],
+    hubAssignments: [SYNTHETIC_HUB_IDS.ADAMA_SHARED],
+    hubPurposeScopes: [...hubPurposeScopesForRole(role)],
   };
 }
 
@@ -135,17 +170,20 @@ export function syntheticWorkspaceContextForReference(
       SYNTHETIC_REFERENCE_PRINCIPALS.betaAgentAdama,
       SYNTHETIC_PARTNER_IDS.PARTNERFI_BETA,
       SYNTHETIC_REGION_IDS.ADAMA,
+      "AGENT",
     );
   if (reference === "ALPHA_SUPERVISOR_ADAMA")
     return contextFromReferencePrincipal(
       SYNTHETIC_REFERENCE_PRINCIPALS.alphaSupervisor,
       SYNTHETIC_PARTNER_IDS.PARTNERFI_ALPHA,
       SYNTHETIC_REGION_IDS.ADAMA,
+      "SUPERVISOR",
     );
   return contextFromReferencePrincipal(
     SYNTHETIC_REFERENCE_PRINCIPALS.alphaAgentAdama,
     SYNTHETIC_PARTNER_IDS.PARTNERFI_ALPHA,
     SYNTHETIC_REGION_IDS.ADAMA,
+    "AGENT",
   );
 }
 
@@ -189,12 +227,15 @@ export class SyntheticAuthService {
         NetworkOperationsObjectIdSchema.parse(objectId),
       ),
       workspaceContext: {
+        tenantId: workspaceContext.tenantId,
         activePartnerOrgId: workspaceContext.activePartnerOrgId,
         partnerOrgMemberships: [...workspaceContext.partnerOrgMemberships],
         regionId: workspaceContext.regionId,
         agentGroupIds: [...workspaceContext.agentGroupIds],
         serviceScopes: [...workspaceContext.serviceScopes],
         objectScopes: [...workspaceContext.objectScopes],
+        hubAssignments: [...workspaceContext.hubAssignments],
+        hubPurposeScopes: [...workspaceContext.hubPurposeScopes],
       },
       expiresAtMs: Date.now() + this.sessionTtlMs,
     };
@@ -273,6 +314,32 @@ export class SyntheticAuthService {
     }
   }
 
+  requireHubAccess(
+    session: StoredSession,
+    hubId: string,
+    purpose: HubAccessPurpose = "HUB_VIEW",
+  ) {
+    const access = authorizeSyntheticHubAccess({
+      hubId,
+      purpose,
+      context: {
+        tenantId: session.workspaceContext.tenantId,
+        role: session.role,
+        activePartnerOrgId: session.workspaceContext.activePartnerOrgId,
+        partnerOrgMemberships: [...session.workspaceContext.partnerOrgMemberships],
+        regionId: session.workspaceContext.regionId,
+        agentGroupIds: [...session.workspaceContext.agentGroupIds],
+        assignedHubIds: [...session.workspaceContext.hubAssignments],
+        allowedPurposes: [...session.workspaceContext.hubPurposeScopes],
+      },
+    });
+    if (!access) {
+      this.record("OBJECT_ACCESS_DENIED", "DENY", session);
+      throw new SyntheticAuthError("HUB_ACCESS_DENIED", 403);
+    }
+    return projectAuthorizedHub(access);
+  }
+
   requireCsrf(req: Request, session: StoredSession) {
     const supplied = req.get("x-csrf-token") ?? "";
     if (!supplied || !safeEqual(supplied, session.csrfToken)) {
@@ -294,12 +361,15 @@ export class SyntheticAuthService {
       allowedCustomerIds: [...session.allowedCustomerIds],
       allowedNetworkObjectIds: [...session.allowedNetworkObjectIds],
       workspaceContext: {
+        tenantId: session.workspaceContext.tenantId,
         activePartnerOrgId: session.workspaceContext.activePartnerOrgId,
         partnerOrgMemberships: [...session.workspaceContext.partnerOrgMemberships],
         regionId: session.workspaceContext.regionId,
         agentGroupIds: [...session.workspaceContext.agentGroupIds],
         serviceScopes: [...session.workspaceContext.serviceScopes],
         objectScopes: [...session.workspaceContext.objectScopes],
+        hubAssignments: [...session.workspaceContext.hubAssignments],
+        hubPurposeScopes: [...session.workspaceContext.hubPurposeScopes],
       },
       csrfToken: session.csrfToken,
       expiresAt: new Date(session.expiresAtMs).toISOString(),

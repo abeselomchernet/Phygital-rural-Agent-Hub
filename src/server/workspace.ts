@@ -8,10 +8,6 @@ import {
   generatePartnerServiceManifest,
 } from "../domain/partnerServiceCatalog";
 import {
-  SYNTHETIC_PARTNER_IDS,
-  SYNTHETIC_REGION_IDS,
-} from "../domain/syntheticReferencePartners";
-import {
   buildWorkspaceProviderStates,
   generateWorkspaceManifest,
 } from "../domain/workspaceManifest";
@@ -56,14 +52,7 @@ export function resolveSyntheticWorkspaceContext(input: {
   if (input.workspaceKey === "ALPHA_SUPERVISOR_ADAMA")
     return syntheticWorkspaceContextForReference("ALPHA_SUPERVISOR_ADAMA");
 
-  return {
-    activePartnerOrgId: SYNTHETIC_PARTNER_IDS.PARTNERFI_ALPHA,
-    partnerOrgMemberships: [SYNTHETIC_PARTNER_IDS.PARTNERFI_ALPHA],
-    regionId: SYNTHETIC_REGION_IDS.ADAMA,
-    agentGroupIds: [],
-    serviceScopes: [],
-    objectScopes: [],
-  };
+  return defaultSyntheticWorkspaceContextForRole(input.role);
 }
 
 export function generateSyntheticWorkspaceForSession(input: {
