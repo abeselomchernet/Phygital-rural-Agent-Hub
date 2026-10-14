@@ -12,12 +12,10 @@ test("Partner Ecosystem console separates registered provider foundations from p
   page,
 }) => {
   await page.goto("/");
-
-  const homeCard = page.getByTestId("partner-ecosystem-home-card");
-  await expect(homeCard).toContainText("Partner ecosystem");
-  await expect(homeCard).toContainText(
-    "Code presence never becomes service authorization",
-  );
+  await expect(page.getByTestId("partner-ecosystem-home-card")).toHaveCount(0);
+  await expect(
+    page.getByRole("navigation", { name: "Role and partner workspace" }),
+  ).not.toContainText("Partner Ecosystem");
 
   await page.goto("/partners");
   await expect(page).toHaveURL(/\/partners$/);
@@ -58,7 +56,9 @@ test("Partner Ecosystem console separates registered provider foundations from p
   await expect(provenance).toContainText("MPESA_ETHIOPIA_DIRECT_SANDBOX");
   await expect(provenance).toContainText("Enawuga transaction");
   await expect(provenance).toContainText("direct payment route remains unmounted");
-  await expect(provenance).toContainText("payment/status/callback routes remain unmounted");
+  await expect(provenance).toContainText(
+    "payment/status/callback routes remain unmounted",
+  );
 
   await expect(
     page.getByRole("button", { name: /enable|activate|dispatch|handover/i }),
