@@ -1,5 +1,5 @@
 version: "1.3"
-as_of: "2026-10-14"
+as_of: "2026-10-15"
 capabilities:
   - id: "partner_capability_contract"
     current: "implemented_and_validated"
@@ -40,6 +40,13 @@ capabilities:
     current: "passed_synthetic_architecture_level"
     evidence: ["PR_37", "MAIN_RUN_347"]
     authority_note: "Synthetic PartnerFI Gamma was added without partner-specific core/UI code by reusing existing contracts, service/workspace generators, route registry, adapter and certification runtime."
+
+  - id: "hub_domain_core"
+    current: "implementation_under_validation"
+    evidence: ["PR_43", "E1_HUB_DOMAIN_AND_API_TESTS"]
+    target: "implemented_and_validated_synthetic"
+    authority_note: "Hub/operator/device/membership models and read-only server scope are synthetic Stage-4 product infrastructure only; Hub readiness, membership or visibility never creates financial, payment, custody, settlement, pilot or regulatory authority."
+    unlock_requires: ["EXACT_HEAD_CI_PASS_BEFORE_ACCEPTANCE"]
 
   - id: "partnerfi_adapter"
     current: "synthetic_adapter_contract_and_registry_implemented"
