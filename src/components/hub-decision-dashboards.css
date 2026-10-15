@@ -1,0 +1,37 @@
+.decision-page { display:grid; gap:1rem; }
+.decision-hero { display:grid; gap:.45rem; padding:1.15rem 1.25rem; border:1px solid var(--wl-border-200); border-radius:var(--wl-radius-lg); background:linear-gradient(135deg,#fff,#f0f5e9); box-shadow:var(--wl-shadow-soft); }
+.decision-hero h1 { margin:0; color:var(--wl-forest-900); letter-spacing:-.025em; }
+.decision-hero p { margin:0; max-width:60rem; color:var(--wl-muted-600); }
+.decision-hero-actions { display:flex; flex-wrap:wrap; gap:.4rem; margin-top:.4rem; }
+.decision-metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.7rem; }
+.decision-metric { padding:.9rem 1rem; border:1px solid var(--wl-border-200); border-radius:var(--wl-radius-md); background:#fff; }
+.decision-metric span { display:block; color:var(--wl-muted-600); font-size:.68rem; font-weight:800; letter-spacing:.055em; text-transform:uppercase; }
+.decision-metric strong { display:block; margin-top:.25rem; color:var(--wl-forest-900); font-size:clamp(1rem,2vw,1.3rem); overflow-wrap:anywhere; }
+.decision-panel { padding:1rem; border:1px solid var(--wl-border-200); border-radius:var(--wl-radius-md); background:#fff; }
+.decision-panel-header { display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; margin-bottom:.75rem; }
+.decision-panel-header h2 { margin:.15rem 0 0; color:var(--wl-forest-900); }
+.decision-panel-header p { margin:.25rem 0 0; color:var(--wl-muted-600); font-size:.86rem; }
+.economics-service-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.7rem; }
+.economics-service-card { display:grid; gap:.5rem; padding:.85rem; border:1px solid var(--wl-border-200); border-radius:.75rem; background:var(--wl-surface-25); }
+.economics-service-card h3 { margin:0; color:var(--wl-forest-900); font-size:.95rem; }
+.economics-figures { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.4rem; }
+.economics-figure { padding:.55rem; border-radius:.55rem; background:#fff; }
+.economics-figure span { display:block; color:var(--wl-muted-600); font-size:.65rem; }
+.economics-figure strong { display:block; margin-top:.15rem; color:var(--wl-forest-900); font-size:.8rem; }
+.economics-cost-list { display:grid; gap:.55rem; }
+.economics-cost-row { display:grid; grid-template-columns:minmax(0,1.6fr) repeat(3,minmax(0,.8fr)); gap:.55rem; align-items:center; padding:.7rem .75rem; border:1px solid var(--wl-border-200); border-radius:.65rem; }
+.economics-cost-row > span { color:var(--wl-muted-600); font-size:.78rem; }
+.evidence-action { border:0; padding:.35rem 0; background:transparent; color:var(--wl-forest-700); font-weight:800; cursor:pointer; }
+.pilot-gate-list { display:grid; gap:.65rem; }
+.pilot-gate-card { display:grid; grid-template-columns:4rem minmax(0,1.2fr) minmax(0,1fr) auto; gap:.75rem; align-items:center; padding:.85rem; border:1px solid var(--wl-border-200); border-radius:.75rem; background:#fff; }
+.pilot-gate-id { display:grid; place-items:center; width:2.8rem; height:2.8rem; border-radius:.7rem; background:var(--wl-forest-900); color:var(--wl-leaf-300); font-weight:850; }
+.pilot-gate-copy h3 { margin:0; color:var(--wl-forest-900); font-size:.92rem; }
+.pilot-gate-copy p { margin:.2rem 0 0; color:var(--wl-muted-600); font-size:.76rem; }
+.pilot-constraint-list { display:grid; gap:.2rem; color:var(--wl-muted-600); font-size:.74rem; }
+.pilot-constraint-list strong { color:var(--wl-forest-900); }
+.pilot-gate-actions { display:grid; justify-items:end; gap:.35rem; }
+.decision-unavailable { padding:.85rem; border-left:4px solid var(--wl-review-500); border-radius:.65rem; background:#fbf8ef; color:var(--wl-forest-900); }
+.decision-unavailable strong { display:block; margin-bottom:.15rem; }
+@media (max-width:980px) { .decision-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); } .pilot-gate-card { grid-template-columns:3.5rem minmax(0,1fr); } .pilot-constraint-list,.pilot-gate-actions { grid-column:2; justify-items:start; } }
+@media (max-width:720px) { .decision-metrics,.economics-service-grid { grid-template-columns:1fr; } .economics-figures { grid-template-columns:1fr; } .economics-cost-row { grid-template-columns:1fr 1fr; } }
+@media (max-width:480px) { .pilot-gate-card { grid-template-columns:1fr; } .pilot-gate-id,.pilot-constraint-list,.pilot-gate-actions { grid-column:auto; } }

@@ -113,6 +113,8 @@ The UI must visually distinguish data, evidence, interpretation, recommendation 
 
 F2 implements the first shared evidence primitives in `EvidenceDrawer` and `GovernedStatus`. Hub service composition consumes the authenticated `/api/demo/hubs/:hubId/services` response and exposes server-provided evidence references without reconstructing capability state in the client.
 
+F3 extends the Hub workspace with scoped Economics and Pilot Evidence dashboards. The browser presents E5/E6 read models and exact domain statuses; it does not calculate alternative economics, re-score gates or turn model/evidence state into authorization.
+
 ## 10. Responsive behavior
 
 - Agent: phone/tablet first.

@@ -39,6 +39,8 @@ Frontend productization uses one governed application with Agent, Supervisor, Op
 - `/onboard`: read-only readiness stages beside the existing mock identity workflow; no PII form, camera or real agent admission.
 - `/queue` and `/data-mule`: local outbox, conflict learning and illustrative handoff. No remote delivery or settlement.
 - `/hub`: governed Hub/partner/role/environment context and explicit Stage-4 authority boundaries.
+- `/hub/economics`: Stage-4 model assumptions/outputs with observed variance explicitly unavailable.
+- `/hub/pilot-evidence`: P1-P11 synthetic evidence states with no scale or pilot authorization.
 - `/supervisor`: synthetic fleet map/table/pagination; device controls disabled; readiness and transport concepts.
 - `/transcription`: fixed authored dialogue; no microphone or speech service.
 - `/node-status`: deterministic architecture samples, explicitly not operational telemetry.

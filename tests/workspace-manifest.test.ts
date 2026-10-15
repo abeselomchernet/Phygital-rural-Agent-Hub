@@ -101,6 +101,8 @@ test("role navigation is responsibility and service scoped, with Ardi absent fro
   assert.equal(agentPaths.includes("/hub"), false);
   assert.equal(agentPaths.includes("/operations"), false);
   assert.ok(supervisorPaths.includes("/hub"));
+  assert.ok(supervisorPaths.includes("/hub/economics"));
+  assert.ok(supervisorPaths.includes("/hub/pilot-evidence"));
   assert.ok(supervisorPaths.includes("/liquidity"));
   assert.equal(supervisorPaths.includes("/cash-fleet"), false);
   assert.equal(supervisorPaths.includes("/fmcg"), false);
