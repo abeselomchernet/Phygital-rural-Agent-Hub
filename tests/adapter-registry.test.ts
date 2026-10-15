@@ -281,7 +281,7 @@ test("Beta cannot gain Alpha cash service through the same resolver", () => {
   );
 });
 
-test("submitted or ambiguous mutations require the originally pinned route", () => {
+test("submitted or ambiguous mutations require the originally pinned route and versions", () => {
   const registry = createRuntimeAdapterRegistry({ env: {} });
   const base = {
     catalog: SYNTHETIC_ALPHA_SERVICE_CATALOG,
@@ -293,6 +293,7 @@ test("submitted or ambiguous mutations require the originally pinned route", () 
     capabilityId: "FIN.CASH_IN_AUTHORIZE" as const,
     evaluatedAt,
   };
+  const preSubmit = registry.resolveGoverned(base);
 
   assert.throws(
     () => registry.resolveGoverned({ ...base, mutationState: "SUBMITTED" }),
@@ -302,8 +303,19 @@ test("submitted or ambiguous mutations require the originally pinned route", () 
     () =>
       registry.resolveGoverned({
         ...base,
+        mutationState: "SUBMITTED",
+        pinnedRouteId: preSubmit.provenance.routeId,
+      }),
+    /PINNED_ROUTE_VERSION_REQUIRED_AFTER_SUBMIT/,
+  );
+  assert.throws(
+    () =>
+      registry.resolveGoverned({
+        ...base,
         mutationState: "AMBIGUOUS",
         pinnedRouteId: SYNTHETIC_ROUTE_IDS.BETA_CORE,
+        pinnedRouteVersion: preSubmit.provenance.routeVersion,
+        pinnedAdapterVersion: preSubmit.provenance.adapterVersion,
       }),
     /PINNED_ROUTE_MISMATCH/,
   );
@@ -311,9 +323,51 @@ test("submitted or ambiguous mutations require the originally pinned route", () 
   const pinned = registry.resolveGoverned({
     ...base,
     mutationState: "SUBMITTED",
-    pinnedRouteId: SYNTHETIC_ROUTE_IDS.ALPHA_CORE,
+    pinnedRouteId: preSubmit.provenance.routeId,
+    pinnedRouteVersion: preSubmit.provenance.routeVersion,
+    pinnedAdapterVersion: preSubmit.provenance.adapterVersion,
   });
   assert.equal(pinned.provenance.routeId, SYNTHETIC_ROUTE_IDS.ALPHA_CORE);
+  assert.equal(pinned.provenance.routeVersion, preSubmit.provenance.routeVersion);
+  assert.equal(pinned.provenance.adapterVersion, preSubmit.provenance.adapterVersion);
+});
+
+test("post-submit resolution rejects route or adapter version drift even when route identity is unchanged", () => {
+  const registry = createRuntimeAdapterRegistry({ env: {} });
+  const base = {
+    catalog: SYNTHETIC_ALPHA_SERVICE_CATALOG,
+    contract: SYNTHETIC_PARTNERFI_ALPHA,
+    principal: SYNTHETIC_REFERENCE_PRINCIPALS.alphaAgentAdama,
+    role: "AGENT" as const,
+    regionId: SYNTHETIC_REGION_IDS.ADAMA,
+    serviceId: SYNTHETIC_SERVICE_IDS.ALPHA_CASH_IN,
+    capabilityId: "FIN.CASH_IN_AUTHORIZE" as const,
+    evaluatedAt,
+  };
+  const preSubmit = registry.resolveGoverned(base);
+
+  assert.throws(
+    () =>
+      registry.resolveGoverned({
+        ...base,
+        mutationState: "SUBMITTED",
+        pinnedRouteId: preSubmit.provenance.routeId,
+        pinnedRouteVersion: preSubmit.provenance.routeVersion + 1,
+        pinnedAdapterVersion: preSubmit.provenance.adapterVersion,
+      }),
+    /ROUTE_VERSION_MISMATCH/,
+  );
+  assert.throws(
+    () =>
+      registry.resolveGoverned({
+        ...base,
+        mutationState: "SUBMITTED",
+        pinnedRouteId: preSubmit.provenance.routeId,
+        pinnedRouteVersion: preSubmit.provenance.routeVersion,
+        pinnedAdapterVersion: preSubmit.provenance.adapterVersion + 1,
+      }),
+    /ADAPTER_VERSION_MISMATCH/,
+  );
 });
 
 test("registry metadata exposes references, never factories or secret values", () => {

@@ -159,6 +159,39 @@ test("identical retry is one logical workflow and returns duplicate no-op", () =
   assert.equal(store.snapshot().reservations.length, 1);
 });
 
+test("Promise.all same scoped intent creates exactly one logical workflow", async () => {
+  const store = new HubWorkflowIntentCertificationStore();
+  const request = alphaRequest();
+  const decisions = await Promise.all(
+    Array.from({ length: 8 }, () =>
+      Promise.resolve().then(() => store.reserve(request, alphaAdamaContext())),
+    ),
+  );
+
+  assert.equal(decisions.filter((entry) => entry.decision === "RESERVED_NEW").length, 1);
+  assert.equal(decisions.filter((entry) => entry.decision === "DUPLICATE_NOOP").length, 7);
+  assert.equal(decisions.filter((entry) => entry.logicalWorkflowCreated).length, 1);
+  assert.equal(store.snapshot().reservations.length, 1);
+});
+
+test("Promise.all changed reuse fails closed without creating a second logical workflow", async () => {
+  const store = new HubWorkflowIntentCertificationStore();
+  const request = alphaRequest();
+  const changed = alphaRequest({ facts: { ...request.facts, amountMinor: 1251 } });
+  const decisions = await Promise.all([
+    Promise.resolve().then(() => store.reserve(request, alphaAdamaContext())),
+    Promise.resolve().then(() => store.reserve(changed, alphaAdamaContext())),
+  ]);
+
+  assert.equal(decisions.filter((entry) => entry.decision === "RESERVED_NEW").length, 1);
+  assert.equal(
+    decisions.filter((entry) => entry.decision === "CONFLICT_REVIEW_REQUIRED").length,
+    1,
+  );
+  assert.equal(store.snapshot().reservations.length, 1);
+  assert.equal(decisions.every((entry) => entry.assumedSuccess === false), true);
+});
+
 test("changed reuse of a scoped idempotency key fails closed as conflict/review", () => {
   const store = new HubWorkflowIntentCertificationStore();
   const request = alphaRequest();
