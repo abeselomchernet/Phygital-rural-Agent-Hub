@@ -333,7 +333,7 @@ export default function AuditCompliance() {
       };
       toast.info("No active reconciliation report found. Generating complete regulatory report using current Sandbox metrics!", { duration: 5000 });
     } else {
-      toast.success("Compiling live ledger report into official regulatory PDF...", { id: 'recon' });
+      toast.success("Compiling synthetic ledger-fixture report into demo PDF...", { id: 'recon' });
     }
 
     try {
@@ -535,7 +535,7 @@ export default function AuditCompliance() {
       yCoord += 4.5;
       
       const checks = [
-        { label: 'Fayda ZKP Biometric Binding Constraint', state: verifications.fayda },
+        { label: 'Fayda synthetic identity/card-integrity check', state: verifications.fayda },
         { label: 'GhostSync Local Bluetooth Sync Outbox', state: verifications.ghostsync },
         { label: 'ISO 20022 Credit Inbound pacs.008 Specs', state: verifications.iso },
         { label: 'SPIFFE Identity Cryptographic mTLS Handshake', state: verifications.zerotrust },
@@ -680,7 +680,7 @@ export default function AuditCompliance() {
       if (isMock) {
         toast.success(`Successfully exported simulated report ${docTitleForSave}!`);
       } else {
-        toast.success(`Successfully exported live report ${docTitleForSave}!`);
+        toast.success(`Successfully exported synthetic demo report ${docTitleForSave}!`);
       }
     } catch (error) {
       console.error("PDF generation failed:", error);
@@ -877,7 +877,7 @@ export default function AuditCompliance() {
           <CardContent className="space-y-3 pt-1 text-xs">
             <div className="grid grid-cols-2 gap-2 text-center text-xs font-mono">
               <div className="bg-slate-800/40 border border-slate-800 p-2 rounded-md">
-                <div className="text-slate-400 text-[10px]">PEERS LIVE</div>
+                <div className="text-slate-400 text-[10px]">SYNTHETIC PEERS</div>
                 <div className="text-lg font-black text-indigo-400">4 / 4</div>
               </div>
               <div className="bg-slate-800/40 border border-slate-800 p-2 rounded-md">
@@ -926,7 +926,7 @@ export default function AuditCompliance() {
         >
           <Terminal className="w-4 h-4" />
           ISO 20022 pacs.008 XML Inspector
-          <Badge className="bg-indigo-100 text-indigo-800 text-[9px] px-1.5 py-0 font-bold font-mono">LIVE</Badge>
+          <Badge className="bg-indigo-100 text-indigo-800 text-[9px] px-1.5 py-0 font-bold font-mono">SYNTHETIC</Badge>
         </button>
       </div>
 
@@ -944,10 +944,10 @@ export default function AuditCompliance() {
                 <CardHeader>
                   <CardTitle className="text-lg flex items-center gap-2 text-slate-850">
                     <CheckCircle2 className="w-5 h-5 text-indigo-600" />
-                    Regulatory Proof Checklist
+                    Synthetic Readiness Checklist
                   </CardTitle>
                   <CardDescription>
-                    Iterate over structural items below to guarantee mathematical trust assertions.
+                    Inspect bounded Stage-4 fixture checks below. They are not regulatory proof, external verification, or production assurance.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3.5">
@@ -956,16 +956,16 @@ export default function AuditCompliance() {
                   <div className="flex items-center justify-between p-3 border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors">
                     <div className="space-y-0.5">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold text-slate-800">1. Biometric Binding (Fayda ZKP)</span>
-                        <Badge variant="outline" className="text-[9px] bg-slate-50 font-bold">Card Integrity Match</Badge>
+                        <span className="text-xs font-bold text-slate-800">1. Fayda Identity Placeholder Check</span>
+                        <Badge variant="outline" className="text-[9px] bg-slate-50 font-bold">Synthetic Check</Badge>
                       </div>
-                      <p className="text-[11px] text-slate-400">Verifies local device-level biometrics with hash masking.</p>
+                      <p className="text-[11px] text-slate-400">Checks synthetic demo state only; no biometric binding, biometric capture, or ZKP is performed.</p>
                     </div>
                     {verifications.fayda === 'PASSED' ? (
-                      <Badge className="bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-50 px-3 py-1 font-bold">APPROVED</Badge>
+                      <Badge className="bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-50 px-3 py-1 font-bold">FIXTURE PASS</Badge>
                     ) : (
                       <Button size="sm" onClick={() => handleVerifyMetric('fayda')} disabled={verifications.fayda === 'VERIFYING'} className="h-8 text-xs bg-indigo-600 hover:bg-indigo-700">
-                        {verifications.fayda === 'VERIFYING' ? <RefreshCw className="w-3 h-3 animate-spin" /> : "Verify Match"}
+                        {verifications.fayda === 'VERIFYING' ? <RefreshCw className="w-3 h-3 animate-spin" /> : "Run Check"}
                       </Button>
                     )}
                   </div>
@@ -1267,7 +1267,7 @@ export default function AuditCompliance() {
         {activeTab === 'ledger' && (
           <div className="space-y-6 animate-fade-in">
             
-            {/* Live Ledger logs */}
+            {/* Synthetic ledger fixture logs */}
             <Card className="shadow-lg border-t-0 p-0 overflow-hidden">
               <CardHeader className="bg-slate-50 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 p-5">
                 <div>
@@ -1275,7 +1275,7 @@ export default function AuditCompliance() {
                     <FileKey className="w-5 h-5 text-slate-500" />
                     Consensus System Event Ledger
                   </CardTitle>
-                  <CardDescription>Real-time cryptographically secured system audit trails.</CardDescription>
+                  <CardDescription>Synthetic event-ledger fixtures for demo inspection; not live telemetry or external audit evidence.</CardDescription>
                 </div>
                 <div className="flex flex-wrap items-center gap-2 shrink-0">
                   <span className="text-[10px] font-bold text-slate-500 font-mono uppercase mr-1">Batch Export Audit:</span>
