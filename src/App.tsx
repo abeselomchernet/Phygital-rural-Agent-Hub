@@ -13,6 +13,8 @@ import HubEconomics from "./pages/HubEconomics";
 import PilotEvidence from "./pages/PilotEvidence";
 import CorridorPlanning from "./pages/CorridorPlanning";
 import OperatorDeviceReadiness from "./pages/OperatorDeviceReadiness";
+import NeutralityGovernance from "./pages/NeutralityGovernance";
+import OperationsEvidence from "./pages/OperationsEvidence";
 import AgentKiosk from "./pages/AgentKiosk";
 import Farmer360 from "./pages/Farmer360";
 import GhostSyncQueue from "./pages/GhostSyncQueue";
@@ -47,6 +49,8 @@ export default function App() {
           <Route path="/hub/pilot-evidence" element={<PilotEvidence />} />
           <Route path="/hub/corridor-planning" element={<CorridorPlanning />} />
           <Route path="/hub/readiness" element={<OperatorDeviceReadiness />} />
+          <Route path="/hub/neutrality" element={<NeutralityGovernance />} />
+          <Route path="/operations/evidence" element={<OperationsEvidence />} />
           <Route path="/kiosk" element={<AgentKiosk />} />
           <Route path="/farmer-360" element={<Farmer360 />} />
           <Route path="/queue" element={<GhostSyncQueue />} />

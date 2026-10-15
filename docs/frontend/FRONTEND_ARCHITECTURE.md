@@ -153,3 +153,6 @@ Frontend Definition of Done includes:
 ## 14. Stage-4 boundary
 
 The frontend is a synthetic decision-support and workflow demonstration surface. It does not prove or grant live institutions, real funds, production settlement, live identity, production provider access, regulated pilot approval, geographic authorization or device-control authority.
+## F5 governance and operations evidence
+
+F5 adds scoped Neutrality & Scheme Governance and Offline/Reconciliation Evidence surfaces. Neutrality renders E9 review evidence without route substitution/fallback semantics. Operations evidence renders E4 queue/replay/idempotency/reconciliation traces without exposing raw intent facts, raw idempotency keys, credentials or provider payloads. Both remain read-only and preserve the difference between transport evidence and financial/regulated authority.

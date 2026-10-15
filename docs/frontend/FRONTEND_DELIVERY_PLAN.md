@@ -6,6 +6,15 @@ Turn the governed Stage-4 backend into one coherent role-based Enawuga product w
 
 This delivery plan uses frontend workstream identifiers `F1`–`F10`. They are not backend epic identifiers. In particular, frontend `F10` does not unlock backend Epic E10 Inclusion Analytics.
 
+## Implementation status
+
+- F1 - MERGED: role-aware shell, governed Hub context, Wishland design foundation.
+- F2 - MERGED: Hub service composition and reusable evidence/status UX.
+- F3 - MERGED: Hub Economics and Pilot Evidence dashboards.
+- F4 - MERGED: Corridor Planning, Operator/Device Readiness and official Wishland brand asset synchronization.
+- F5 - IMPLEMENTED ON CURRENT BRANCH: Neutrality Governance and Offline/Reconciliation Evidence; pending exact-head CI/merge.
+- F6-F10 - PLANNED; roadmap status creates no capability or authority.
+
 ## F1 — Role-aware shell, Hub context and dashboards
 
 Deliver:

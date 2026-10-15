@@ -32,7 +32,7 @@ The Express/Vite demo defaults to loopback port 3000. No secrets, Redis or Postg
 
 The responsive presentation shell restores the rural-agent product breadth without live-integration claims. English, Amharic and Afaan Oromoo headings/navigation are available; detailed domain controls remain English, and translations need local-speaker review.
 
-Frontend productization uses one governed application with Agent, Supervisor, Operations and Partner Admin portals. The current implementation adds a Wishland/Enawuga application design system and a governed Hub overview while keeping server authorization authoritative. See [frontend architecture](docs/frontend/FRONTEND_ARCHITECTURE.md), [Wishland/Enawuga brand and design system](docs/frontend/WISHLAND_BRAND_AND_DESIGN_SYSTEM.md), the [frontend delivery plan](docs/frontend/FRONTEND_DELIVERY_PLAN.md), the [F1 implementation note](docs/frontend/F1_ROLE_WORKSPACE_IMPLEMENTATION.md), and the [F2 Hub/evidence implementation note](docs/frontend/F2_HUB_SERVICE_EVIDENCE_IMPLEMENTATION.md).
+Frontend productization uses one governed application with Agent, Supervisor, Operations and Partner Admin portals. The current implementation adds a Wishland/Enawuga application design system and a governed Hub overview while keeping server authorization authoritative. See [frontend architecture](docs/frontend/FRONTEND_ARCHITECTURE.md), [Wishland/Enawuga brand and design system](docs/frontend/WISHLAND_BRAND_AND_DESIGN_SYSTEM.md), the [frontend delivery plan](docs/frontend/FRONTEND_DELIVERY_PLAN.md), and the bounded F1-F5 implementation notes under `docs/frontend/`.
 
 - `/kiosk`: implemented local customer/request workflow plus synthetic inventory, liquidity planning, printer-slip and training concepts.
 - `/farmer-360`: proposed read-only agriculture, vouchers, climate/insurance, solar PAYG, carbon, diaspora, procurement and PartnerFI service portfolio.
@@ -41,6 +41,10 @@ Frontend productization uses one governed application with Agent, Supervisor, Op
 - `/hub`: governed Hub/partner/role/environment context and explicit Stage-4 authority boundaries.
 - `/hub/economics`: Stage-4 model assumptions/outputs with observed variance explicitly unavailable.
 - `/hub/pilot-evidence`: P1-P11 synthetic evidence states with no scale or pilot authorization.
+- `/hub/corridor`: E7 synthetic corridor candidate comparison with geographic authorization explicitly not granted.
+- `/hub/readiness`: E8 operator/device readiness evidence without activation or remote device-control authority.
+- `/hub/neutrality`: E9 synthetic neutrality/governance evidence; route comparison never authorizes interchangeability or fallback.
+- `/operations/evidence`: E4 offline/reconciliation evidence for Operations/Partner Admin; transport remains separate from settlement.
 - `/supervisor`: synthetic fleet map/table/pagination; device controls disabled; readiness and transport concepts.
 - `/transcription`: fixed authored dialogue; no microphone or speech service.
 - `/node-status`: deterministic architecture samples, explicitly not operational telemetry.
