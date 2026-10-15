@@ -155,6 +155,7 @@ test("PartnerFI Gamma uses configuration + an existing adapter + the existing wo
   const workspace = generateWorkspaceManifest({
     partnerOrgId: GAMMA.partnerOrgId,
     partnerDisplayName: gammaContract.displayName,
+    hubId: "hub_syn_adama_001",
     role: "AGENT",
     environment: "synthetic",
     regionId: SYNTHETIC_REGION_IDS.ADAMA,

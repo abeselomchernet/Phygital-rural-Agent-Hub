@@ -43,6 +43,7 @@ function agentWorkspace(kind: "alpha" | "beta") {
   return generateWorkspaceManifest({
     partnerOrgId: contract.partnerOrgId,
     partnerDisplayName: contract.displayName,
+    hubId: "hub_syn_adama_001",
     role: "AGENT",
     environment: "synthetic",
     regionId: SYNTHETIC_REGION_IDS.ADAMA,
@@ -56,6 +57,8 @@ test("Alpha and Beta Agents receive different services through one workspace gen
 
   assert.equal(alpha.partnerOrgId, SYNTHETIC_PARTNER_IDS.PARTNERFI_ALPHA);
   assert.equal(beta.partnerOrgId, SYNTHETIC_PARTNER_IDS.PARTNERFI_BETA);
+  assert.equal(alpha.hubId, "hub_syn_adama_001");
+  assert.equal(beta.hubId, "hub_syn_adama_001");
   assert.deepEqual(
     alpha.services.map((service) => service.name),
     ["Account Lookup", "Cash In", "Cash Out"],
@@ -81,6 +84,7 @@ test("role navigation is responsibility and service scoped, with Ardi absent fro
   const supervisor = generateWorkspaceManifest({
     partnerOrgId: SYNTHETIC_PARTNER_IDS.PARTNERFI_ALPHA,
     partnerDisplayName: SYNTHETIC_PARTNERFI_ALPHA.displayName,
+    hubId: "hub_syn_adama_001",
     role: "SUPERVISOR",
     environment: "synthetic",
     regionId: SYNTHETIC_REGION_IDS.ADAMA,
@@ -94,7 +98,9 @@ test("role navigation is responsibility and service scoped, with Ardi absent fro
     group.items.map((item) => item.path),
   );
   assert.ok(agentPaths.includes("/kiosk"));
+  assert.equal(agentPaths.includes("/hub"), false);
   assert.equal(agentPaths.includes("/operations"), false);
+  assert.ok(supervisorPaths.includes("/hub"));
   assert.ok(supervisorPaths.includes("/liquidity"));
   assert.equal(supervisorPaths.includes("/cash-fleet"), false);
   assert.equal(supervisorPaths.includes("/fmcg"), false);
@@ -137,6 +143,7 @@ test("workspace generator rejects service manifests from another partner", () =>
       generateWorkspaceManifest({
         partnerOrgId: SYNTHETIC_PARTNER_IDS.PARTNERFI_BETA,
         partnerDisplayName: "PartnerFI Beta",
+        hubId: "hub_syn_adama_001",
         role: "AGENT",
         environment: "synthetic",
         regionId: SYNTHETIC_REGION_IDS.ADAMA,

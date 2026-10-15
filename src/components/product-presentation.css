@@ -1,8 +1,8 @@
 .product-shell {
-  --ink: #163d36;
-  --muted: #566b64;
-  --accent: #b7eb8f;
-  background: #f3f5ee;
+  --ink: var(--wl-forest-900);
+  --muted: var(--wl-muted-600);
+  --accent: var(--wl-leaf-300);
+  background: var(--wl-surface-50);
   color: var(--ink);
   min-height: 100vh;
   font-family: Geist, system-ui, sans-serif;
@@ -27,18 +27,42 @@
   font-size: 24px;
   font-weight: 750;
   line-height: 1.25;
+  color: var(--wl-forest-900);
+  text-decoration: none;
+}
+.product-brand-copy {
+  display: grid;
+  gap: 1px;
+}
+.product-brand-copy strong {
+  font-size: 24px;
+  line-height: 1.05;
 }
 .product-brand small {
   display: block;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 650;
   letter-spacing: 0.06em;
 }
+.product-brand em {
+  color: var(--wl-muted-600);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 650;
+}
 .brand-mark {
-  background: var(--ink);
-  color: var(--accent);
+  display: grid;
+  place-items: center;
+  background: var(--wl-forest-900);
+  color: var(--wl-leaf-300);
   padding: 13px;
   border-radius: 16px;
+  box-shadow: var(--wl-shadow-soft);
+}
+.product-header-tools {
+  display: flex;
+  align-items: center;
+  gap: 14px;
 }
 .language-picker {
   display: flex;
@@ -58,18 +82,18 @@
 .product-hero {
   max-width: 1200px;
   margin: 0 auto;
-  background: #173f37;
+  background: var(--wl-forest-800);
   color: #f4f8ef;
   border-radius: 24px;
   padding: 36px 42px;
   background-image: radial-gradient(
     ellipse at top right,
-    #326957,
+    var(--wl-forest-600),
     transparent 65%
   );
 }
 .eyebrow {
-  color: #b7eb8f;
+  color: var(--wl-leaf-300);
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -418,7 +442,16 @@
 }
 @media (max-width: 760px) {
   .product-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
     padding: 18px 16px;
+  }
+  .product-header-tools {
+    width: 100%;
+    align-items: flex-end;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 8px;
   }
   .product-brand {
     font-size: 20px;
@@ -463,6 +496,10 @@
   }
   .product-brand small {
     max-width: 150px;
+  }
+  .product-brand em {
+    max-width: 190px;
+    font-size: 8px;
   }
   .product-footer {
     padding: 20px;

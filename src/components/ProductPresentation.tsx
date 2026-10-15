@@ -15,6 +15,7 @@ import {
   Truck,
   Mic,
 } from "lucide-react";
+import "./wishland-brand.css";
 import "./product-presentation.css";
 export type CapabilityState =
   | "IMPLEMENTED"
@@ -84,25 +85,30 @@ export function PresentationShell({ children }: { children: ReactNode }) {
     <LanguageContext.Provider value={t}>
       <div className="product-shell">
         <header className="product-header">
-          <Link to="/" className="product-brand">
-            <span className="brand-mark">
+          <Link to="/" className="product-brand" aria-label="Enawuga home">
+            <span className="brand-mark" aria-hidden="true">
               <Sprout />
             </span>
-            <span>
-              Enawuga<small>Phygital Rural Agent Hub</small>
+            <span className="product-brand-copy">
+              <strong>Enawuga</strong>
+              <small>Phygital Rural Agent Hub</small>
+              <em>Wishland Networking PLC {"\u00b7"} Technology provider</em>
             </span>
           </Link>
-          <div className="language-picker">
-            <label htmlFor="presentation-language">{t.language}</label>
-            <select
-              id="presentation-language"
-              value={language}
-              onChange={(e) => setLanguage(e.target.value as Language)}
-            >
-              <option value="en">English</option>
-              <option value="am">አማርኛ</option>
-              <option value="or">Afaan Oromoo</option>
-            </select>
+          <div className="product-header-tools">
+            <span className="wl-environment-chip">Stage 4 {"\u00b7"} Synthetic</span>
+            <div className="language-picker">
+              <label htmlFor="presentation-language">{t.language}</label>
+              <select
+                id="presentation-language"
+                value={language}
+                onChange={(e) => setLanguage(e.target.value as Language)}
+              >
+                <option value="en">English</option>
+                <option value="am">{"\u12a0\u121b\u122d\u129b"}</option>
+                <option value="or">Afaan Oromoo</option>
+              </select>
+            </div>
           </div>
         </header>
         <div className="product-hero">

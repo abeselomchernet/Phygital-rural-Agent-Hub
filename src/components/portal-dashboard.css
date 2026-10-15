@@ -1,0 +1,220 @@
+.portal-page {
+  display: grid;
+  gap: 1.15rem;
+}
+
+.portal-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.portal-heading > div {
+  max-width: 52rem;
+}
+
+.portal-heading h1,
+.portal-heading h2 {
+  margin: 0.2rem 0 0.35rem;
+  color: var(--wl-forest-900);
+  letter-spacing: -0.025em;
+}
+
+.portal-heading p {
+  margin: 0;
+  color: var(--wl-muted-600);
+}
+
+.portal-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.portal-summary-card {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+  padding: 0.95rem 1rem;
+  border: 1px solid var(--wl-border-200);
+  border-radius: var(--wl-radius-md);
+  background: var(--wl-surface-0);
+}
+
+.portal-summary-card span {
+  color: var(--wl-muted-600);
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.portal-summary-card strong {
+  overflow-wrap: anywhere;
+  color: var(--wl-forest-900);
+  font-size: 1.08rem;
+  line-height: 1.3;
+}
+
+.portal-action-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.portal-action-card {
+  display: flex;
+  min-height: 13rem;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 1.1rem;
+  border: 1px solid var(--wl-border-200);
+  border-radius: var(--wl-radius-md);
+  background: var(--wl-surface-0);
+  box-shadow: 0 5px 20px rgba(21, 56, 41, 0.025);
+}
+
+.portal-action-card-icon {
+  display: grid;
+  width: 2.35rem;
+  height: 2.35rem;
+  place-items: center;
+  border-radius: 0.7rem;
+  background: var(--wl-info-100);
+  color: var(--wl-forest-700);
+}
+
+.portal-action-card h2,
+.portal-action-card h3 {
+  margin: 0;
+  color: var(--wl-forest-900);
+}
+
+.portal-action-card p {
+  margin: 0;
+  color: var(--wl-muted-600);
+  font-size: 0.9rem;
+}
+
+.portal-action-card .text-link {
+  margin-top: auto;
+  align-self: flex-start;
+}
+
+.portal-boundary-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--wl-border-300);
+  border-left: 4px solid var(--wl-review-500);
+  border-radius: var(--wl-radius-md);
+  background: #fbf8ef;
+  color: var(--wl-forest-900);
+}
+
+.portal-boundary-banner strong {
+  display: block;
+  margin-bottom: 0.1rem;
+}
+
+.hub-overview-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 1.35rem;
+  border-radius: var(--wl-radius-lg);
+  background: var(--wl-forest-800);
+  color: #f4f8ef;
+  box-shadow: var(--wl-shadow-soft);
+}
+
+.hub-overview-hero::after {
+  position: absolute;
+  width: 18rem;
+  height: 18rem;
+  top: -9rem;
+  right: -6rem;
+  border-radius: 999px;
+  background: rgba(183, 235, 143, 0.14);
+  content: "";
+}
+
+.hub-overview-hero h1 {
+  position: relative;
+  z-index: 1;
+  margin: 0.25rem 0;
+  color: #ffffff;
+}
+
+.hub-overview-hero p {
+  position: relative;
+  z-index: 1;
+  max-width: 52rem;
+  margin: 0;
+  color: #c4d6c9;
+}
+
+.hub-overview-chips {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 1rem;
+}
+
+.hub-overview-chips .wl-status-chip {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
+.hub-boundary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.hub-boundary-card {
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--wl-border-200);
+  border-radius: var(--wl-radius-md);
+  background: var(--wl-surface-0);
+}
+
+.hub-boundary-card strong,
+.hub-boundary-card span {
+  display: block;
+}
+
+.hub-boundary-card span {
+  margin-top: 0.25rem;
+  color: var(--wl-muted-600);
+  font-size: 0.84rem;
+}
+
+@media (max-width: 980px) {
+  .portal-summary-grid,
+  .portal-action-grid,
+  .hub-boundary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .portal-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .portal-summary-grid,
+  .portal-action-grid,
+  .hub-boundary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .portal-action-card {
+    min-height: auto;
+  }
+}

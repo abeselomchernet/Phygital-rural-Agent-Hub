@@ -8,6 +8,7 @@ import {
 import CapabilityWorkspaceShell from "./components/CapabilityWorkspaceShell";
 import "./components/navigation-groups.css";
 import CapabilityHome from "./pages/CapabilityHome";
+import HubOverview from "./pages/HubOverview";
 import AgentKiosk from "./pages/AgentKiosk";
 import Farmer360 from "./pages/Farmer360";
 import GhostSyncQueue from "./pages/GhostSyncQueue";
@@ -37,6 +38,7 @@ export default function App() {
       <CapabilityWorkspaceShell>
         <Routes>
           <Route path="/" element={<CapabilityHome />} />
+          <Route path="/hub" element={<HubOverview />} />
           <Route path="/kiosk" element={<AgentKiosk />} />
           <Route path="/farmer-360" element={<Farmer360 />} />
           <Route path="/queue" element={<GhostSyncQueue />} />

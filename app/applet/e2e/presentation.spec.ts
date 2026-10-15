@@ -152,8 +152,9 @@ test("presentation fits desktop and mobile with explicitly synthetic architectur
     ]) {
       await page.goto(route);
       await expect(
-        page.getByText("Wishland technology provider · Synthetic Demo"),
+        page.getByText(/Wishland Networking PLC.*Technology provider/),
       ).toBeVisible();
+      await expect(page.getByText(/Stage 4.*Synthetic/)).toBeVisible();
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth <= window.innerWidth + 1,
