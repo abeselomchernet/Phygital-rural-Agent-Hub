@@ -115,6 +115,8 @@ F2 implements the first shared evidence primitives in `EvidenceDrawer` and `Gove
 
 F3 extends the Hub workspace with scoped Economics and Pilot Evidence dashboards. The browser presents E5/E6 read models and exact domain statuses; it does not calculate alternative economics, re-score gates or turn model/evidence state into authorization.
 
+F4 extends the same governed Hub workspace with Corridor Planning and Operator & Device Readiness. Corridor comparison renders E7 synthetic evidence completeness/readiness and recommendation states without maps or exact coordinates that could imply site approval. Readiness renders E8 training/certification/device/support evidence without real identities, telemetry, remote-control controls or automatic return-to-service. Both surfaces reuse the Wishland/Enawuga tokens, semantic statuses and EvidenceDrawer rather than creating a parallel visual system.
+
 ## 10. Responsive behavior
 
 - Agent: phone/tablet first.

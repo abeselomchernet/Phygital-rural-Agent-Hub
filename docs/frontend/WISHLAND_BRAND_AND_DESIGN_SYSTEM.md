@@ -1,59 +1,97 @@
 # Wishland / Enawuga Application Brand & Design System
 
-## 1. Brand hierarchy
+## 1. Source of truth and provenance
 
-The product should present a clear hierarchy:
+The governed application brand source for this repository is the public GitHub repository `abeselomchernet/wishland`, default branch `main`. The F4 branding sync was taken from Wishland tree `874754155b6ce59346ddcb23f912f1945bb9fa42` and includes the official files:
+
+- `assets/wishland-mark.png` -> `/public/brand/wishland-mark.png`
+- `assets/wishland-wordmark.png` -> `/public/brand/wishland-wordmark.png`
+- palette values from Wishland `styles.css`
+
+These repository assets supersede the earlier temporary sprout-only application branding. Do not redraw, recolor, distort or invent a replacement Wishland corporate mark without a newer governed source asset.
+
+## 2. Brand hierarchy
+
+The application presents a clear hierarchy:
+
+**Wishland Networking PLC** — company / technology provider brand.
 
 **Enawuga** — product/platform name.
 
 **Phygital Rural Agent Hub** — descriptive product category/subtitle.
 
-**Wishland Networking PLC** — technology/software/orchestration provider.
+Wishland is the technology/software/orchestration provider. The UI must not present Wishland as the regulated financial principal, issuer, settlement institution, custodian of customer funds or payment provider unless future written authority explicitly changes that model.
 
-This frontend must not present Wishland as the regulated financial principal, issuer, settlement institution, custodian of customer funds or payment provider unless future written authority explicitly changes that model.
+## 3. Canonical Wishland palette
 
-## 2. Current brand direction
+The canonical application palette is aligned to the Wishland repository:
 
-The existing Enawuga product shell already uses a green rural-infrastructure visual language. F1 formalizes that existing application palette as reusable design tokens rather than introducing a disconnected visual identity.
-
-The repository currently contains no governed corporate logo asset. Therefore F1 does not invent an official Wishland corporate logo. The existing sprout product mark remains a temporary Enawuga product symbol alongside explicit Wishland text attribution. A formally approved Wishland logo can replace or accompany that mark later without changing the token architecture.
-
-## 3. Application palette
-
-These tokens are derived from the existing Enawuga shell and become the canonical frontend application palette for this repository:
-
-| Token | Value | Use |
+| Token | Value | Primary use |
 | --- | --- | --- |
-| `--wl-forest-900` | `#163D36` | primary text, dark controls, brand anchor |
-| `--wl-forest-800` | `#173F37` | hero/sidebar/background |
-| `--wl-forest-600` | `#326957` | secondary brand surface |
-| `--wl-leaf-300` | `#B7EB8F` | brand accent/highlight |
-| `--wl-surface-50` | `#F3F5EE` | application canvas |
-| `--wl-surface-0` | `#FFFFFF` | cards/raised surfaces |
-| `--wl-muted-600` | `#566B64` | secondary text |
-| `--wl-border-200` | `#D7E0D1` | separators/card borders |
-| `--wl-review-500` | `#CFA44B` | review/partial attention |
-| `--wl-danger-600` | `#A43F3B` | denied/error/destructive state |
+| `--wl-navy-deep` | `#061B35` | darkest brand surface / footer / high-contrast anchor |
+| `--wl-navy-900` | `#0A2A52` | primary Wishland navy / headings / navigation |
+| `--wl-navy-700` | `#123D6B` | secondary navy surfaces |
+| `--wl-teal-600` | `#007DBA` | product/action accent and information emphasis |
+| `--wl-teal-400` | `#00A4D6` | bright focus/accent state |
+| `--wl-gold-500` | `#D4AF37` | Wishland gold / controlled emphasis |
+| `--wl-gold-300` | `#F6D77A` | light gold on dark surfaces |
+| `--wl-ink` | `#0A2342` | body/headline ink on light surfaces |
+| `--wl-surface-50` | `#F4F7FB` | application canvas |
+| `--wl-soft-100` | `#EAF2F8` | subtle information/background surfaces |
+| `--wl-surface-0` | `#FFFFFF` | cards / raised surfaces |
+| `--wl-muted-600` | `#5D7087` | secondary text |
+| `--wl-border-200` | `#D8E2EC` | separators/card borders |
 
-The green palette communicates rural infrastructure and continuity. It must not be overloaded to mean financial approval, settlement or regulatory authorization.
+Older `--wl-forest-*` and `--wl-leaf-*` tokens remain only as compatibility aliases so existing components can migrate incrementally without visual drift. New code should prefer the navy/teal/gold token names.
 
-## 4. Semantic status system
+## 4. Logo and wordmark use
 
-Semantic states use text plus icon/label; color alone is insufficient.
+The global application header uses the official Wishland wordmark asset. The standalone mark may be used only when space is constrained and the product/company relationship is still clear in adjacent accessible text.
+
+Rules:
+
+- preserve aspect ratio and internal whitespace;
+- do not crop or place the mark inside an unrelated colored badge;
+- do not substitute the former sprout icon for the Wishland corporate mark;
+- retain accessible `alt` text for the corporate wordmark;
+- use sufficient contrast and clear space;
+- Enawuga remains visible as the product identity next to, not inside, the Wishland asset.
+
+## 5. Brand header pattern
+
+The application header should show:
+
+- official Wishland wordmark;
+- Enawuga product name;
+- `Phygital Rural Agent Hub` subtitle;
+- Wishland technology-provider relationship;
+- current environment marker such as `Stage 4 · Synthetic`.
+
+The environment marker and authority boundary must remain visible in screenshots and narrow/mobile layouts.
+
+## 6. Visual language
+
+Wishland visual language uses navy as the trust/structure anchor, teal for connective/digital emphasis, and gold for controlled premium emphasis. The palette supports the company themes visible in the source material: grounded digital infrastructure, trust, transparency, resilience, inclusion and practical institutional utility.
+
+Gold is a brand accent, not a generic PASS/approval color. Teal is an information/action accent, not proof of provider connectivity. Navy is brand structure, not evidence of regulated authority.
+
+## 7. Semantic status system
+
+Semantic states always use text plus icon/label; color alone is insufficient.
 
 | Semantic state | Visual intent | Examples |
 | --- | --- | --- |
-| Synthetic / informational | neutral green-gray | `SYNTHETIC`, `READ ONLY` |
-| Evidence available | leaf/forest | `PRESENT_SYNTHETIC` |
-| Collecting / partial | amber | `COLLECTING`, `PARTIAL`, `REVIEW_REQUIRED` |
+| Synthetic / informational | soft blue / navy | `SYNTHETIC`, `READ ONLY` |
+| Evidence available | teal/navy | `PRESENT_SYNTHETIC` |
+| Collecting / partial / review | gold/amber | `COLLECTING`, `PARTIAL`, `REVIEW_REQUIRED` |
 | Unknown / unavailable | muted neutral | `UNKNOWN`, `UNAVAILABLE` |
 | Denied / blocked | red | `NOT_AUTHORIZED`, `DENIED`, `REJECTED` |
 
-A positive color must never transform `MEETS_TARGET_UNREVIEWED` into `APPROVED`.
+A positive brand color must never transform `MEETS_TARGET_UNREVIEWED` into `APPROVED`.
 
-## 5. Typography
+## 8. Typography
 
-Primary application typeface: **Geist**, with `system-ui, sans-serif` fallback.
+Primary application typeface: **Geist**, with `system-ui, sans-serif` fallback. The Wishland public source currently uses Inter/system UI on the website; the application keeps Geist as its product UI typeface to preserve implemented information density and readability.
 
 Rules:
 
@@ -63,45 +101,34 @@ Rules:
 - tabular numerals for operational figures;
 - readable line height for field/tablet conditions.
 
-## 6. Shape, spacing and surfaces
+## 9. Shape, spacing and surfaces
 
 - card radius: 14–20px depending on hierarchy;
 - control radius: 9–12px;
 - pills only for compact statuses/tags;
 - subtle borders preferred over heavy shadows;
-- shadows remain low contrast and never imply interactivity by themselves;
-- use 8px-based spacing rhythm;
+- shadows remain navy-tinted and low contrast;
+- use an 8px-based spacing rhythm;
 - management dashboards prioritize scanability over decoration.
 
-## 7. Brand header pattern
-
-The global product header should show:
-
-- Enawuga product mark/name;
-- `Phygital Rural Agent Hub` subtitle;
-- `Wishland Networking PLC · Technology provider` attribution;
-- current environment marker such as `Stage 4 · Synthetic`.
-
-The environment marker must remain visible in screenshots and narrow/mobile layouts.
-
-## 8. Portal visual differentiation
+## 10. Portal visual differentiation
 
 All portals share the Wishland/Enawuga design system but differ by information density and workflow pattern, not by unrelated colors.
 
 - Agent: task-first cards, large targets, low density.
 - Supervisor: management summaries and Hub tabs.
-- Operations: queues, exceptions, provenance, evidence timelines.
+- Operations: queues, exceptions, provenance and evidence timelines.
 - Partner Admin: configuration/evidence tables and governance context.
 
 Do not assign different corporate colors to roles; role differentiation comes from labels, iconography, hierarchy and page structure.
 
-## 9. Icons and imagery
+## 11. Icons and imagery
 
-Lucide icons are the default functional icon set already used by the application. Icons describe actions/status and must not replace text for high-risk states.
+Lucide icons remain the default functional icon set. Icons describe actions/status and must not replace text for high-risk states.
 
-Photography/illustration is optional and should not be used to imply an actual deployed Hub, partner institution, customer, device or regulated operation when the underlying state is synthetic.
+Photography or illustration must not imply an actual deployed Hub, partner institution, customer, device or regulated operation when the underlying state is synthetic. The Wishland repository's public imagery may be reused only when its context is compatible with the application's evidence boundaries.
 
-## 10. Data visualization
+## 12. Data visualization
 
 Charts must use brand tokens and semantic states consistently. Every operational chart requires:
 
@@ -111,17 +138,15 @@ Charts must use brand tokens and semantic states consistently. Every operational
 - time/evaluation context;
 - accessible tabular alternative where practical.
 
-Avoid decorative chart color palettes that conflict with semantic status colors.
+Avoid decorative chart palettes that conflict with semantic status colors.
 
-## 11. Language presentation
+## 13. Language presentation
 
-English is the source UI language. Amharic and Afaan Oromo may be exposed only as reviewed presentation language packs. Broken or machine-corrupted strings are not acceptable production branding.
+English is the source UI language. Amharic and Afaan Oromo may be exposed only as reviewed presentation language packs. Product names, provider names, evidence IDs and canonical status codes remain unchanged across translations unless an approved localization standard says otherwise.
 
-Product names, provider names, evidence IDs and canonical status codes remain unchanged across translations unless an approved localization standard says otherwise.
+## 14. Brand claim control
 
-## 12. Brand claim control
-
-Approved product phrasing for the current stage includes:
+Approved current-stage phrasing includes:
 
 - `Wishland Networking PLC · Technology provider`
 - `Stage 4 · Synthetic`
@@ -130,6 +155,6 @@ Approved product phrasing for the current stage includes:
 
 Avoid phrases such as `live network`, `real-time institutional`, `bank-grade`, `regulator approved`, `settlement complete`, `production ready`, `biometric secured` or `zero-knowledge protected` unless independently implemented and evidenced.
 
-## 13. Governance of future brand changes
+## 15. Governance of future brand changes
 
-Any future formal logo, corporate palette or external brand guide should be added as a governed asset and mapped into these tokens rather than hard-coded across components. Brand changes should not weaken authority/status semantics or accessibility contrast.
+Newer official Wishland assets or corporate brand guidance should replace this source only through a reviewed repository change with provenance recorded. Brand changes must not weaken authority/status semantics, accessibility contrast or evidence classification.

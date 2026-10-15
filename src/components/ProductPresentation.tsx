@@ -85,14 +85,13 @@ export function PresentationShell({ children }: { children: ReactNode }) {
     <LanguageContext.Provider value={t}>
       <div className="product-shell">
         <header className="product-header">
-          <Link to="/" className="product-brand" aria-label="Enawuga home">
-            <span className="brand-mark" aria-hidden="true">
-              <Sprout />
-            </span>
+          <Link to="/" className="product-brand" aria-label="Enawuga home by Wishland Networking PLC">
+            <img className="wishland-wordmark" src="/brand/wishland-wordmark.png" alt="Wishland Networking PLC" />
+            <span className="product-brand-divider" aria-hidden="true" />
             <span className="product-brand-copy">
               <strong>Enawuga</strong>
               <small>Phygital Rural Agent Hub</small>
-              <em>Wishland Networking PLC {"\u00b7"} Technology provider</em>
+              <em>Wishland Networking PLC · Technology provider</em>
             </span>
           </Link>
           <div className="product-header-tools">

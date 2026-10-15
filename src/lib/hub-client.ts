@@ -1,6 +1,8 @@
 import type { HubServiceWorkspaceManifest } from "../domain/hubServiceComposition";
 import type { HubEconomicsReadModel } from "../domain/hubEconomics";
 import type { PilotEvidenceReadModel } from "../domain/pilotEvidenceEngine";
+import type { CorridorPlanningReadModel } from "../domain/corridorPlanning";
+import type { HubOperatorDeviceReadinessReadModel } from "../domain/hubOperatorDeviceReadiness";
 
 async function parseHubJson(response: Response) {
   const contentType = response.headers.get("content-type") ?? "";
@@ -35,4 +37,22 @@ export async function loadHubPilotEvidence(hubId: string): Promise<readonly Pilo
   if (!response.ok) { const body = await parseHubJson(response).catch(() => ({})); throw new Error(body.error ?? "HUB_API_UNAVAILABLE"); }
   const body = (await parseHubJson(response)) as { readOnly: true; programs: PilotEvidenceReadModel[] };
   return body.programs;
+}
+
+export async function loadHubCorridorPlanning(hubId: string): Promise<readonly CorridorPlanningReadModel[]> {
+  const response = await fetch(`/api/demo/hubs/${encodeURIComponent(hubId)}/corridor-planning`, { credentials: "same-origin" });
+  if (response.status === 401) throw new Error("WORKSPACE_SESSION_REQUIRED");
+  if (response.status === 403) throw new Error("HUB_ACCESS_DENIED");
+  if (!response.ok) { const body = await parseHubJson(response).catch(() => ({})); throw new Error(body.error ?? "HUB_API_UNAVAILABLE"); }
+  const body = (await parseHubJson(response)) as { readOnly: true; plans: CorridorPlanningReadModel[] };
+  return body.plans;
+}
+
+export async function loadHubOperatorDeviceReadiness(hubId: string): Promise<readonly HubOperatorDeviceReadinessReadModel[]> {
+  const response = await fetch(`/api/demo/hubs/${encodeURIComponent(hubId)}/operator-device-readiness`, { credentials: "same-origin" });
+  if (response.status === 401) throw new Error("WORKSPACE_SESSION_REQUIRED");
+  if (response.status === 403) throw new Error("HUB_ACCESS_DENIED");
+  if (!response.ok) { const body = await parseHubJson(response).catch(() => ({})); throw new Error(body.error ?? "HUB_API_UNAVAILABLE"); }
+  const body = (await parseHubJson(response)) as { readOnly: true; readiness: HubOperatorDeviceReadinessReadModel[] };
+  return body.readiness;
 }

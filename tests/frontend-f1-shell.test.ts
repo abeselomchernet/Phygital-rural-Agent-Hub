@@ -4,12 +4,13 @@ import test from "node:test";
 
 const read = (path: string) => readFileSync(path, "utf8");
 
-test("F1 formalizes the existing Wishland/Enawuga application palette and attribution", () => {
+test("F1/F4 governed Wishland/Enawuga palette and attribution remain explicit", () => {
   const tokens = read("src/components/wishland-brand.css");
   const presentation = read("src/components/ProductPresentation.tsx");
-  assert.match(tokens, /--wl-forest-900:\s*#163d36/i);
-  assert.match(tokens, /--wl-leaf-300:\s*#b7eb8f/i);
-  assert.match(tokens, /--wl-surface-50:\s*#f3f5ee/i);
+  assert.match(tokens, /--wl-navy-900:\s*#0a2a52/i);
+  assert.match(tokens, /--wl-teal-600:\s*#007dba/i);
+  assert.match(tokens, /--wl-gold-500:\s*#d4af37/i);
+  assert.match(presentation, /wishland-wordmark\.png/);
   assert.match(presentation, /Wishland Networking PLC/);
   assert.match(presentation, /Technology provider/);
   assert.match(presentation, /Stage 4/);
@@ -33,6 +34,6 @@ test("frontend architecture and Wishland design governance are versioned with th
   const plan = read("docs/frontend/FRONTEND_DELIVERY_PLAN.md");
   assert.match(architecture, /one governed application with role-specific portals/i);
   assert.match(brand, /Wishland Networking PLC/);
-  assert.match(brand, /does not invent an official Wishland corporate logo/i);
+  assert.match(brand, /official Wishland wordmark asset/i);
   assert.match(plan, /Backend E10 remains gated/);
 });

@@ -15,7 +15,7 @@
   padding: 1.1rem 1.2rem;
   border: 1px solid var(--wl-border-200);
   border-radius: var(--wl-radius-lg);
-  background: linear-gradient(135deg, var(--wl-surface-0), #eef4e6);
+  background: linear-gradient(135deg, var(--wl-surface-0), #edf5fb);
   box-shadow: var(--wl-shadow-soft);
 }
 
@@ -163,7 +163,7 @@
 
 .workspace-nav-link.active {
   border-color: var(--wl-border-300);
-  background: #e8f2dc;
+  background: #eaf2f8;
   color: var(--wl-forest-900);
 }
 
