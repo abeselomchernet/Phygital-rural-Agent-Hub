@@ -154,7 +154,7 @@ test("presentation fits desktop and mobile with explicitly synthetic architectur
       await expect(
         page.getByText(/Wishland Networking PLC.*Technology provider/),
       ).toBeVisible();
-      await expect(page.getByText(/Stage 4.*Synthetic/)).toBeVisible();
+      await expect(page.getByText("Stage 4 · Synthetic", { exact: true })).toBeVisible();
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth <= window.innerWidth + 1,

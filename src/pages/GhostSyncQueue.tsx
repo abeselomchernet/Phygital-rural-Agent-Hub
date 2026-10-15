@@ -9,6 +9,8 @@ import {
   CapabilityBadge,
   ConflictDemo,
 } from "../components/ProductPresentation";
+import AgentFieldStatus from "../components/AgentFieldStatus";
+import "../components/agent-field.css";
 export default function GhostSyncQueue() {
   const [events, setEvents] = useState<QueuedEvent[]>([]),
     [notice, setNotice] = useState("");
@@ -20,6 +22,7 @@ export default function GhostSyncQueue() {
   }, []);
   return (
     <>
+      <AgentFieldStatus compact />
       <section className="product-card space-y-4">
         <CapabilityBadge state="IMPLEMENTED" />
         <h1>GhostSync — synthetic request outbox</h1>
@@ -55,7 +58,7 @@ export default function GhostSyncQueue() {
             Terminal.
           </p>
         )}
-        <div className="queue-scroll">
+        <div className="queue-scroll agent-queue-table">
           <table>
             <thead>
               <tr>
@@ -87,6 +90,27 @@ export default function GhostSyncQueue() {
               ))}
             </tbody>
           </table>
+        </div>
+        <div className="agent-queue-cards" aria-label="Local synthetic request cards">
+          {events.map((event) => (
+            <article className="agent-queue-card" key={`card-${event.row_key}`} data-testid="queue-event-card">
+              <strong>Local request</strong>
+              <dl>
+                <dt>Event</dt><dd>{event.row_key}</dd>
+                <dt>Transport</dt><dd>{event.transportState}</dd>
+                <dt>Financial state</dt><dd>{event.financialState}</dd>
+                <dt>Retries</dt><dd>{event.retry_count}</dd>
+              </dl>
+              <button
+                onClick={async () => {
+                  await retryEvent(event.row_key);
+                  await refresh();
+                }}
+              >
+                Retry locally ({event.retry_count})
+              </button>
+            </article>
+          ))}
         </div>
       </section>
       <ConflictDemo />

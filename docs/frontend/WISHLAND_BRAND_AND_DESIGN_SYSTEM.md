@@ -158,3 +158,18 @@ Avoid phrases such as `live network`, `real-time institutional`, `bank-grade`, `
 ## 15. Governance of future brand changes
 
 Newer official Wishland assets or corporate brand guidance should replace this source only through a reviewed repository change with provenance recorded. Brand changes must not weaken authority/status semantics, accessibility contrast or evidence classification.
+
+## 16. Agent field/mobile application of the brand
+
+The F6 Agent experience applies the corporate system to field interaction rather than introducing a separate Agent color theme.
+
+- primary task/action controls use Wishland navy `#0A2A52`;
+- active/information emphasis uses Wishland teal `#007DBA`;
+- focus and controlled attention states use the governed teal/gold tokens;
+- the official Wishland wordmark remains the corporate mark in the shared header;
+- Enawuga remains the product identity;
+- semantic danger/review states remain independent from brand color.
+
+Agent surfaces prioritize large touch targets, strong contrast, low information density and visible offline context. A blue/teal `Online signal` is never evidence that a provider, PartnerFI or payment rail is online. Gold is never used to mean approved. No mobile layout may hide the `Stage 4 · Synthetic` or no-production-authority context merely to save space.
+
+New Agent controls should use the canonical `--wl-navy-*`, `--wl-teal-*`, `--wl-gold-*`, surface and semantic tokens rather than legacy hard-coded forest/leaf colors. Existing compatibility aliases may remain until safely migrated.
