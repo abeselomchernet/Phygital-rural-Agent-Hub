@@ -56,10 +56,11 @@ export function resolveSyntheticWorkspaceContext(input: {
   return defaultSyntheticWorkspaceContextForRole(input.role);
 }
 
-export function generateSyntheticWorkspaceForSession(input: {
+export function generateHubServiceWorkspaceForSession(input: {
   session: SyntheticPrincipal;
   registry: PartnerAdapterRegistry;
   evaluatedAt: string;
+  hubId?: string;
 }) {
   const context = input.session.workspaceContext;
   const partnerOrgId = context.activePartnerOrgId;
@@ -80,12 +81,13 @@ export function generateSyntheticWorkspaceForSession(input: {
     objectScopes: context.objectScopes,
   });
 
-  if (context.hubAssignments.length !== 1)
+  const hubId = input.hubId ?? context.hubAssignments[0];
+  if (!hubId || (!input.hubId && context.hubAssignments.length !== 1))
     throw new SyntheticAuthError("HUB_WORKSPACE_UNAVAILABLE", 403);
 
-  const hubServiceManifest = generateHubServiceWorkspaceManifest({
+  return generateHubServiceWorkspaceManifest({
     tenantId: context.tenantId,
-    hubId: context.hubAssignments[0],
+    hubId,
     partnerOrgId,
     role: input.session.role,
     principal,
@@ -96,6 +98,21 @@ export function generateSyntheticWorkspaceForSession(input: {
     adapterRegistrations: input.registry.adapterMetadata(),
     evaluatedAt: input.evaluatedAt,
   });
+}
+
+export function generateSyntheticWorkspaceForSession(input: {
+  session: SyntheticPrincipal;
+  registry: PartnerAdapterRegistry;
+  evaluatedAt: string;
+}) {
+  const context = input.session.workspaceContext;
+  const partnerOrgId = context.activePartnerOrgId;
+  const contracts = SYNTHETIC_PARTNERFI_SERVICE_CONTRACTS as Record<string, any>;
+  const contract = contracts[partnerOrgId];
+  if (!contract)
+    throw new SyntheticAuthError("PARTNER_WORKSPACE_UNAVAILABLE", 403);
+
+  const hubServiceManifest = generateHubServiceWorkspaceForSession(input);
   const serviceManifest = PartnerServiceManifestSchema.parse({
     partnerOrgId,
     catalogVersion: hubServiceManifest.catalogVersion,

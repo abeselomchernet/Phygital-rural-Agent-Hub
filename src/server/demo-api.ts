@@ -1,11 +1,9 @@
 import { syntheticMetadata } from "../demo/fixtures";
 import { HubAccessPurposeSchema } from "../domain/hub";
-import { generateHubServiceWorkspaceManifest } from "../domain/hubServiceComposition";
-import { PartnerCapabilityPrincipalSchema } from "../domain/partnerCapabilityContract";
 import {
-  SYNTHETIC_PARTNERFI_SERVICE_CATALOGS,
-  SYNTHETIC_PARTNERFI_SERVICE_CONTRACTS,
-} from "../domain/partnerServiceCatalog";
+  buildHubLiquidityTimeSeries,
+  syntheticHubLiquidityObservations,
+} from "../domain/hubLiquidityIntelligence";
 import {
   HubOperationsViewerRoleSchema,
   SYNTHETIC_E1D_OPERATIONS_READ_MODEL,
@@ -52,6 +50,7 @@ import {
 } from "./adapter-bootstrap";
 import {
   SyntheticWorkspaceKeySchema,
+  generateHubServiceWorkspaceForSession,
   generateSyntheticWorkspaceForSession,
   resolveSyntheticWorkspaceContext,
 } from "./workspace";
@@ -232,45 +231,46 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
             ? "HUB_SUPERVISE"
             : "HUB_PARTNER_REVIEW";
       auth.requireHubAccess(session, req.params.hubId, purpose);
-
-      const context = session.workspaceContext;
-      const partnerOrgId = context.activePartnerOrgId;
-      const catalogs = SYNTHETIC_PARTNERFI_SERVICE_CATALOGS as Record<
-        string,
-        unknown
-      >;
-      const contracts = SYNTHETIC_PARTNERFI_SERVICE_CONTRACTS as Record<
-        string,
-        unknown
-      >;
-      const catalog = catalogs[partnerOrgId];
-      const contract = contracts[partnerOrgId];
-      if (!catalog || !contract)
-        throw new SyntheticAuthError("PARTNER_WORKSPACE_UNAVAILABLE", 403);
-
-      const principal = PartnerCapabilityPrincipalSchema.parse({
-        userId: session.userId,
-        partnerOrgMemberships: context.partnerOrgMemberships,
-        roleAssignments: [{ partnerOrgId, role: session.role }],
-        regionIds: [context.regionId],
-        agentGroupIds: context.agentGroupIds,
-        serviceScopes: context.serviceScopes,
-        objectScopes: context.objectScopes,
-      });
-
-      return generateHubServiceWorkspaceManifest({
-        tenantId: context.tenantId,
+      return generateHubServiceWorkspaceForSession({
+        session,
+        registry: workspaceRegistry,
         hubId: req.params.hubId,
-        partnerOrgId,
-        role: session.role,
-        principal,
-        contract,
-        catalog,
-        routesById: workspaceRegistry.resolvedRoutesById(),
-        routeRegistrations: workspaceRegistry.routeMetadata(),
-        adapterRegistrations: workspaceRegistry.adapterMetadata(),
         evaluatedAt: new Date().toISOString(),
       });
+    }),
+  );
+  app.get("/api/demo/hubs/:hubId/liquidity", (req, res) =>
+    respond(res, () => {
+      const session = res.locals.syntheticSession;
+      auth.requireRole(session, ["SUPERVISOR"]);
+      const hub = auth.requireHubAccess(session, req.params.hubId, "HUB_SUPERVISE");
+      const evaluatedAt = new Date().toISOString();
+      const serviceManifest = generateHubServiceWorkspaceForSession({
+        session,
+        registry: workspaceRegistry,
+        hubId: req.params.hubId,
+        evaluatedAt,
+      });
+      if (
+        !serviceManifest.offerings.some(
+          (offering) => offering.serviceType === "NETWORK_LIQUIDITY_READ",
+        )
+      )
+        throw new SyntheticAuthError("HUB_LIQUIDITY_ACCESS_DENIED", 403);
+
+      const timeSeries = buildHubLiquidityTimeSeries({
+        tenantId: hub.tenantId,
+        hubId: hub.hubId,
+        partnerOrgId: hub.partnerMembership.partnerOrgId,
+        observations: syntheticHubLiquidityObservations,
+        evaluatedAt,
+      });
+      return {
+        readOnly: true as const,
+        latestSnapshot:
+          timeSeries.snapshots[timeSeries.snapshots.length - 1],
+        timeSeries,
+      };
     }),
   );
   app.get("/api/demo/hub-operations/traces", (req, res) =>
