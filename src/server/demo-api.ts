@@ -1,4 +1,5 @@
 import { syntheticMetadata } from "../demo/fixtures";
+import { HubAccessPurposeSchema } from "../domain/hub";
 import type { Express } from "express";
 import { z } from "zod";
 import type { PartnerAdapterRegistry } from "../domain/adapterRegistry";
@@ -197,6 +198,18 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
         evaluatedAt: new Date().toISOString(),
       }),
     ),
+  );
+  app.get("/api/demo/hubs/:hubId", (req, res) =>
+    respond(res, () => {
+      const purpose = HubAccessPurposeSchema.parse(
+        typeof req.query.purpose === "string" ? req.query.purpose : "HUB_VIEW",
+      );
+      return auth.requireHubAccess(
+        res.locals.syntheticSession,
+        req.params.hubId,
+        purpose,
+      );
+    }),
   );
   app.post("/api/demo/session/logout", (req, res) => {
     auth.revoke(res.locals.syntheticSession);
