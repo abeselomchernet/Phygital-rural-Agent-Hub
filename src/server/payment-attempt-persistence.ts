@@ -4,6 +4,7 @@ import {
   renameSync, statSync, unlinkSync, writeFileSync,
 } from "node:fs";
 import { dirname, resolve } from "node:path";
+import { fsyncDirectoryEntrySync } from "./local-directory-fsync";
 import {
   PaymentAttemptSnapshotSchema,
   type PaymentAttemptPersistence,
@@ -45,7 +46,7 @@ export class AtomicJsonPaymentAttemptPersistence implements PaymentAttemptPersis
     const directory = dirname(this.filePath);
     const temporary = `${this.filePath}.${randomUUID()}.tmp`;
     const lockPath = `${this.filePath}.lock`;
-    let lock: number | undefined, data: number | undefined, parent: number | undefined;
+    let lock: number | undefined, data: number | undefined;
     try {
       mkdirSync(directory, { recursive: true, mode: 0o700 });
       lock = openSync(lockPath, "wx", 0o600);
@@ -57,14 +58,13 @@ export class AtomicJsonPaymentAttemptPersistence implements PaymentAttemptPersis
       closeSync(data);
       data = undefined;
       renameSync(temporary, this.filePath);
-      parent = openSync(directory, "r");
-      fsyncSync(parent);
+      fsyncDirectoryEntrySync(directory);
     } catch {
       throw new Error("PAYMENT_ATTEMPT_PERSISTENCE_FAILED");
     } finally {
       // Cleanup failure also fails closed; no raw path/error reaches callers.
       let cleanupFailed = false;
-      for (const descriptor of [data, parent, lock]) {
+      for (const descriptor of [data, lock]) {
         if (descriptor !== undefined) {
           try { closeSync(descriptor); } catch { cleanupFailed = true; }
         }
