@@ -13,6 +13,10 @@ import {
   searchStage4HubOperatorDeviceReadiness,
 } from "../domain/hubOperatorDeviceReadiness";
 import {
+  SYNTHETIC_E9_NEUTRALITY_READ_MODELS,
+  searchStage4HubNeutralityGovernance,
+} from "../domain/hubNeutralityGovernance";
+import {
   SYNTHETIC_E6_PILOT_EVIDENCE_READ_MODELS,
   searchStage4PilotEvidence,
 } from "../domain/pilotEvidenceEngine";
@@ -328,6 +332,23 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
           tenantId: hub.tenantId,
           hubId: hub.hubId,
           partnerOrgId: hub.partnerMembership.partnerOrgId,
+        }),
+      };
+    }),
+  );
+  app.get("/api/demo/hubs/:hubId/neutrality-governance", (req, res) =>
+    respond(res, () => {
+      const session = res.locals.syntheticSession;
+      auth.requireRole(session, ["SUPERVISOR", "OPERATIONS", "PARTNER_ADMIN"]);
+      const purpose =
+        session.role === "SUPERVISOR" ? "HUB_SUPERVISE" : "HUB_PARTNER_REVIEW";
+      const hub = auth.requireHubAccess(session, req.params.hubId, purpose);
+      return {
+        readOnly: true as const,
+        neutrality: searchStage4HubNeutralityGovernance({
+          readModels: SYNTHETIC_E9_NEUTRALITY_READ_MODELS,
+          tenantId: hub.tenantId,
+          hubId: hub.hubId,
         }),
       };
     }),
