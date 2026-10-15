@@ -5,6 +5,10 @@ import {
   searchHubEconomics,
 } from "../domain/hubEconomics";
 import {
+  SYNTHETIC_E6_PILOT_EVIDENCE_READ_MODELS,
+  searchStage4PilotEvidence,
+} from "../domain/pilotEvidenceEngine";
+import {
   HubOfflineEvidenceViewerRoleSchema,
   SYNTHETIC_E4_OFFLINE_EVIDENCE_READ_MODEL,
   searchHubOfflineEvidence,
@@ -259,6 +263,24 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
         readOnly: true as const,
         economics: searchHubEconomics({
           readModels: SYNTHETIC_E5_HUB_ECONOMICS_READ_MODELS,
+          tenantId: hub.tenantId,
+          hubId: hub.hubId,
+          partnerOrgId: hub.partnerMembership.partnerOrgId,
+        }),
+      };
+    }),
+  );
+  app.get("/api/demo/hubs/:hubId/pilot-evidence", (req, res) =>
+    respond(res, () => {
+      const session = res.locals.syntheticSession;
+      auth.requireRole(session, ["SUPERVISOR", "OPERATIONS", "PARTNER_ADMIN"]);
+      const purpose =
+        session.role === "SUPERVISOR" ? "HUB_SUPERVISE" : "HUB_PARTNER_REVIEW";
+      const hub = auth.requireHubAccess(session, req.params.hubId, purpose);
+      return {
+        readOnly: true as const,
+        programs: searchStage4PilotEvidence({
+          readModels: SYNTHETIC_E6_PILOT_EVIDENCE_READ_MODELS,
           tenantId: hub.tenantId,
           hubId: hub.hubId,
           partnerOrgId: hub.partnerMembership.partnerOrgId,
