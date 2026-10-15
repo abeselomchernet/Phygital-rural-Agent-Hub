@@ -11,7 +11,7 @@ const presentationSteps = [
     title: 'Mission Control',
     audioFile: '/audio/scene_1.mp3',
     fallbackDelay: 8000,
-    text: "Hi there, and welcome. Let me give you a personal tour of Naga Node—our resilient, offline command center designed for rural finance. On this dashboard, you can see our live network liquidity, transaction mass, and active Ghost-Sync streams updating in real-time."
+    text: "Hi there, and welcome. Let me give you a personal tour of Naga Node—our resilient, offline command center designed for rural finance. On this Stage-4 dashboard, you can inspect synthetic network-liquidity models, transaction fixtures, and Ghost-Sync demo streams. They refresh locally for demonstration; no live institution or provider connection is implied."
   },
   {
     route: '/kiosk',
@@ -39,7 +39,7 @@ const presentationSteps = [
     title: 'Farmer 360',
     audioFile: '/audio/scene_5.mp3',
     fallbackDelay: 10000,
-    text: "At the individual farmer level, we hold a holistic view. In our Farmer Three-Sixty portal, we verify identity using biometric card integrity matching, keeping records entirely encrypted. Operational scores are compiled locally, protecting privacy with Zero-Knowledge principles."
+    text: "At the individual farmer level, we hold a holistic view. In our Farmer Three-Sixty portal, identity and card-integrity states are synthetic placeholders. No biometric capture or binding and no Zero-Knowledge proof system is implemented here; the privacy controls shown are bounded demo concepts, not production identity verification."
   },
   {
     route: '/ardi-engine',
