@@ -11,6 +11,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { dirname, resolve } from "node:path";
+import { fsyncDirectoryEntrySync } from "./local-directory-fsync";
 import { z } from "zod";
 import {
   TelebirrPreorderIntentSnapshotSchema,
@@ -61,7 +62,6 @@ export class AtomicJsonTelebirrPreorderIntentPersistence
 
     let lockDescriptor: number | undefined;
     let dataDescriptor: number | undefined;
-    let directoryDescriptor: number | undefined;
     let ownsLock = false;
 
     try {
@@ -87,15 +87,11 @@ export class AtomicJsonTelebirrPreorderIntentPersistence
 
       renameSync(temporary, this.filePath);
 
-      // Persist the directory entry where supported. Failure is fail-closed
-      // rather than silently overstating local durability.
-      directoryDescriptor = openSync(directory, "r");
-      fsyncSync(directoryDescriptor);
-      closeSync(directoryDescriptor);
-      directoryDescriptor = undefined;
+      // POSIX hosts fsync the containing directory. Node on Windows rejects
+      // directory fsync with EPERM, so that platform limitation is explicit.
+      fsyncDirectoryEntrySync(directory);
     } finally {
       if (dataDescriptor !== undefined) closeSync(dataDescriptor);
-      if (directoryDescriptor !== undefined) closeSync(directoryDescriptor);
       if (lockDescriptor !== undefined) closeSync(lockDescriptor);
       if (existsSync(temporary)) unlinkSync(temporary);
       if (ownsLock && existsSync(lockPath)) unlinkSync(lockPath);
