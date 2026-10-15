@@ -1,11 +1,12 @@
 import { z } from "zod";
 
 import type { PartnerAdapterRegistry } from "../domain/adapterRegistry";
+import { generateHubServiceWorkspaceManifest } from "../domain/hubServiceComposition";
 import { PartnerCapabilityPrincipalSchema } from "../domain/partnerCapabilityContract";
 import {
+  PartnerServiceManifestSchema,
   SYNTHETIC_PARTNERFI_SERVICE_CATALOGS,
   SYNTHETIC_PARTNERFI_SERVICE_CONTRACTS,
-  generatePartnerServiceManifest,
 } from "../domain/partnerServiceCatalog";
 import {
   buildWorkspaceProviderStates,
@@ -79,14 +80,41 @@ export function generateSyntheticWorkspaceForSession(input: {
     objectScopes: context.objectScopes,
   });
 
-  const serviceManifest = generatePartnerServiceManifest({
-    catalog,
-    contract,
+  if (context.hubAssignments.length !== 1)
+    throw new SyntheticAuthError("HUB_WORKSPACE_UNAVAILABLE", 403);
+
+  const hubServiceManifest = generateHubServiceWorkspaceManifest({
+    tenantId: context.tenantId,
+    hubId: context.hubAssignments[0],
+    partnerOrgId,
+    role: input.session.role,
     principal,
+    contract,
+    catalog,
+    routesById: input.registry.resolvedRoutesById(),
+    routeRegistrations: input.registry.routeMetadata(),
+    adapterRegistrations: input.registry.adapterMetadata(),
+    evaluatedAt: input.evaluatedAt,
+  });
+  const serviceManifest = PartnerServiceManifestSchema.parse({
+    partnerOrgId,
+    catalogVersion: hubServiceManifest.catalogVersion,
     role: input.session.role,
     regionId: context.regionId,
-    routesById: input.registry.resolvedRoutesById(),
-    evaluatedAt: input.evaluatedAt,
+    services: hubServiceManifest.offerings.map((offering) => ({
+      serviceId: offering.serviceId,
+      serviceType: offering.serviceType,
+      name: offering.name,
+      shortDescription: offering.shortDescription,
+      category: offering.category,
+      iconKey: offering.iconKey,
+      workflowTemplate: offering.workflowTemplate,
+      requiredCapabilities: offering.capabilityBindings.map(
+        (capability) => capability.capabilityId,
+      ),
+      routeId: offering.capabilityBindings[0].routeId,
+      actionState: "AVAILABLE_SYNTHETIC" as const,
+    })),
   });
 
   const providerStates = buildWorkspaceProviderStates({

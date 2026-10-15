@@ -1,5 +1,11 @@
 import { syntheticMetadata } from "../demo/fixtures";
 import { HubAccessPurposeSchema } from "../domain/hub";
+import { generateHubServiceWorkspaceManifest } from "../domain/hubServiceComposition";
+import { PartnerCapabilityPrincipalSchema } from "../domain/partnerCapabilityContract";
+import {
+  SYNTHETIC_PARTNERFI_SERVICE_CATALOGS,
+  SYNTHETIC_PARTNERFI_SERVICE_CONTRACTS,
+} from "../domain/partnerServiceCatalog";
 import {
   HubOperationsViewerRoleSchema,
   SYNTHETIC_E1D_OPERATIONS_READ_MODEL,
@@ -214,6 +220,57 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
         req.params.hubId,
         purpose,
       );
+    }),
+  );
+  app.get("/api/demo/hubs/:hubId/services", (req, res) =>
+    respond(res, () => {
+      const session = res.locals.syntheticSession;
+      const purpose =
+        session.role === "AGENT"
+          ? "HUB_OPERATE"
+          : session.role === "SUPERVISOR"
+            ? "HUB_SUPERVISE"
+            : "HUB_PARTNER_REVIEW";
+      auth.requireHubAccess(session, req.params.hubId, purpose);
+
+      const context = session.workspaceContext;
+      const partnerOrgId = context.activePartnerOrgId;
+      const catalogs = SYNTHETIC_PARTNERFI_SERVICE_CATALOGS as Record<
+        string,
+        unknown
+      >;
+      const contracts = SYNTHETIC_PARTNERFI_SERVICE_CONTRACTS as Record<
+        string,
+        unknown
+      >;
+      const catalog = catalogs[partnerOrgId];
+      const contract = contracts[partnerOrgId];
+      if (!catalog || !contract)
+        throw new SyntheticAuthError("PARTNER_WORKSPACE_UNAVAILABLE", 403);
+
+      const principal = PartnerCapabilityPrincipalSchema.parse({
+        userId: session.userId,
+        partnerOrgMemberships: context.partnerOrgMemberships,
+        roleAssignments: [{ partnerOrgId, role: session.role }],
+        regionIds: [context.regionId],
+        agentGroupIds: context.agentGroupIds,
+        serviceScopes: context.serviceScopes,
+        objectScopes: context.objectScopes,
+      });
+
+      return generateHubServiceWorkspaceManifest({
+        tenantId: context.tenantId,
+        hubId: req.params.hubId,
+        partnerOrgId,
+        role: session.role,
+        principal,
+        contract,
+        catalog,
+        routesById: workspaceRegistry.resolvedRoutesById(),
+        routeRegistrations: workspaceRegistry.routeMetadata(),
+        adapterRegistrations: workspaceRegistry.adapterMetadata(),
+        evaluatedAt: new Date().toISOString(),
+      });
     }),
   );
   app.get("/api/demo/hub-operations/traces", (req, res) =>
