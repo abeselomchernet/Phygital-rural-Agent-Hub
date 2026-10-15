@@ -12,7 +12,7 @@ This change closes the four HIGH/MEDIUM current defects identified by the indepe
 
 `POST /api/demo/session/start` now passes through a dedicated in-memory limiter before a session is created.
 
-- default: 20 attempts per 60 seconds per Express client IP;
+- default: 60 attempts per 60 seconds per Express client IP;
 - configurable in bounded server options for deterministic testing;
 - denial returns `429 SESSION_START_RATE_LIMITED`;
 - denial is recorded through the existing redacted AUTH audit vocabulary;
