@@ -40,7 +40,8 @@ Current and planned governed route families are:
 - `/kiosk`, `/farmer-360`, `/queue`, `/onboard`, `/academy` Agent workflows
 - `/supervisor`, `/liquidity`, `/cash-fleet`, `/fmcg` Supervisor operations
 - `/operations`, `/network-operations`, `/partners` Operations/Partner administration
-- future Hub workspace surfaces: economics, pilot evidence, corridor planning, operator/device readiness, neutrality and operations evidence
+- /hub/economics, /hub/pilot-evidence, /hub/corridor-planning, /hub/readiness, /hub/neutrality governed management dashboards
+- /operations/evidence governed offline/reconciliation evidence
 
 Future screens must use the existing backend read APIs and exact domain vocabulary rather than inventing parallel client state.
 
@@ -156,3 +157,14 @@ The frontend is a synthetic decision-support and workflow demonstration surface.
 ## F5 governance and operations evidence
 
 F5 adds scoped Neutrality & Scheme Governance and Offline/Reconciliation Evidence surfaces. Neutrality renders E9 review evidence without route substitution/fallback semantics. Operations evidence renders E4 queue/replay/idempotency/reconciliation traces without exposing raw intent facts, raw idempotency keys, credentials or provider payloads. Both remain read-only and preserve the difference between transport evidence and financial/regulated authority.
+
+
+## F6 Agent field/mobile experience
+
+F6 makes the Agent portal explicitly phone/tablet-first without creating a separate application or client-side authority model. The authenticated `WorkspaceManifest` still determines role, PartnerFI, Hub, region, services and navigation.
+
+The field UX adds browser/device connectivity status, local synthetic outbox count, explicit Stage-4 remote-delivery state, large mobile task controls, a compact primary Agent navigation derived from the server-provided manifest, responsive queue cards, and canonical Wishland navy/teal/gold interaction tokens.
+
+The connectivity indicator MUST NOT be interpreted as provider availability. `navigator.onLine` is only a browser/device network hint. A locally persisted request remains untrusted transport intent and does not prove provider receipt, authorization, posting, reconciliation or settlement.
+
+The mobile primary navigation is a presentation shortcut only. It is derived from the authenticated Agent manifest and never grants routes or capabilities absent from server policy.

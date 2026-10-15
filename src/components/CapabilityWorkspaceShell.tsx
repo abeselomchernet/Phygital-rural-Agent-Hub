@@ -104,6 +104,26 @@ function WorkspacePortalHeader({ manifest }: { manifest: WorkspaceManifest }) {
   );
 }
 
+function AgentMobileNavigation({ manifest }: { manifest: WorkspaceManifest }) {
+  if (manifest.role !== "AGENT") return null;
+  const primaryIds = new Set(["home", "agent-terminal", "farmer-360", "requests", "readiness"]);
+  const items = manifest.navigation.flatMap((group) => group.items).filter((item) => primaryIds.has(item.id));
+  return (
+    <nav className="agent-mobile-nav" aria-label="Agent primary mobile navigation">
+      {items.map((item) => (
+        <NavLink
+          key={item.id}
+          to={item.path}
+          end={item.path === "/"}
+          className={({ isActive }) => isActive ? "active" : undefined}
+        >
+          {item.label.replace("Requests & offline queue", "Queue").replace("Agent Terminal", "Terminal").replace("Agent readiness", "Readiness")}
+        </NavLink>
+      ))}
+    </nav>
+  );
+}
+
 function WorkspaceNavigation({ manifest }: { manifest: WorkspaceManifest }) {
   return (
     <nav className="workspace-nav" aria-label="Role and partner workspace">
@@ -248,7 +268,7 @@ export default function CapabilityWorkspaceShell({ children }: { children: React
 
   return (
     <CapabilityWorkspaceContext.Provider value={manifest}>
-      <div className="capability-workspace-runtime">
+      <div className="capability-workspace-runtime" data-role={manifest?.role ?? "UNRESOLVED"}>
         <PresentationShell>
           {manifest ? <WorkspacePortalHeader manifest={manifest} /> : (
             <section className="workspace-portal-header workspace-portal-header-fallback">
@@ -281,6 +301,7 @@ export default function CapabilityWorkspaceShell({ children }: { children: React
             </aside>
             <main className="workspace-main" id="main-workspace-content">{children}</main>
           </div>
+          {manifest && <AgentMobileNavigation manifest={manifest} />}
         </PresentationShell>
       </div>
     </CapabilityWorkspaceContext.Provider>

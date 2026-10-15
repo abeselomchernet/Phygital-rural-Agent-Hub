@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import { CapabilityBadge } from "../components/ProductPresentation";
+import AgentFieldStatus from "../components/AgentFieldStatus";
 import { useCapabilityWorkspace } from "../components/CapabilityWorkspaceShell";
 import "../components/portal-dashboard.css";
 
@@ -48,6 +49,7 @@ function ActionCard({
   icon,
   state = "IMPLEMENTED",
   testId,
+  priority = false,
 }: {
   title: string;
   description: string;
@@ -56,9 +58,10 @@ function ActionCard({
   icon: ReactNode;
   state?: "IMPLEMENTED" | "SYNTHETIC DEMO";
   testId?: string;
+  priority?: boolean;
 }) {
   return (
-    <article className="portal-action-card" data-testid={testId}>
+    <article className={`portal-action-card${priority ? " portal-action-card-priority" : ""}`} data-testid={testId}>
       <div className="card-top">
         <span className="portal-action-card-icon" aria-hidden="true">{icon}</span>
         <CapabilityBadge state={state} />
@@ -110,15 +113,17 @@ function AgentHome() {
         title="Field service workspace"
         description="Task-first customer assistance, partner-published services and field resilience for the active governed PartnerFI context."
       />
-      <div className="portal-summary-grid">
+      <AgentFieldStatus />
+      <div className="portal-summary-grid agent-summary-grid">
         <SummaryCard label="Partner" value={workspace?.partnerDisplayName ?? "Unavailable"} />
         <SummaryCard label="Published services" value={services.length} />
         <SummaryCard label="Hub" value={displaySyntheticId(workspace?.hubId, "hub_syn_")} />
         <SummaryCard label="Environment" value={workspace?.environment.toUpperCase() ?? "UNKNOWN"} />
       </div>
-      <div className="portal-action-grid">
+      <div className="portal-action-grid agent-action-grid">
         <ActionCard
           testId="agent-services-home-card"
+          priority
           title="Serve customer"
           description="Open the Agent Terminal with the service set resolved from the active partner catalog and capability policy."
           to="/kiosk"

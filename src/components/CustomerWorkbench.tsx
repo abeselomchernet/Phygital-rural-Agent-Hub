@@ -74,7 +74,7 @@ export function CustomerWorkbench({ title = "Customer" }: { title?: string }) {
     );
   };
   return (
-    <section className="workbench p-6 space-y-4 max-w-3xl mx-auto text-slate-100 bg-slate-900 rounded-xl">
+    <section className="workbench agent-workbench">
       <CapabilityBadge state="IMPLEMENTED" />
       <h1 className="text-2xl font-bold">{title}</h1>
       <p>
@@ -96,7 +96,7 @@ export function CustomerWorkbench({ title = "Customer" }: { title?: string }) {
           aria-label="Synthetic phone alias"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
-          className="block bg-slate-800 p-2"
+          className="agent-field-control"
         >
           {["+251900000001", "+251900000002", "+251900000003"].map((p) => (
             <option key={p}>{p}</option>
@@ -192,7 +192,7 @@ export function CustomerWorkbench({ title = "Customer" }: { title?: string }) {
             Request amount (ETB)
             <input
               aria-label="Request amount (ETB)"
-              className="block bg-slate-800 p-2"
+              className="agent-field-control"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               inputMode="decimal"

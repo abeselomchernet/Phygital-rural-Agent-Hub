@@ -218,3 +218,88 @@
     min-height: auto;
   }
 }
+
+
+.portal-action-card-priority {
+  border-color: color-mix(in srgb, var(--wl-teal-600) 38%, var(--wl-border-200));
+  background: linear-gradient(145deg, var(--wl-surface-0), var(--wl-soft-100));
+}
+
+.portal-action-card-priority .portal-action-card-icon {
+  background: var(--wl-teal-600);
+  color: #ffffff;
+}
+
+.agent-kiosk-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.agent-workbench {
+  display: grid;
+  gap: 0.8rem;
+  max-width: 54rem;
+  margin: 0 auto;
+  padding: 1.25rem;
+  border: 1px solid var(--wl-border-200);
+  border-radius: var(--wl-radius-lg);
+  background: linear-gradient(145deg, var(--wl-navy-deep), var(--wl-navy-900));
+  color: #eef5fb;
+  box-shadow: var(--wl-shadow-soft);
+}
+
+.agent-workbench h1 {
+  margin: 0;
+  color: #ffffff;
+}
+
+.agent-workbench p {
+  margin: 0.15rem 0;
+}
+
+.agent-workbench label {
+  display: grid;
+  gap: 0.4rem;
+  font-weight: 700;
+}
+
+.agent-field-control {
+  width: 100%;
+  min-height: 48px;
+}
+
+@media (max-width: 640px) {
+  .agent-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .agent-action-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .agent-action-grid .portal-action-card {
+    min-height: auto;
+    padding: 1rem;
+  }
+
+  .agent-action-grid .portal-action-card .text-link {
+    width: 100%;
+    min-height: 48px;
+    justify-content: center;
+    padding: 0.65rem 0.8rem;
+    border-radius: 0.75rem;
+    background: var(--wl-navy-900);
+    color: #ffffff;
+  }
+
+  .agent-workbench {
+    padding: 1rem;
+    border-radius: var(--wl-radius-md);
+  }
+
+  .agent-workbench button {
+    width: 100%;
+    min-height: 50px;
+    margin: 0.25rem 0 !important;
+  }
+}
