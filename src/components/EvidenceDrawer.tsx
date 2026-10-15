@@ -8,6 +8,7 @@ export type EvidenceDrawerModel = {
   evidenceRefs: readonly string[];
   schemaVersion?: string | number;
   evaluatedAt?: string;
+  integrityRef?: string;
   limitation: string;
   authorityImplication: string;
 };
@@ -31,6 +32,7 @@ export default function EvidenceDrawer({ model, onClose }: { model: EvidenceDraw
           <div className="evidence-detail"><span>Classification</span><strong>{model.classification}</strong></div>
           {model.schemaVersion !== undefined && <div className="evidence-detail"><span>Schema version</span><strong>{model.schemaVersion}</strong></div>}
           {model.evaluatedAt && <div className="evidence-detail"><span>Evaluated / recorded</span><strong>{model.evaluatedAt}</strong></div>}
+          {model.integrityRef && <div className="evidence-detail"><span>Integrity reference</span><code>{model.integrityRef}</code></div>}
           <div className="evidence-detail"><span>Evidence references</span>{model.evidenceRefs.length ? <ul className="evidence-ref-list">{model.evidenceRefs.map((ref) => <li key={ref}><code>{ref}</code></li>)}</ul> : <strong>UNAVAILABLE</strong>}</div>
           <div className="evidence-detail"><span>Limitation</span><strong>{model.limitation}</strong></div>
           <div className="evidence-detail"><span>Authority implication</span><strong>{model.authorityImplication}</strong></div>
