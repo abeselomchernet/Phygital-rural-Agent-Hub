@@ -1,6 +1,6 @@
-import { createHash } from "node:crypto";
 import { z } from "zod";
 
+import { computeCanonicalSha256 } from "./evidenceIntegrity";
 import { HubIdSchema, HubTenantIdSchema } from "./hub";
 import {
   PartnerAdapterIdSchema,
@@ -198,27 +198,11 @@ export const HubWorkflowEnvelopeSchema = HubWorkflowEnvelopeContentSchema.extend
 }).strict();
 export type HubWorkflowEnvelope = z.infer<typeof HubWorkflowEnvelopeSchema>;
 
-function canonicalize(value: unknown): string {
-  if (value === null) return "null";
-  if (typeof value === "string") return JSON.stringify(value);
-  if (typeof value === "number" || typeof value === "boolean")
-    return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map(canonicalize).join(",")}]`;
-  if (typeof value === "object") {
-    const record = value as Record<string, unknown>;
-    return `{${Object.keys(record)
-      .sort()
-      .map((key) => `${JSON.stringify(key)}:${canonicalize(record[key])}`)
-      .join(",")}}`;
-  }
-  throw new Error("HUB_WORKFLOW_CANONICALIZATION_UNSUPPORTED_VALUE");
-}
-
 export function computeHubWorkflowContentDigest(
   content: HubWorkflowEnvelopeContent,
 ) {
   const validated = HubWorkflowEnvelopeContentSchema.parse(content);
-  return `sha256:${createHash("sha256").update(canonicalize(validated)).digest("hex")}`;
+  return computeCanonicalSha256(validated);
 }
 
 export function createHubWorkflowEnvelope(
