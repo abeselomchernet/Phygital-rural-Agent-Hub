@@ -111,6 +111,8 @@ Evidence is a first-class interaction. Governed metrics should expose `View evid
 
 The UI must visually distinguish data, evidence, interpretation, recommendation and authorization.
 
+F2 implements the first shared evidence primitives in `EvidenceDrawer` and `GovernedStatus`. Hub service composition consumes the authenticated `/api/demo/hubs/:hubId/services` response and exposes server-provided evidence references without reconstructing capability state in the client.
+
 ## 10. Responsive behavior
 
 - Agent: phone/tablet first.
