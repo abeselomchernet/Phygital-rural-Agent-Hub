@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 const read = (path: string) => readFileSync(path, "utf8");
 
@@ -39,12 +39,22 @@ test("management navigation exposes F4 surfaces while Agent navigation remains b
   assert.match(manifest, /Operator & Device Readiness/);
 });
 
-test("F4 documents frontend architecture and keeps the Wishland design system", () => {
+test("F4 documents frontend architecture and uses official Wishland brand assets and palette", () => {
   const architecture = read("docs/frontend/FRONTEND_ARCHITECTURE.md");
   const brand = read("docs/frontend/WISHLAND_BRAND_AND_DESIGN_SYSTEM.md");
   const implementation = read("docs/frontend/F4_CORRIDOR_READINESS_IMPLEMENTATION.md");
+  const shell = read("src/components/ProductPresentation.tsx");
+  const tokens = read("src/components/wishland-brand.css");
   assert.match(architecture, /F4 extends/);
-  assert.match(brand, /--wl-forest-900/);
+  assert.match(brand, /abeselomchernet\/wishland/);
+  assert.match(brand, /874754155b6ce59346ddcb23f912f1945bb9fa42/);
   assert.match(implementation, /Wishland \/ Enawuga/);
   assert.match(implementation, /not authorization/i);
+  assert.equal(existsSync("public/brand/wishland-mark.png"), true);
+  assert.equal(existsSync("public/brand/wishland-wordmark.png"), true);
+  assert.match(shell, /wishland-wordmark\.png/);
+  assert.doesNotMatch(shell, /<Sprout/);
+  assert.match(tokens, /--wl-navy-900: #0a2a52/);
+  assert.match(tokens, /--wl-teal-600: #007dba/);
+  assert.match(tokens, /--wl-gold-500: #d4af37/);
 });

@@ -1,23 +1,36 @@
 :root {
-  --wl-forest-900: #163d36;
-  --wl-forest-800: #173f37;
-  --wl-forest-700: #224f3b;
-  --wl-forest-600: #326957;
-  --wl-leaf-300: #b7eb8f;
-  --wl-leaf-200: #d3e8bb;
-  --wl-surface-50: #f3f5ee;
-  --wl-surface-25: #fafaf5;
+  /* Canonical Wishland palette sourced from abeselomchernet/wishland. */
+  --wl-navy-deep: #061b35;
+  --wl-navy-900: #0a2a52;
+  --wl-navy-700: #123d6b;
+  --wl-teal-600: #007dba;
+  --wl-teal-400: #00a4d6;
+  --wl-gold-500: #d4af37;
+  --wl-gold-300: #f6d77a;
+  --wl-ink: #0a2342;
+  --wl-surface-50: #f4f7fb;
+  --wl-surface-25: #f8fbfd;
   --wl-surface-0: #ffffff;
-  --wl-muted-600: #566b64;
-  --wl-muted-500: #6f8179;
-  --wl-border-200: #d7e0d1;
-  --wl-border-300: #c8d6c1;
-  --wl-review-500: #cfa44b;
-  --wl-review-100: #fff1cf;
+  --wl-soft-100: #eaf2f8;
+  --wl-muted-600: #5d7087;
+  --wl-muted-500: #708399;
+  --wl-border-200: #d8e2ec;
+  --wl-border-300: #c7d6e4;
+
+  /* Compatibility aliases retained while components migrate from the earlier green prototype palette. */
+  --wl-forest-900: var(--wl-navy-deep);
+  --wl-forest-800: var(--wl-navy-900);
+  --wl-forest-700: var(--wl-navy-700);
+  --wl-forest-600: var(--wl-teal-600);
+  --wl-leaf-300: var(--wl-gold-300);
+  --wl-leaf-200: #fff0b6;
+
+  --wl-review-500: var(--wl-gold-500);
+  --wl-review-100: #fff7dc;
   --wl-danger-600: #a43f3b;
   --wl-danger-100: #f9e5e3;
-  --wl-info-100: #e8eee3;
-  --wl-shadow-soft: 0 12px 34px rgba(21, 56, 41, 0.08);
+  --wl-info-100: var(--wl-soft-100);
+  --wl-shadow-soft: 0 12px 34px rgba(10, 42, 82, 0.08);
   --wl-radius-sm: 9px;
   --wl-radius-md: 14px;
   --wl-radius-lg: 20px;
@@ -33,11 +46,17 @@
   border: 1px solid var(--wl-border-300);
   border-radius: 999px;
   background: var(--wl-info-100);
-  color: var(--wl-forest-900);
+  color: var(--wl-navy-900);
   font-size: 0.72rem;
   font-weight: 750;
   letter-spacing: 0.035em;
   line-height: 1.2;
+}
+
+.wl-environment-chip {
+  border-color: rgba(212, 175, 55, 0.55);
+  background: linear-gradient(135deg, #fff8df, #fffdf5);
+  color: var(--wl-navy-900);
 }
 
 .wl-status-chip[data-tone="review"] {
@@ -53,7 +72,7 @@
 }
 
 .wl-kicker {
-  color: var(--wl-forest-600);
+  color: var(--wl-teal-600);
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.1em;
@@ -64,7 +83,7 @@
   border: 1px solid var(--wl-border-200);
   border-radius: var(--wl-radius-md);
   background: var(--wl-surface-0);
-  box-shadow: 0 5px 20px rgba(21, 56, 41, 0.025);
+  box-shadow: 0 5px 20px rgba(10, 42, 82, 0.035);
 }
 
 .wl-focus-ring:focus-visible,
@@ -72,6 +91,6 @@
 .product-shell button:focus-visible,
 .product-shell select:focus-visible,
 .product-shell input:focus-visible {
-  outline: 3px solid #8fbf68;
+  outline: 3px solid var(--wl-teal-400);
   outline-offset: 3px;
 }

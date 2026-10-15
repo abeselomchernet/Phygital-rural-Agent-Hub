@@ -6,7 +6,7 @@ F4 surfaces the existing E7 Corridor Planning and E8 Operator & Device Readiness
 
 ## Wishland / Enawuga design continuity
 
-F4 uses the canonical design system in `WISHLAND_BRAND_AND_DESIGN_SYSTEM.md`: forest/leaf brand tokens, Geist typography, low-shadow bordered surfaces, semantic status labels and explicit Stage-4 authority boundaries. No new role color family or unofficial Wishland logo is introduced. Wishland remains text-attributed as the technology provider; Enawuga remains the product/platform identity.
+F4 uses the canonical design system in `WISHLAND_BRAND_AND_DESIGN_SYSTEM.md`: the official Wishland navy/teal/gold palette, Geist application typography, low-shadow bordered surfaces, semantic status labels and explicit Stage-4 authority boundaries. The official Wishland wordmark and mark are imported from `abeselomchernet/wishland` and the former temporary sprout-only corporate treatment is retired. Wishland remains the technology provider; Enawuga remains the product/platform identity.
 
 ## Corridor Planning UX
 

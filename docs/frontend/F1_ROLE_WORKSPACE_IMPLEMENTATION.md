@@ -79,3 +79,7 @@ A merge-ready F1 head must pass:
 - exact-head hosted Linux CI before merge.
 
 Local Playwright may use an installed Chromium-compatible browser through `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`; hosted CI remains the authoritative Chromium merge gate because CI installs its pinned browser revision.
+
+### F4 branding sync addendum
+
+The F1 statement above records what was available at F1 implementation time. In F4, the official Wishland corporate mark, wordmark and navy/teal/gold palette were located in `abeselomchernet/wishland` and imported into the governed frontend. The temporary sprout-only corporate treatment is therefore superseded; see `WISHLAND_BRAND_AND_DESIGN_SYSTEM.md` for current brand provenance and usage.
