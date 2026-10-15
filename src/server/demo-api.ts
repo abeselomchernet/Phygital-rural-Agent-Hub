@@ -1,6 +1,11 @@
 import { syntheticMetadata } from "../demo/fixtures";
 import { HubAccessPurposeSchema } from "../domain/hub";
 import {
+  HubOfflineEvidenceViewerRoleSchema,
+  SYNTHETIC_E4_OFFLINE_EVIDENCE_READ_MODEL,
+  searchHubOfflineEvidence,
+} from "../domain/hubOfflineOperationsEvidence";
+import {
   buildHubLiquidityTimeSeries,
   syntheticHubLiquidityObservations,
 } from "../domain/hubLiquidityIntelligence";
@@ -270,6 +275,33 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
         latestSnapshot:
           timeSeries.snapshots[timeSeries.snapshots.length - 1],
         timeSeries,
+      };
+    }),
+  );
+  app.get("/api/demo/hub-operations/offline-evidence", (req, res) =>
+    respond(res, () => {
+      const session = res.locals.syntheticSession;
+      auth.requireRole(session, ["OPERATIONS", "PARTNER_ADMIN"]);
+      const { hubId, correlationId } = z
+        .object({
+          hubId: z.string().min(1).max(120),
+          correlationId: z.string().min(1).max(120).optional(),
+        })
+        .strict()
+        .parse(req.query);
+      const hub = auth.requireHubAccess(session, hubId, "HUB_PARTNER_REVIEW");
+      return {
+        readOnly: true as const,
+        traces: searchHubOfflineEvidence({
+          readModel: SYNTHETIC_E4_OFFLINE_EVIDENCE_READ_MODEL,
+          scope: {
+            role: HubOfflineEvidenceViewerRoleSchema.parse(session.role),
+            tenantId: hub.tenantId,
+            hubId: hub.hubId,
+            partnerOrgId: hub.partnerMembership.partnerOrgId,
+          },
+          correlationId,
+        }),
       };
     }),
   );
