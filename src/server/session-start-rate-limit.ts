@@ -15,7 +15,7 @@ export class SyntheticSessionStartRateLimiter {
 
   constructor(config: SessionStartRateLimitConfig = {}) {
     this.rateWindowMs = config.rateWindowMs ?? 60_000;
-    this.maxRequestsPerWindow = config.maxRequestsPerWindow ?? 20;
+    this.maxRequestsPerWindow = config.maxRequestsPerWindow ?? 60;
     if (!Number.isSafeInteger(this.rateWindowMs) || this.rateWindowMs <= 0)
       throw new Error("SESSION_START_RATE_WINDOW_INVALID");
     if (
