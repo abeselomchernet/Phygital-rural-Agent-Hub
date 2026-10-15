@@ -175,6 +175,8 @@ export type PartnerTechnicalRouteRequest = {
   capabilityId: PartnerContractCapabilityId;
   environment: PartnerContractEnvironment;
   routeId: string;
+  expectedRouteVersion?: number | null;
+  expectedAdapterVersion?: number | null;
 };
 
 export type PartnerGovernedRouteRequest = {
@@ -188,6 +190,8 @@ export type PartnerGovernedRouteRequest = {
   evaluatedAt: string;
   mutationState?: "PRE_SUBMIT" | "SUBMITTED" | "AMBIGUOUS";
   pinnedRouteId?: string | null;
+  pinnedRouteVersion?: number | null;
+  pinnedAdapterVersion?: number | null;
 };
 
 const registeredAdapterStatusByEnvironment: Record<
@@ -319,6 +323,8 @@ export class PartnerAdapterRegistry {
   resolve<T>(input: PartnerTechnicalRouteRequest): PartnerAdapterResolution<T> {
     const route = this.routes.get(input.routeId);
     if (!route) throw new Error("ROUTE_NOT_REGISTERED");
+    if (input.expectedRouteVersion != null && route.routeVersion !== input.expectedRouteVersion)
+      throw new Error("ROUTE_VERSION_MISMATCH");
     if (route.providerOrgId !== input.partnerOrgId)
       throw new Error("ROUTE_PARTNER_MISMATCH");
     if (route.environment !== input.environment)
@@ -331,6 +337,8 @@ export class PartnerAdapterRegistry {
 
     const stored = this.adapters.get(route.adapterId);
     if (!stored) throw new Error("ROUTE_ADAPTER_NOT_REGISTERED");
+    if (input.expectedAdapterVersion != null && stored.metadata.adapterVersion !== input.expectedAdapterVersion)
+      throw new Error("ADAPTER_VERSION_MISMATCH");
     if (!this.adapterIsUsable(stored)) throw new Error("ADAPTER_NOT_USABLE");
     if (stored.metadata.environment !== input.environment)
       throw new Error("ADAPTER_ENVIRONMENT_MISMATCH");
@@ -394,12 +402,23 @@ export class PartnerAdapterRegistry {
     if (selectedRouteId !== service.routeId)
       throw new Error("PINNED_ROUTE_MISMATCH");
 
+    const expectedRouteVersion =
+      mutationState === "PRE_SUBMIT" ? undefined : input.pinnedRouteVersion ?? undefined;
+    const expectedAdapterVersion =
+      mutationState === "PRE_SUBMIT" ? undefined : input.pinnedAdapterVersion ?? undefined;
+    if (mutationState !== "PRE_SUBMIT" && expectedRouteVersion === undefined)
+      throw new Error("PINNED_ROUTE_VERSION_REQUIRED_AFTER_SUBMIT");
+    if (mutationState !== "PRE_SUBMIT" && expectedAdapterVersion === undefined)
+      throw new Error("PINNED_ADAPTER_VERSION_REQUIRED_AFTER_SUBMIT");
+
     return this.resolve<T>({
       partnerOrgId: catalog.partnerOrgId,
       serviceId: input.serviceId,
       capabilityId: input.capabilityId,
       environment: catalog.environment,
       routeId: selectedRouteId,
+      expectedRouteVersion,
+      expectedAdapterVersion,
     });
   }
 
