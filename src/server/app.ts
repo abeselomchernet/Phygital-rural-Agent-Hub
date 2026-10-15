@@ -9,14 +9,27 @@ import {
   isoFixtures,
 } from "../demo/fixtures";
 
-export function createApp(options: DemoApiOptions = {}) {
+export interface AppOptions extends DemoApiOptions {
+  trustProxyHops?: number;
+}
+
+export function createApp(options: AppOptions = {}) {
   validateDataConfig(process.env);
   const app = express();
+  const trustProxyHops =
+    options.trustProxyHops ?? (process.env.NODE_ENV === "production" ? 1 : 0);
+  if (
+    !Number.isSafeInteger(trustProxyHops) ||
+    trustProxyHops < 0 ||
+    trustProxyHops > 5
+  )
+    throw new Error("TRUST_PROXY_HOPS_INVALID");
+  app.set("trust proxy", trustProxyHops);
   app.disable("x-powered-by");
   app.use((_req, res, next) => {
     res.setHeader(
       "Content-Security-Policy",
-      "connect-src 'self'; media-src 'self'; object-src 'none'; frame-ancestors 'none'",
+      "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self'; media-src 'self'; object-src 'none'; frame-ancestors 'none'",
     );
     next();
   });

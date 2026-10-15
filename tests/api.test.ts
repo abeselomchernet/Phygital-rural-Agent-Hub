@@ -313,3 +313,77 @@ test("all presentation GET fixtures are deterministic and explicitly synthetic",
     );
   }
 });
+
+
+test("audit hardening rate-limits session creation and handles one trusted proxy hop", async () => {
+  const app = createApp({
+    trustProxyHops: 1,
+    sessionStartMaxRequestsPerWindow: 2,
+    sessionStartRateWindowMs: 60_000,
+  });
+  const server = app.listen(0, "127.0.0.1");
+  await new Promise<void>((resolve) => server.once("listening", resolve));
+  const base = `http://127.0.0.1:${(server.address() as any).port}`;
+  const origin = base.replace("http://", "https://");
+  const start = (clientIp: string) =>
+    fetch(base + "/api/demo/session/start", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Origin: origin,
+        "X-Forwarded-Proto": "https",
+        "X-Forwarded-For": clientIp,
+      },
+      body: JSON.stringify({ role: "AGENT" }),
+    });
+  try {
+    const health = await fetch(base + "/api/health");
+    const csp = health.headers.get("content-security-policy") ?? "";
+    assert.match(csp, /default-src 'self'/);
+    assert.match(csp, /script-src 'self'/);
+
+    const first = await start("203.0.113.10");
+    assert.equal(first.status, 200);
+    assert.match(first.headers.get("set-cookie") ?? "", /; Secure/);
+    assert.equal((await start("203.0.113.10")).status, 200);
+    const limited = await start("203.0.113.10");
+    assert.equal(limited.status, 429);
+    assert.equal((await limited.json()).error, "SESSION_START_RATE_LIMITED");
+    assert.equal((await start("203.0.113.11")).status, 200);
+  } finally {
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve())),
+    );
+  }
+});
+
+test("customer lookup returns one non-enumerating response for invalid or unavailable phones", async () => {
+  const server = createApp().listen(0, "127.0.0.1");
+  await new Promise<void>((resolve) => server.once("listening", resolve));
+  const base = `http://127.0.0.1:${(server.address() as any).port}`;
+  try {
+    const session = await startSession(base);
+    assert.equal(
+      (await authedFetch(base, session, "/api/demo/lookup?phone=%2B251900000001")).status,
+      200,
+    );
+
+    const unavailableKnownShape = await authedFetch(
+      base,
+      session,
+      "/api/demo/lookup?phone=%2B251900000002",
+    );
+    const invalidPhone = await authedFetch(
+      base,
+      session,
+      "/api/demo/lookup?phone=%2B251911234567",
+    );
+    assert.equal(unavailableKnownShape.status, 404);
+    assert.equal(invalidPhone.status, 404);
+    assert.deepEqual(await unavailableKnownShape.json(), await invalidPhone.json());
+  } finally {
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve())),
+    );
+  }
+});

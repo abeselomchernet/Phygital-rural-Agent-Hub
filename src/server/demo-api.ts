@@ -69,6 +69,7 @@ import {
   SyntheticAuditLog,
   type SyntheticAuditPersistence,
 } from "./audit";
+import { SyntheticSessionStartRateLimiter } from "./session-start-rate-limit";
 import {
   createDefaultSyntheticFinancialInstitutionAdapter,
   createRuntimeAdapterRegistry,
@@ -97,6 +98,8 @@ export interface DemoApiOptions {
   paymentGateway?: PaymentGatewayAdapter;
   paymentGatewayReconciliation?: PaymentGatewayReconciliationService;
   adapterRegistry?: PartnerAdapterRegistry;
+  sessionStartRateWindowMs?: number;
+  sessionStartMaxRequestsPerWindow?: number;
 }
 
 const roleSchema = z.enum([
@@ -120,6 +123,10 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
       ),
     transactions = new TransactionService(customers, partner),
     auth = new SyntheticAuthService({}, audit),
+    sessionStartLimiter = new SyntheticSessionStartRateLimiter({
+      rateWindowMs: options.sessionStartRateWindowMs,
+      maxRequestsPerWindow: options.sessionStartMaxRequestsPerWindow,
+    }),
     workspaceRegistry =
       options.adapterRegistry ?? createRuntimeAdapterRegistry({ env: {} });
 
@@ -175,6 +182,18 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
 
   app.post("/api/demo/session/start", (req, res) =>
     respond(res, () => {
+      try {
+        sessionStartLimiter.consume(req.ip ?? req.socket.remoteAddress ?? "unknown");
+      } catch (error) {
+        if (error instanceof SyntheticAuthError)
+          audit.record({
+            category: "AUTH",
+            action: "RATE_LIMITED",
+            outcome: "DENY",
+            actor: { userId: "anonymous", role: "NONE" },
+          });
+        throw error;
+      }
       const { role, workspaceKey } = z
         .object({
           role: roleSchema.default("AGENT"),
@@ -464,18 +483,37 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
       return customers.get(fixtureId);
     }),
   );
-  app.get("/api/demo/lookup", (req, res) =>
-    respond(res, () => {
-      auth.requireRole(res.locals.syntheticSession, [
-        "AGENT",
-        "SUPERVISOR",
-        "PARTNER_ADMIN",
-      ]);
-      const resolved = customers.resolve(z.enum(demoPhones).parse(req.query.phone));
-      auth.requireCustomer(res.locals.syntheticSession, resolved.customerId);
-      return resolved;
-    }),
-  );
+  app.get("/api/demo/lookup", (req, res) => {
+    const session = res.locals.syntheticSession;
+    try {
+      auth.requireRole(session, ["AGENT", "SUPERVISOR", "PARTNER_ADMIN"]);
+    } catch (error) {
+      if (error instanceof SyntheticAuthError)
+        return res.status(error.status).json({ error: error.code });
+      throw error;
+    }
+
+    const parsed = z
+      .object({ phone: z.enum(demoPhones) })
+      .strict()
+      .safeParse(req.query);
+    if (!parsed.success)
+      return res.status(404).json({
+        error: "CUSTOMER_LOOKUP_UNAVAILABLE",
+        ...syntheticMetadata,
+      });
+
+    try {
+      const resolved = customers.resolve(parsed.data.phone);
+      auth.requireCustomer(session, resolved.customerId);
+      return res.json({ ...resolved, ...syntheticMetadata });
+    } catch {
+      return res.status(404).json({
+        error: "CUSTOMER_LOOKUP_UNAVAILABLE",
+        ...syntheticMetadata,
+      });
+    }
+  });
   app.post("/api/demo/phone", (req, res) =>
     respond(res, () => {
       const session = res.locals.syntheticSession;
