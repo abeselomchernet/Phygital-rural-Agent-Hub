@@ -131,6 +131,8 @@ function navigationForRole(input: {
       { id: "pilot-evidence", label: "Pilot Evidence", path: "/hub/pilot-evidence" },
       { id: "corridor-planning", label: "Corridor Planning", path: "/hub/corridor-planning" },
       { id: "operator-device-readiness", label: "Operator & Device Readiness", path: "/hub/readiness" },
+      { id: "neutrality-governance", label: "Neutrality & Governance", path: "/hub/neutrality" },
+      { id: "neutrality-governance", label: "Neutrality & Governance", path: "/hub/neutrality" },
       { id: "supervisor", label: "Regional overview", path: "/supervisor" },
       { id: "network-access", label: "Network access", path: "/network-operations" },
     ];
@@ -168,7 +170,9 @@ function navigationForRole(input: {
       { id: "pilot-evidence", label: "Pilot Evidence", path: "/hub/pilot-evidence" },
       { id: "corridor-planning", label: "Corridor Planning", path: "/hub/corridor-planning" },
       { id: "operator-device-readiness", label: "Operator & Device Readiness", path: "/hub/readiness" },
+      { id: "neutrality-governance", label: "Neutrality & Governance", path: "/hub/neutrality" },
       { id: "operations-center", label: "Operations Center", path: "/operations" },
+      { id: "offline-evidence", label: "Offline & Reconciliation Evidence", path: "/operations/evidence" },
       { id: "network-access", label: "Network access", path: "/network-operations" },
       { id: "queue", label: "Offline exceptions", path: "/queue" },
     ];
@@ -204,6 +208,7 @@ function navigationForRole(input: {
         { id: "partners", label: "Partner Ecosystem", path: "/partners" },
         { id: "network-access", label: "Access & scopes", path: "/network-operations" },
         { id: "operations-center", label: "Operations evidence", path: "/operations" },
+        { id: "offline-evidence", label: "Offline & Reconciliation Evidence", path: "/operations/evidence" },
       ],
     },
     {
