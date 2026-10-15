@@ -5,6 +5,10 @@ import {
   searchHubEconomics,
 } from "../domain/hubEconomics";
 import {
+  SYNTHETIC_E7_CORRIDOR_PLANNING_READ_MODELS,
+  searchStage4CorridorPlanning,
+} from "../domain/corridorPlanning";
+import {
   SYNTHETIC_E6_PILOT_EVIDENCE_READ_MODELS,
   searchStage4PilotEvidence,
 } from "../domain/pilotEvidenceEngine";
@@ -283,6 +287,24 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
           readModels: SYNTHETIC_E6_PILOT_EVIDENCE_READ_MODELS,
           tenantId: hub.tenantId,
           hubId: hub.hubId,
+          partnerOrgId: hub.partnerMembership.partnerOrgId,
+        }),
+      };
+    }),
+  );
+  app.get("/api/demo/hubs/:hubId/corridor-planning", (req, res) =>
+    respond(res, () => {
+      const session = res.locals.syntheticSession;
+      auth.requireRole(session, ["SUPERVISOR", "OPERATIONS", "PARTNER_ADMIN"]);
+      const purpose =
+        session.role === "SUPERVISOR" ? "HUB_SUPERVISE" : "HUB_PARTNER_REVIEW";
+      const hub = auth.requireHubAccess(session, req.params.hubId, purpose);
+      return {
+        readOnly: true as const,
+        plans: searchStage4CorridorPlanning({
+          readModels: SYNTHETIC_E7_CORRIDOR_PLANNING_READ_MODELS,
+          tenantId: hub.tenantId,
+          anchorHubId: hub.hubId,
           partnerOrgId: hub.partnerMembership.partnerOrgId,
         }),
       };
