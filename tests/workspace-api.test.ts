@@ -48,6 +48,7 @@ test("workspace API is authenticated and Alpha/Beta Agent manifests differ witho
     assert.ok(alpha.session);
     const alphaWorkspace = await workspace(base, alpha.session);
     assert.equal(alphaWorkspace.role, "AGENT");
+    assert.equal(alphaWorkspace.hubId, "hub_syn_adama_001");
     assert.match(alphaWorkspace.partnerDisplayName, /Alpha/);
     assert.deepEqual(
       alphaWorkspace.services.map((service: any) => service.name),
@@ -61,6 +62,7 @@ test("workspace API is authenticated and Alpha/Beta Agent manifests differ witho
     assert.ok(beta.session);
     const betaWorkspace = await workspace(base, beta.session);
     assert.match(betaWorkspace.partnerDisplayName, /Beta/);
+    assert.equal(betaWorkspace.hubId, "hub_syn_adama_001");
     assert.deepEqual(
       betaWorkspace.services.map((service: any) => service.name),
       ["Account Lookup", "Savings Inquiry", "Savings Service Request"],
@@ -108,6 +110,7 @@ test("Operations workspace exposes provider readiness but no Agent cash services
     assert.ok(operations.session);
     const manifest = await workspace(base, operations.session);
     assert.equal(manifest.role, "OPERATIONS");
+    assert.equal(manifest.hubId, "hub_syn_adama_001");
     assert.deepEqual(manifest.services, []);
     const providers = Object.fromEntries(
       manifest.providerStates.map((provider: any) => [provider.providerKey, provider]),

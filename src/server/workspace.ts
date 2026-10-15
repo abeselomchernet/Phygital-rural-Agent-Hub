@@ -143,6 +143,7 @@ export function generateSyntheticWorkspaceForSession(input: {
   return generateWorkspaceManifest({
     partnerOrgId,
     partnerDisplayName: contract.displayName,
+    hubId: hubServiceManifest.hubId,
     role: input.session.role,
     environment: contract.environment,
     regionId: context.regionId,

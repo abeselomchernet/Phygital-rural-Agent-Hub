@@ -32,10 +32,13 @@ The Express/Vite demo defaults to loopback port 3000. No secrets, Redis or Postg
 
 The responsive presentation shell restores the rural-agent product breadth without live-integration claims. English, Amharic and Afaan Oromoo headings/navigation are available; detailed domain controls remain English, and translations need local-speaker review.
 
+Frontend productization uses one governed application with Agent, Supervisor, Operations and Partner Admin portals. The current implementation adds a Wishland/Enawuga application design system and a governed Hub overview while keeping server authorization authoritative. See [frontend architecture](docs/frontend/FRONTEND_ARCHITECTURE.md), [Wishland/Enawuga brand and design system](docs/frontend/WISHLAND_BRAND_AND_DESIGN_SYSTEM.md), the [frontend delivery plan](docs/frontend/FRONTEND_DELIVERY_PLAN.md), and the [F1 implementation note](docs/frontend/F1_ROLE_WORKSPACE_IMPLEMENTATION.md).
+
 - `/kiosk`: implemented local customer/request workflow plus synthetic inventory, liquidity planning, printer-slip and training concepts.
 - `/farmer-360`: proposed read-only agriculture, vouchers, climate/insurance, solar PAYG, carbon, diaspora, procurement and PartnerFI service portfolio.
 - `/onboard`: read-only readiness stages beside the existing mock identity workflow; no PII form, camera or real agent admission.
 - `/queue` and `/data-mule`: local outbox, conflict learning and illustrative handoff. No remote delivery or settlement.
+- `/hub`: governed Hub/partner/role/environment context and explicit Stage-4 authority boundaries.
 - `/supervisor`: synthetic fleet map/table/pagination; device controls disabled; readiness and transport concepts.
 - `/transcription`: fixed authored dialogue; no microphone or speech service.
 - `/node-status`: deterministic architecture samples, explicitly not operational telemetry.

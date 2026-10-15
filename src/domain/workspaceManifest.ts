@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { HubIdSchema } from "./hub";
 import {
   PartnerContractEnvironmentSchema,
   PartnerContractRoleSchema,
@@ -60,6 +61,7 @@ export const WorkspaceManifestSchema = z
     schemaVersion: z.literal(1),
     partnerOrgId: PartnerOrgIdSchema,
     partnerDisplayName: SafeTextSchema.max(120),
+    hubId: HubIdSchema,
     role: PartnerContractRoleSchema,
     environment: PartnerContractEnvironmentSchema,
     regionId: z.string().min(3).max(96),
@@ -124,6 +126,7 @@ function navigationForRole(input: {
     );
     const items: NavigationGroup["items"] = [
       home,
+      { id: "hub-overview", label: "Hub Overview", path: "/hub" },
       { id: "supervisor", label: "Regional overview", path: "/supervisor" },
       { id: "network-access", label: "Network access", path: "/network-operations" },
     ];
@@ -156,6 +159,7 @@ function navigationForRole(input: {
   if (input.role === "OPERATIONS") {
     const items: NavigationGroup["items"] = [
       home,
+      { id: "hub-overview", label: "Hub Overview", path: "/hub" },
       { id: "operations-center", label: "Operations Center", path: "/operations" },
       { id: "network-access", label: "Network access", path: "/network-operations" },
       { id: "queue", label: "Offline exceptions", path: "/queue" },
@@ -184,6 +188,7 @@ function navigationForRole(input: {
       label: "Partner administration",
       items: [
         home,
+        { id: "hub-overview", label: "Hub Overview", path: "/hub" },
         { id: "partners", label: "Partner Ecosystem", path: "/partners" },
         { id: "network-access", label: "Access & scopes", path: "/network-operations" },
         { id: "operations-center", label: "Operations evidence", path: "/operations" },
@@ -248,6 +253,7 @@ export function buildWorkspaceProviderStates(input: {
 export function generateWorkspaceManifest(input: {
   partnerOrgId: string;
   partnerDisplayName: string;
+  hubId: string;
   role: SupportedWorkspaceRole;
   environment: "synthetic" | "sandbox" | "testbed";
   regionId: string;
@@ -266,6 +272,7 @@ export function generateWorkspaceManifest(input: {
     schemaVersion: 1,
     partnerOrgId: input.partnerOrgId,
     partnerDisplayName: input.partnerDisplayName,
+    hubId: input.hubId,
     role: input.role,
     environment: input.environment,
     regionId: input.regionId,
