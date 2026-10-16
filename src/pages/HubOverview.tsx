@@ -3,6 +3,7 @@ import { Activity, Building2, Layers3, ShieldCheck, Waypoints } from "lucide-rea
 
 import { useCapabilityWorkspace } from "../components/CapabilityWorkspaceShell";
 import EvidenceDrawer, { type EvidenceDrawerModel } from "../components/EvidenceDrawer";
+import BoundedState from "../components/BoundedState";
 import { GovernedStatus, toneForGovernedState } from "../components/GovernedStatus";
 import type { HubServiceWorkspaceManifest } from "../domain/hubServiceComposition";
 import { loadHubServices } from "../lib/hub-client";
@@ -16,6 +17,7 @@ function displaySyntheticId(value: string, prefix: string) {
 function errorMessage(code: string) {
   if (code === "HUB_ACCESS_DENIED") return "This role/workspace is not authorized to read the requested Hub service composition.";
   if (code === "WORKSPACE_SESSION_REQUIRED") return "The synthetic workspace session expired. Reload the workspace before reading Hub state.";
+  if (code === "HUB_API_TIMEOUT") return "Hub service evidence request timed out. No service state is inferred; retry when the governed API is available.";
   return "Hub service evidence is unavailable. No service state is inferred from client-side defaults.";
 }
 
@@ -24,6 +26,7 @@ export default function HubOverview() {
   const [services, setServices] = useState<HubServiceWorkspaceManifest | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
   const [evidence, setEvidence] = useState<EvidenceDrawerModel | null>(null);
 
   useEffect(() => {
@@ -37,7 +40,7 @@ export default function HubOverview() {
       .catch((cause) => { if (active) setError(errorMessage(cause instanceof Error ? cause.message : "HUB_API_UNAVAILABLE")); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [workspace]);
+  }, [workspace, reloadKey]);
 
   const unavailableDecisions = useMemo(() => services?.decisionMatrix.filter((entry) => !entry.available) ?? [], [services]);
 
@@ -77,7 +80,16 @@ export default function HubOverview() {
         <h2 id="service-composition-title">Services & capabilities</h2>
         <p>Availability is derived from the current PartnerFI catalog, Hub binding, capability grant, route and adapter state.</p>
         {loading && <div className="hub-loading-grid" role="status" aria-live="polite" aria-busy="true" aria-label="Loading Hub service composition"><div className="hub-loading-block" /><div className="hub-loading-block" /></div>}
-        {!loading && error && <div className="portal-boundary-banner" role="status"><ShieldCheck size={20} aria-hidden="true" /><div><strong>Service evidence unavailable</strong>{error}</div></div>}
+        {!loading && error && (
+          <BoundedState
+            kind="error"
+            title="Service evidence unavailable"
+            onRetry={() => setReloadKey((value) => value + 1)}
+            retryLabel="Retry Hub evidence"
+          >
+            {error}
+          </BoundedState>
+        )}
         {!loading && !error && services && services.offerings.length === 0 && <div className="portal-boundary-banner"><Layers3 size={20} aria-hidden="true" /><div><strong>No available services</strong>The authenticated Hub response contains no currently available offerings. This is not treated as an error or a successful capability grant.</div></div>}
         {!loading && !error && services && services.offerings.length > 0 && (
           <div className="service-composition-grid">

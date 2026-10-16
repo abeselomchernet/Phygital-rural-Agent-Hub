@@ -1,10 +1,7 @@
 import { Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
 import { initGhostSync } from "./lib/ghostsync";
-import {
-  ServicePortfolio,
-  InventoryDemo,
-} from "./components/ProductPresentation";
+import { InventoryDemo } from "./components/ProductPresentation";
 import CapabilityWorkspaceShell from "./components/CapabilityWorkspaceShell";
 import "./components/navigation-groups.css";
 import CapabilityHome from "./pages/CapabilityHome";
@@ -73,26 +70,6 @@ export default function App() {
           <Route path="/inventory" element={<InventoryDemo />} />
           <Route path="/ardi-engine" element={<ArdiEngine />} />
           <Route path="/guided-demo" element={<GuidedDemo />} />
-          {[
-            "swaps",
-            "fmcg-liquidity",
-            "kentiq-payg",
-            "smartcycle",
-            "bank-racing",
-            "psnp-plus",
-            "securitization",
-            "agri-connect",
-            "agritrust",
-            "governance",
-            "sandbox",
-            "audit",
-          ].map((path) => (
-            <Route
-              key={path}
-              path={"/" + path}
-              element={<ServicePortfolio />}
-            />
-          ))}
           <Route
             path="*"
             element={

@@ -12,8 +12,23 @@ async function parseHubJson(response: Response) {
   return response.json();
 }
 
+const HUB_REQUEST_TIMEOUT_MS = 5_000;
+
+async function fetchHub(input: string) {
+  const controller = new AbortController();
+  const timeout = globalThis.setTimeout(() => controller.abort(), HUB_REQUEST_TIMEOUT_MS);
+  try {
+    return await fetch(input, { credentials: "same-origin", signal: controller.signal });
+  } catch (cause) {
+    if (controller.signal.aborted) throw new Error("HUB_API_TIMEOUT");
+    throw cause;
+  } finally {
+    globalThis.clearTimeout(timeout);
+  }
+}
+
 export async function loadHubServices(hubId: string): Promise<HubServiceWorkspaceManifest> {
-  const response = await fetch(`/api/demo/hubs/${encodeURIComponent(hubId)}/services`, { credentials: "same-origin" });
+  const response = await fetchHub(`/api/demo/hubs/${encodeURIComponent(hubId)}/services`);
   if (response.status === 401) throw new Error("WORKSPACE_SESSION_REQUIRED");
   if (response.status === 403) throw new Error("HUB_ACCESS_DENIED");
   if (!response.ok) {
@@ -24,7 +39,7 @@ export async function loadHubServices(hubId: string): Promise<HubServiceWorkspac
 }
 
 export async function loadHubEconomics(hubId: string): Promise<readonly HubEconomicsReadModel[]> {
-  const response = await fetch(`/api/demo/hubs/${encodeURIComponent(hubId)}/economics`, { credentials: "same-origin" });
+  const response = await fetchHub(`/api/demo/hubs/${encodeURIComponent(hubId)}/economics`);
   if (response.status === 401) throw new Error("WORKSPACE_SESSION_REQUIRED");
   if (response.status === 403) throw new Error("HUB_ACCESS_DENIED");
   if (!response.ok) { const body = await parseHubJson(response).catch(() => ({})); throw new Error(body.error ?? "HUB_API_UNAVAILABLE"); }
@@ -33,7 +48,7 @@ export async function loadHubEconomics(hubId: string): Promise<readonly HubEcono
 }
 
 export async function loadHubPilotEvidence(hubId: string): Promise<readonly PilotEvidenceReadModel[]> {
-  const response = await fetch(`/api/demo/hubs/${encodeURIComponent(hubId)}/pilot-evidence`, { credentials: "same-origin" });
+  const response = await fetchHub(`/api/demo/hubs/${encodeURIComponent(hubId)}/pilot-evidence`);
   if (response.status === 401) throw new Error("WORKSPACE_SESSION_REQUIRED");
   if (response.status === 403) throw new Error("HUB_ACCESS_DENIED");
   if (!response.ok) { const body = await parseHubJson(response).catch(() => ({})); throw new Error(body.error ?? "HUB_API_UNAVAILABLE"); }
@@ -42,7 +57,7 @@ export async function loadHubPilotEvidence(hubId: string): Promise<readonly Pilo
 }
 
 export async function loadHubCorridorPlanning(hubId: string): Promise<readonly CorridorPlanningReadModel[]> {
-  const response = await fetch(`/api/demo/hubs/${encodeURIComponent(hubId)}/corridor-planning`, { credentials: "same-origin" });
+  const response = await fetchHub(`/api/demo/hubs/${encodeURIComponent(hubId)}/corridor-planning`);
   if (response.status === 401) throw new Error("WORKSPACE_SESSION_REQUIRED");
   if (response.status === 403) throw new Error("HUB_ACCESS_DENIED");
   if (!response.ok) { const body = await parseHubJson(response).catch(() => ({})); throw new Error(body.error ?? "HUB_API_UNAVAILABLE"); }
@@ -51,7 +66,7 @@ export async function loadHubCorridorPlanning(hubId: string): Promise<readonly C
 }
 
 export async function loadHubOperatorDeviceReadiness(hubId: string): Promise<readonly HubOperatorDeviceReadinessReadModel[]> {
-  const response = await fetch(`/api/demo/hubs/${encodeURIComponent(hubId)}/operator-device-readiness`, { credentials: "same-origin" });
+  const response = await fetchHub(`/api/demo/hubs/${encodeURIComponent(hubId)}/operator-device-readiness`);
   if (response.status === 401) throw new Error("WORKSPACE_SESSION_REQUIRED");
   if (response.status === 403) throw new Error("HUB_ACCESS_DENIED");
   if (!response.ok) { const body = await parseHubJson(response).catch(() => ({})); throw new Error(body.error ?? "HUB_API_UNAVAILABLE"); }
@@ -59,7 +74,7 @@ export async function loadHubOperatorDeviceReadiness(hubId: string): Promise<rea
   return body.readiness;
 }
 export async function loadHubNeutralityGovernance(hubId: string): Promise<readonly HubNeutralityGovernanceReadModel[]> {
-  const response = await fetch(`/api/demo/hubs/${encodeURIComponent(hubId)}/neutrality-governance`, { credentials: "same-origin" });
+  const response = await fetchHub(`/api/demo/hubs/${encodeURIComponent(hubId)}/neutrality-governance`);
   if (response.status === 401) throw new Error("WORKSPACE_SESSION_REQUIRED");
   if (response.status === 403) throw new Error("HUB_ACCESS_DENIED");
   if (!response.ok) { const body = await parseHubJson(response).catch(() => ({})); throw new Error(body.error ?? "HUB_API_UNAVAILABLE"); }
@@ -70,7 +85,7 @@ export async function loadHubNeutralityGovernance(hubId: string): Promise<readon
 export async function loadHubOfflineEvidence(hubId: string, correlationId?: string): Promise<readonly HubOfflineEvidenceTrace[]> {
   const params = new URLSearchParams({ hubId });
   if (correlationId) params.set("correlationId", correlationId);
-  const response = await fetch(`/api/demo/hub-operations/offline-evidence?${params.toString()}`, { credentials: "same-origin" });
+  const response = await fetchHub(`/api/demo/hub-operations/offline-evidence?${params.toString()}`);
   if (response.status === 401) throw new Error("WORKSPACE_SESSION_REQUIRED");
   if (response.status === 403) throw new Error("HUB_ACCESS_DENIED");
   if (!response.ok) { const body = await parseHubJson(response).catch(() => ({})); throw new Error(body.error ?? "HUB_API_UNAVAILABLE"); }
