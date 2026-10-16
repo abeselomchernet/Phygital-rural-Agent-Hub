@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
 const read = (path: string) => readFileSync(path, "utf8");
@@ -30,19 +30,6 @@ test("guided demo preserves audited Stage-4 claim boundaries without voice autom
   assert.match(demo, /Presentation polish does not change system authority/);
 });
 
-test("audit-compliance presentation does not present synthetic fixtures as live biometric or audit proof", () => {
-  const page = read("src/pages/AuditCompliance.tsx");
-  for (const forbidden of [
-    "Compiling live ledger report into official regulatory PDF",
-    "Fayda ZKP Biometric Binding Constraint",
-    "Biometric Binding (Fayda ZKP)",
-    "Verifies local device-level biometrics with hash masking",
-    "Successfully exported live report",
-    "PEERS LIVE",
-    "Real-time cryptographically secured system audit trails",
-  ]) assert.equal(page.includes(forbidden), false, forbidden);
-  assert.match(page, /Synthetic Readiness Checklist/);
-  assert.match(page, /not regulatory proof, external verification, or production assurance/);
-  assert.match(page, /no biometric binding, biometric capture, or ZKP is performed/);
-  assert.match(page, /not live telemetry or external audit evidence/);
+test("ARCH-16 quarantines the legacy audit-compliance presentation entirely", () => {
+  assert.equal(existsSync("src/pages/AuditCompliance.tsx"), false);
 });
