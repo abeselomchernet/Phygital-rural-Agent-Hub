@@ -175,6 +175,79 @@ export type HubWorkflowIntentReservation = z.infer<
   typeof HubWorkflowIntentReservationSchema
 >;
 
+export const HubWorkflowIntentPersistenceRecordSchema = z
+  .object({
+    revision: z.number().int().min(1).max(Number.MAX_SAFE_INTEGER),
+    reservation: HubWorkflowIntentReservationSchema,
+  })
+  .strict();
+export type HubWorkflowIntentPersistenceRecord = z.infer<
+  typeof HubWorkflowIntentPersistenceRecordSchema
+>;
+
+export interface HubWorkflowIntentPersistence {
+  readonly mode: "MEMORY" | "ATOMIC_DIRECTORY_CAS";
+  readonly durable: boolean;
+  load(scope: string): HubWorkflowIntentPersistenceRecord | undefined;
+  create(scope: string, reservation: HubWorkflowIntentReservation): boolean;
+  compareAndSet(
+    scope: string,
+    expectedRevision: number,
+    reservation: HubWorkflowIntentReservation,
+  ): boolean;
+  list(): HubWorkflowIntentPersistenceRecord[];
+}
+
+export class InMemoryHubWorkflowIntentPersistence
+  implements HubWorkflowIntentPersistence
+{
+  readonly mode = "MEMORY" as const;
+  readonly durable = false;
+  private records = new Map<string, HubWorkflowIntentPersistenceRecord>();
+
+  load(scope: string) {
+    const record = this.records.get(scope);
+    return record
+      ? HubWorkflowIntentPersistenceRecordSchema.parse(structuredClone(record))
+      : undefined;
+  }
+
+  create(scope: string, reservation: HubWorkflowIntentReservation) {
+    if (this.records.has(scope)) return false;
+    this.records.set(
+      scope,
+      HubWorkflowIntentPersistenceRecordSchema.parse({
+        revision: 1,
+        reservation: cloneReservation(reservation),
+      }),
+    );
+    return true;
+  }
+
+  compareAndSet(
+    scope: string,
+    expectedRevision: number,
+    reservation: HubWorkflowIntentReservation,
+  ) {
+    const current = this.records.get(scope);
+    if (!current || current.revision !== expectedRevision) return false;
+    this.records.set(
+      scope,
+      HubWorkflowIntentPersistenceRecordSchema.parse({
+        revision: current.revision + 1,
+        reservation: cloneReservation(reservation),
+      }),
+    );
+    return true;
+  }
+
+  list() {
+    return [...this.records.values()].map((record) =>
+      HubWorkflowIntentPersistenceRecordSchema.parse(structuredClone(record)),
+    );
+  }
+}
+
 export const HubWorkflowIntentDecisionCodeSchema = z.enum([
   "RESERVED_NEW",
   "DUPLICATE_NOOP",
@@ -395,13 +468,52 @@ function cloneReservation(reservation: HubWorkflowIntentReservation) {
 }
 
 export class HubWorkflowIntentCertificationStore {
-  private reservations = new Map<string, HubWorkflowIntentReservation>();
-
-  constructor(snapshot?: HubWorkflowIntentCertificationSnapshot) {
+  constructor(
+    snapshot?: HubWorkflowIntentCertificationSnapshot,
+    private readonly persistence: HubWorkflowIntentPersistence =
+      new InMemoryHubWorkflowIntentPersistence(),
+  ) {
     if (!snapshot) return;
     const validated = HubWorkflowIntentCertificationSnapshotSchema.parse(snapshot);
-    for (const reservation of validated.reservations)
-      this.reservations.set(reservationScopeKey(reservation), cloneReservation(reservation));
+    for (const reservation of validated.reservations) {
+      const scope = reservationScopeKey(reservation);
+      if (!this.persistence.create(scope, cloneReservation(reservation)))
+        throw new Error("HUB_WORKFLOW_IDEMPOTENCY_PERSISTENCE_CONFLICT");
+    }
+  }
+
+  persistenceMode() {
+    return { mode: this.persistence.mode, durable: this.persistence.durable } as const;
+  }
+
+  private loadRecord(scope: string) {
+    const record = this.persistence.load(scope);
+    return record
+      ? HubWorkflowIntentPersistenceRecordSchema.parse(record)
+      : undefined;
+  }
+
+  private decisionForExisting(
+    existing: HubWorkflowIntentReservation,
+    request: HubWorkflowIntentRequest,
+    businessIntentDigest: string,
+  ) {
+    if (existing.businessIntentDigest !== businessIntentDigest)
+      return decision("CONFLICT_REVIEW_REQUIRED", cloneReservation(existing));
+    if (existing.state === "RECONCILIATION_REQUIRED")
+      return decision("RECONCILIATION_REQUIRED", cloneReservation(existing));
+    if (
+      existing.originalRouteId !== request.routeId ||
+      existing.originalAdapterId !== request.adapterId
+    ) {
+      return decision(
+        existing.state === "POSSIBLE_EXTERNAL_MUTATION"
+          ? "ROUTE_FALLBACK_REJECTED"
+          : "ROUTE_CHANGE_REVIEW_REQUIRED",
+        cloneReservation(existing),
+      );
+    }
+    return decision("DUPLICATE_NOOP", cloneReservation(existing));
   }
 
   reserve(
@@ -414,25 +526,13 @@ export class HubWorkflowIntentCertificationStore {
 
     const scope = requestScopeKey(request);
     const businessIntentDigest = computeHubWorkflowBusinessIntentDigest(request);
-    const existing = this.reservations.get(scope);
-    if (existing) {
-      if (existing.businessIntentDigest !== businessIntentDigest)
-        return decision("CONFLICT_REVIEW_REQUIRED", cloneReservation(existing));
-      if (existing.state === "RECONCILIATION_REQUIRED")
-        return decision("RECONCILIATION_REQUIRED", cloneReservation(existing));
-      if (
-        existing.originalRouteId !== request.routeId ||
-        existing.originalAdapterId !== request.adapterId
-      ) {
-        return decision(
-          existing.state === "POSSIBLE_EXTERNAL_MUTATION"
-            ? "ROUTE_FALLBACK_REJECTED"
-            : "ROUTE_CHANGE_REVIEW_REQUIRED",
-          cloneReservation(existing),
-        );
-      }
-      return decision("DUPLICATE_NOOP", cloneReservation(existing));
-    }
+    const existing = this.loadRecord(scope);
+    if (existing)
+      return this.decisionForExisting(
+        existing.reservation,
+        request,
+        businessIntentDigest,
+      );
 
     const reservation = HubWorkflowIntentReservationSchema.parse({
       schemaVersion: HubWorkflowIntentCertificationSchemaVersion,
@@ -461,7 +561,16 @@ export class HubWorkflowIntentCertificationStore {
       liveNetworkAllowed: false,
       settlementAuthorityGranted: false,
     });
-    this.reservations.set(scope, reservation);
+    if (!this.persistence.create(scope, reservation)) {
+      const raced = this.loadRecord(scope);
+      if (!raced)
+        throw new Error("HUB_WORKFLOW_IDEMPOTENCY_PERSISTENCE_UNAVAILABLE");
+      return this.decisionForExisting(
+        raced.reservation,
+        request,
+        businessIntentDigest,
+      );
+    }
     return decision("RESERVED_NEW", cloneReservation(reservation), {
       logicalWorkflowCreated: true,
     });
@@ -479,10 +588,10 @@ export class HubWorkflowIntentCertificationStore {
     const access = authorizeRequest(request, input.context, evaluatedAt);
     if (!access) return decision("REPLAY_AUTHORIZATION_DENIED", null);
 
-    const existing = this.reservations.get(requestScopeKey(request));
+    const existing = this.loadRecord(requestScopeKey(request));
     if (!existing) return decision("NO_RESERVATION", null);
 
-    const reservation = cloneReservation(existing);
+    const reservation = cloneReservation(existing.reservation);
     if (reservation.businessIntentDigest !== computeHubWorkflowBusinessIntentDigest(request))
       return decision("CONFLICT_REVIEW_REQUIRED", reservation);
     if (Date.parse(evaluatedAt) > Date.parse(reservation.expiresAt))
@@ -532,8 +641,9 @@ export class HubWorkflowIntentCertificationStore {
       throw new Error(`HUB_WORKFLOW_DISPATCH_GATE_CLOSED:${gate.decision}`);
 
     const scope = requestScopeKey(request);
-    const existing = this.reservations.get(scope);
-    if (!existing) throw new Error("HUB_WORKFLOW_INTENT_RESERVATION_NOT_FOUND");
+    const record = this.loadRecord(scope);
+    if (!record) throw new Error("HUB_WORKFLOW_INTENT_RESERVATION_NOT_FOUND");
+    const existing = record.reservation;
     if (existing.businessIntentDigest !== computeHubWorkflowBusinessIntentDigest(request))
       throw new Error("HUB_WORKFLOW_INTENT_CONFLICT");
     if (
@@ -552,7 +662,8 @@ export class HubWorkflowIntentCertificationStore {
       possibleMutationMarkedAt: existing.possibleMutationMarkedAt ?? markedAt,
       lastUpdatedAt: markedAt,
     });
-    this.reservations.set(scope, updated);
+    if (!this.persistence.compareAndSet(scope, record.revision, updated))
+      throw new Error("HUB_WORKFLOW_IDEMPOTENCY_CONCURRENT_UPDATE_REVIEW_REQUIRED");
     return cloneReservation(updated);
   }
 
@@ -563,8 +674,9 @@ export class HubWorkflowIntentCertificationStore {
     const request = HubWorkflowIntentRequestSchema.parse(input.request);
     const recordedAt = z.string().datetime({ offset: true }).parse(input.recordedAt);
     const scope = requestScopeKey(request);
-    const existing = this.reservations.get(scope);
-    if (!existing) throw new Error("HUB_WORKFLOW_INTENT_RESERVATION_NOT_FOUND");
+    const record = this.loadRecord(scope);
+    if (!record) throw new Error("HUB_WORKFLOW_INTENT_RESERVATION_NOT_FOUND");
+    const existing = record.reservation;
     if (existing.businessIntentDigest !== computeHubWorkflowBusinessIntentDigest(request))
       throw new Error("HUB_WORKFLOW_INTENT_CONFLICT");
     if (existing.state !== "POSSIBLE_EXTERNAL_MUTATION")
@@ -576,21 +688,23 @@ export class HubWorkflowIntentCertificationStore {
       ambiguityRecordedAt: recordedAt,
       lastUpdatedAt: recordedAt,
     });
-    this.reservations.set(scope, updated);
+    if (!this.persistence.compareAndSet(scope, record.revision, updated))
+      throw new Error("HUB_WORKFLOW_IDEMPOTENCY_CONCURRENT_UPDATE_REVIEW_REQUIRED");
     return cloneReservation(updated);
   }
 
   get(requestInput: HubWorkflowIntentRequest) {
     const request = HubWorkflowIntentRequestSchema.parse(requestInput);
-    const reservation = this.reservations.get(requestScopeKey(request));
-    return reservation ? cloneReservation(reservation) : undefined;
+    const record = this.loadRecord(requestScopeKey(request));
+    return record ? cloneReservation(record.reservation) : undefined;
   }
 
   snapshot(): HubWorkflowIntentCertificationSnapshot {
     return HubWorkflowIntentCertificationSnapshotSchema.parse({
       version: 1,
-      reservations: [...this.reservations.values()]
-        .map(cloneReservation)
+      reservations: this.persistence
+        .list()
+        .map((record) => cloneReservation(record.reservation))
         .sort((a, b) => a.reservationId.localeCompare(b.reservationId)),
     });
   }
