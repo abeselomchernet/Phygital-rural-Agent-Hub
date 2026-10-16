@@ -15,8 +15,9 @@ This delivery plan uses frontend workstream identifiers `F1`–`F10`. They are n
 - F5 - MERGED: Neutrality Governance and Offline/Reconciliation Evidence.
 - F6 - MERGED: Agent phone/tablet UX, browser/offline status, bounded queue presentation and branded field interaction patterns.
 - F7 - MERGED: Partner Administration portal refinement, role-scoped ecosystem evidence and governed test-mode role journeys.
-- F8 - IMPLEMENTED ON CURRENT BRANCH: accessibility, responsive resilience and localization-readiness hardening; pending exact-head CI/merge.
-- F9-F10 - PLANNED; roadmap status creates no capability or authority.
+- F8 - MERGED: accessibility, responsive resilience and localization-readiness hardening.
+- F9 - IMPLEMENTED ON CURRENT BRANCH: end-to-end role journeys and visible claim audit; pending exact-head CI/merge.
+- F10 - PLANNED; roadmap status creates no capability or authority.
 
 ## F1 — Role-aware shell, Hub context and dashboards
 
