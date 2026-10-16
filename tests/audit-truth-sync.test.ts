@@ -16,17 +16,18 @@ test("package identity no longer exposes scaffold metadata", () => {
   assert.equal(lock.packages[""].version, pkg.version);
 });
 
-test("guided presenter explicitly labels audited Stage-4 claims as synthetic", () => {
-  const presenter = read("src/components/DemoPresenter.tsx");
+test("guided demo preserves audited Stage-4 claim boundaries without voice automation", () => {
+  const demo = read("src/pages/GuidedDemo.tsx");
   for (const forbidden of [
     "live network liquidity, transaction mass",
     "biometric card integrity matching",
     "protecting privacy with Zero-Knowledge principles",
-  ]) assert.equal(presenter.includes(forbidden), false, forbidden);
-  assert.match(presenter, /synthetic network-liquidity models/);
-  assert.match(presenter, /no live institution or provider connection is implied/);
-  assert.match(presenter, /No biometric capture or binding/);
-  assert.match(presenter, /no Zero-Knowledge proof system is implemented here/);
+    "automatically issues dynamic credit lines",
+    "settle everything here",
+  ]) assert.equal(demo.includes(forbidden), false, forbidden);
+  assert.match(demo, /Stage-4 guided demo/);
+  assert.match(demo, /No live funds move/);
+  assert.match(demo, /Presentation polish does not change system authority/);
 });
 
 test("audit-compliance presentation does not present synthetic fixtures as live biometric or audit proof", () => {

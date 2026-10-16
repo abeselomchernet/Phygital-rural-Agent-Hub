@@ -107,6 +107,7 @@ function navigationForRole(input: {
           { id: "requests", label: "Requests & offline queue", path: "/queue" },
           { id: "readiness", label: "Agent readiness", path: "/onboard" },
           { id: "learning", label: "Agent learning", path: "/academy" },
+          { id: "guided-demo", label: "Guided Demo", path: "/guided-demo" },
         ],
       },
       {
@@ -135,6 +136,7 @@ function navigationForRole(input: {
       { id: "neutrality-governance", label: "Neutrality & Governance", path: "/hub/neutrality" },
       { id: "supervisor", label: "Regional overview", path: "/supervisor" },
       { id: "network-access", label: "Network access", path: "/network-operations" },
+      { id: "guided-demo", label: "Guided Demo", path: "/guided-demo" },
     ];
     if (serviceTypes.has("NETWORK_LIQUIDITY_READ"))
       items.push({
@@ -175,6 +177,7 @@ function navigationForRole(input: {
       { id: "offline-evidence", label: "Offline & Reconciliation Evidence", path: "/operations/evidence" },
       { id: "network-access", label: "Network access", path: "/network-operations" },
       { id: "queue", label: "Offline exceptions", path: "/queue" },
+      { id: "guided-demo", label: "Guided Demo", path: "/guided-demo" },
     ];
     if (input.providerStates.length > 0)
       items.splice(3, 0, {
@@ -211,6 +214,7 @@ function navigationForRole(input: {
         { id: "network-access", label: "Access & scopes", path: "/network-operations" },
         { id: "operations-center", label: "Operations evidence", path: "/operations" },
         { id: "offline-evidence", label: "Offline & Reconciliation Evidence", path: "/operations/evidence" },
+        { id: "guided-demo", label: "Guided Demo", path: "/guided-demo" },
       ],
     },
     {

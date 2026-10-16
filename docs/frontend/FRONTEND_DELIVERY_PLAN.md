@@ -140,3 +140,7 @@ Each PR must be independently reviewable and include:
 - hosted Linux CI on exact head before merge;
 - responsive/accessibility consideration appropriate to the PR;
 - documentation update when architecture or design-system decisions change.
+
+## F10 completion record
+
+F10 is implemented as a bounded `/guided-demo` route with five read-only scenes, governed workspace context, desktop/mobile screenshot-readability coverage, removal of the obsolete voice presenter/audio placeholders, and final presentation claim hardening. F10 does not unlock backend E10 or any production/provider/settlement authority.
