@@ -52,9 +52,9 @@ Tests cover:
 - required-durability configuration failing closed without a state directory;
 - all pre-existing E1E certification/idempotency tests unchanged.
 
-## Remaining separate gate — F-09
+## Follow-on F-09 status
 
-The filesystem adapter intentionally does **not** solve stale lock recovery in this PR. A process crash can leave a `.lock` file that causes later work to fail closed after the bounded wait. Lease/TTL ownership and safe stale-lock recovery remain the next dedicated audit-closure gate for **F-09**.
+The original idempotency PR deliberately left stale-lock recovery as a separate gate. The subsequent F-09 remediation now applies the shared owned lease/TTL recovery primitive to this filesystem CAS adapter; see AUDIT_CLOSURE_STALE_LOCK_RECOVERY.md.
 
 ## Non-claims
 

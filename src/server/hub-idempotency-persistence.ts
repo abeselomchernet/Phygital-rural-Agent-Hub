@@ -9,7 +9,6 @@ import {
   readdirSync,
   renameSync,
   rmSync,
-  unlinkSync,
   writeFileSync,
 } from "node:fs";
 import path from "node:path";
@@ -22,6 +21,7 @@ import {
   type HubWorkflowIntentReservation,
 } from "../domain/hubWorkflowIdempotencyCertification";
 import { fsyncDirectoryEntrySync } from "./local-directory-fsync";
+import { withLocalFileLeaseSync } from "./local-file-lease";
 
 type StoredRecord = {
   schemaVersion: 1;
@@ -29,12 +29,6 @@ type StoredRecord = {
   revision: number;
   reservation: HubWorkflowIntentReservation;
 };
-
-const waitBuffer = new Int32Array(new SharedArrayBuffer(4));
-
-function sleepSync(milliseconds: number) {
-  Atomics.wait(waitBuffer, 0, 0, milliseconds);
-}
 
 function scopeDigest(scope: string) {
   if (!scope || scope.length > 1024) throw new Error("HUB_IDEMPOTENCY_SCOPE_INVALID");
@@ -85,8 +79,8 @@ function toDomain(record: StoredRecord): HubWorkflowIntentPersistenceRecord {
  * This adapter provides restart durability plus per-scope compare-and-set on a
  * shared local filesystem. It deliberately does not claim distributed-database
  * consensus, cross-region linearizability or financial exactly-once delivery.
- * Lock acquisition currently fails closed if a lock survives a crash; stale
- * lock recovery is a separate audit-closure gate (F-09).
+ * Per-scope writes use owned bounded lease locks with ownership-checked stale
+ * recovery. This remains local/shared-filesystem coordination, not consensus.
  */
 export class AtomicDirectoryHubWorkflowIntentPersistence
   implements HubWorkflowIntentPersistence
@@ -97,9 +91,12 @@ export class AtomicDirectoryHubWorkflowIntentPersistence
   constructor(
     private readonly directory: string,
     private readonly lockWaitMs = 2_000,
+    private readonly lockLeaseMs = 60_000,
   ) {
     if (!Number.isSafeInteger(lockWaitMs) || lockWaitMs < 0 || lockWaitMs > 30_000)
       throw new Error("HUB_IDEMPOTENCY_LOCK_WAIT_INVALID");
+    if (!Number.isSafeInteger(lockLeaseMs) || lockLeaseMs < 1 || lockLeaseMs > 300_000)
+      throw new Error("HUB_IDEMPOTENCY_LOCK_LEASE_INVALID");
     mkdirSync(directory, { recursive: true, mode: 0o700 });
   }
 
@@ -162,33 +159,17 @@ export class AtomicDirectoryHubWorkflowIntentPersistence
 
   private withScopeLock<T>(scope: string, action: () => T): T {
     const record = this.recordPath(scope);
-    const lock = `${record}.lock`;
-    const started = Date.now();
-    let descriptor: number | undefined;
-    while (descriptor === undefined) {
-      try {
-        descriptor = openSync(lock, "wx", 0o600);
-        writeFileSync(
-          descriptor,
-          JSON.stringify({ pid: process.pid, owner: randomUUID(), createdAtMs: Date.now() }),
-          "utf8",
-        );
-        fsyncSync(descriptor);
-      } catch (error) {
-        const code = (error as NodeJS.ErrnoException).code;
-        if (code !== "EEXIST") throw error;
-        if (Date.now() - started >= this.lockWaitMs)
-          throw new Error("HUB_IDEMPOTENCY_PERSISTENCE_LOCKED");
-        sleepSync(Math.min(10, Math.max(1, this.lockWaitMs)));
-      }
-    }
-    try {
-      return action();
-    } finally {
-      closeSync(descriptor);
-      if (existsSync(lock)) unlinkSync(lock);
-      fsyncDirectoryEntrySync(this.directory);
-    }
+    return withLocalFileLeaseSync(
+      {
+        lockPath: `${record}.lock`,
+        waitMs: this.lockWaitMs,
+        leaseMs: this.lockLeaseMs,
+        lockedErrorCode: "HUB_IDEMPOTENCY_PERSISTENCE_LOCKED",
+        ownershipLostErrorCode: "HUB_IDEMPOTENCY_LOCK_OWNERSHIP_LOST",
+        staleRecoveryErrorCode: "HUB_IDEMPOTENCY_LOCK_RECOVERY_FAILED",
+      },
+      action,
+    );
   }
 
   private writeRecord(file: string, record: StoredRecord) {
@@ -216,6 +197,7 @@ export function createConfiguredHubWorkflowIntentPersistence(input: {
   syntheticStateDir?: string;
   requireDurable: boolean;
   lockWaitMs?: number;
+  lockLeaseMs?: number;
 }): HubWorkflowIntentPersistence | undefined {
   if (!input.syntheticStateDir) {
     if (input.requireDurable)
@@ -225,5 +207,6 @@ export function createConfiguredHubWorkflowIntentPersistence(input: {
   return new AtomicDirectoryHubWorkflowIntentPersistence(
     path.join(input.syntheticStateDir, "hub-idempotency"),
     input.lockWaitMs,
+    input.lockLeaseMs,
   );
 }
