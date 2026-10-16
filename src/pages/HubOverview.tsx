@@ -76,7 +76,7 @@ export default function HubOverview() {
         <span className="wl-kicker">Hub service composition</span>
         <h2 id="service-composition-title">Services & capabilities</h2>
         <p>Availability is derived from the current PartnerFI catalog, Hub binding, capability grant, route and adapter state.</p>
-        {loading && <div className="hub-loading-grid" aria-label="Loading Hub service composition"><div className="hub-loading-block" /><div className="hub-loading-block" /></div>}
+        {loading && <div className="hub-loading-grid" role="status" aria-live="polite" aria-busy="true" aria-label="Loading Hub service composition"><div className="hub-loading-block" /><div className="hub-loading-block" /></div>}
         {!loading && error && <div className="portal-boundary-banner" role="status"><ShieldCheck size={20} aria-hidden="true" /><div><strong>Service evidence unavailable</strong>{error}</div></div>}
         {!loading && !error && services && services.offerings.length === 0 && <div className="portal-boundary-banner"><Layers3 size={20} aria-hidden="true" /><div><strong>No available services</strong>The authenticated Hub response contains no currently available offerings. This is not treated as an error or a successful capability grant.</div></div>}
         {!loading && !error && services && services.offerings.length > 0 && (

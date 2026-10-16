@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Scale, ShieldCheck } from "lucide-react";
 
 import { useCapabilityWorkspace } from "../components/CapabilityWorkspaceShell";
+import BoundedState from "../components/BoundedState";
 import EvidenceDrawer, { type EvidenceDrawerModel } from "../components/EvidenceDrawer";
 import { GovernedStatus, toneForGovernedState } from "../components/GovernedStatus";
 import type { HubNeutralityGovernanceReadModel, RouteEquivalenceCheck } from "../domain/hubNeutralityGovernance";
@@ -37,7 +38,7 @@ export default function NeutralityGovernance() {
   const reviewComparisons = useMemo(() => model?.routeEquivalenceChecks.filter((check) => check.result !== "EQUIVALENT_FOR_SYNTHETIC_REVIEW") ?? [], [model]);
   const conflictReviews = useMemo(() => model?.conflictFlags.filter((flag) => flag.state === "DECLARED_SYNTHETIC_REVIEW_REQUIRED") ?? [], [model]);
 
-  if (!workspace) return <section className="decision-page"><div className="decision-unavailable"><strong>Workspace unavailable</strong>No neutrality state is inferred.</div></section>;
+  if (!workspace) return <section className="decision-page"><BoundedState kind="unavailable" title="Workspace unavailable">No neutrality state is inferred.</BoundedState></section>;
 
   return (
     <section className="decision-page" data-testid="neutrality-governance-page">
@@ -48,9 +49,9 @@ export default function NeutralityGovernance() {
         <div className="decision-hero-actions"><GovernedStatus label="STAGE_4" /><GovernedStatus label="SYNTHETIC_ONLY" /><GovernedStatus label="NO_ROUTE_MUTATION_AUTHORITY" tone="blocked" /></div>
       </header>
 
-      {loading && <div className="decision-unavailable"><strong>Loading governance evidence</strong>Waiting for the authenticated Hub neutrality read model.</div>}
-      {!loading && error && <div className="decision-unavailable" role="status"><strong>Governance evidence unavailable</strong>{error}</div>}
-      {!loading && !error && !model && <div className="decision-unavailable"><strong>No scoped neutrality model returned</strong>No neutral, equivalent or approved state is inferred.</div>}
+      {loading && <BoundedState kind="loading" title="Loading governance evidence">Waiting for the authenticated Hub neutrality read model.</BoundedState>}
+      {!loading && error && <BoundedState kind="error" title="Governance evidence unavailable">{error}</BoundedState>}
+      {!loading && !error && !model && <BoundedState kind="empty" title="No scoped neutrality model returned">No neutral, equivalent or approved state is inferred.</BoundedState>}
 
       {model && <>
         <div className="decision-metrics" aria-label="Neutrality governance summary">

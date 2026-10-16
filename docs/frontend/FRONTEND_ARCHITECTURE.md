@@ -186,3 +186,10 @@ Published catalog inspection is intentionally distinct from role-specific servic
 `/partners` is now role-scoped at the presentation layer. Agent direct navigation receives a bounded access-denied view. Supervisor, Operations and Partner Admin views filter synthetic partner objects through each object's explicit `authorizedRoles`; route-provenance cards are then limited to route references declared by the visible partner objects. This client filtering improves UI truth and least-visibility presentation but is not a substitute for server authorization.
 
 Playwright may enable privileged synthetic roles only inside the controlled E2E server through `ALLOW_PRIVILEGED_SYNTHETIC_ROLES=true`. Production/default runtime behavior remains fail-closed; the flag does not create production identity or SSO semantics.
+
+
+## F8 accessibility, resilience and localization readiness
+
+F8 hardens presentation behavior without altering the authenticated workspace authority model. Shared UI now provides a keyboard skip target into the governed main workspace, explicit busy/live-region semantics, a bounded loading/error/empty/denied/unavailable state component, and stronger evidence-drawer modal behavior with focus entry, focus containment, Escape close and focus restoration. Reduced-motion and forced-colors rules improve assistive-technology resilience while status meaning continues to use text/labels rather than color alone.
+
+Localization remains presentation-only. English is the source language; non-English headings are explicitly labeled as previews requiring local-speaker review. F8 does not claim formal WCAG conformance, external accessibility certification or production-quality localization.

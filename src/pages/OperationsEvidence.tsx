@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { RefreshCcw, ShieldCheck } from "lucide-react";
 
 import { useCapabilityWorkspace } from "../components/CapabilityWorkspaceShell";
+import BoundedState from "../components/BoundedState";
 import EvidenceDrawer, { type EvidenceDrawerModel } from "../components/EvidenceDrawer";
 import { GovernedStatus, toneForGovernedState } from "../components/GovernedStatus";
 import type { HubOfflineEvidenceTrace } from "../domain/hubOfflineOperationsEvidence";
@@ -40,7 +41,7 @@ export default function OperationsEvidence() {
 
   const submitFilter = (event: FormEvent) => { event.preventDefault(); setActiveFilter(filter.trim() || undefined); };
 
-  if (!workspace) return <section className="decision-page"><div className="decision-unavailable"><strong>Workspace unavailable</strong>No operations evidence is inferred.</div></section>;
+  if (!workspace) return <section className="decision-page"><BoundedState kind="unavailable" title="Workspace unavailable">No operations evidence is inferred.</BoundedState></section>;
 
   return (
     <section className="decision-page" data-testid="operations-evidence-page">
@@ -57,9 +58,9 @@ export default function OperationsEvidence() {
         {activeFilter && <button type="button" onClick={() => { setFilter(""); setActiveFilter(undefined); }}>Clear filter</button>}
       </form>
 
-      {loading && <div className="decision-unavailable"><strong>Loading operations evidence</strong>Waiting for the authenticated offline-evidence read model.</div>}
-      {!loading && error && <div className="decision-unavailable" role="status"><strong>Operations evidence unavailable</strong>{error}</div>}
-      {!loading && !error && traces.length === 0 && <div className="decision-unavailable"><strong>No scoped traces returned</strong>No success, failure or settlement outcome is inferred from an empty result.</div>}
+      {loading && <BoundedState kind="loading" title="Loading operations evidence">Waiting for the authenticated offline-evidence read model.</BoundedState>}
+      {!loading && error && <BoundedState kind="error" title="Operations evidence unavailable">{error}</BoundedState>}
+      {!loading && !error && traces.length === 0 && <BoundedState kind="empty" title="No scoped traces returned">No success, failure or settlement outcome is inferred from an empty result.</BoundedState>}
 
       {!loading && !error && traces.length > 0 && <>
         <div className="decision-metrics" aria-label="Offline evidence summary">

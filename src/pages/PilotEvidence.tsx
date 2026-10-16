@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ShieldCheck } from "lucide-react";
 
 import { useCapabilityWorkspace } from "../components/CapabilityWorkspaceShell";
+import BoundedState from "../components/BoundedState";
 import EvidenceDrawer, { type EvidenceDrawerModel } from "../components/EvidenceDrawer";
 import { GovernedStatus, toneForGovernedState } from "../components/GovernedStatus";
 import type { PilotEvidenceReadModel, PilotGateAssessment } from "../domain/pilotEvidenceEngine";
@@ -51,7 +52,7 @@ export default function PilotEvidence() {
     return counts;
   }, [program]);
 
-  if (!workspace) return <section className="decision-page"><div className="decision-unavailable"><strong>Workspace unavailable</strong>No pilot gate state is inferred.</div></section>;
+  if (!workspace) return <section className="decision-page"><BoundedState kind="unavailable" title="Workspace unavailable">No pilot gate state is inferred.</BoundedState></section>;
 
   return (
     <section className="decision-page" data-testid="pilot-evidence-page">
@@ -62,9 +63,9 @@ export default function PilotEvidence() {
         <div className="decision-hero-actions"><GovernedStatus label="STAGE_4" /><GovernedStatus label="SYNTHETIC_ONLY" /><GovernedStatus label="NO_AUTHORIZED_SCALE_DECISION_STAGE4" tone="blocked" /></div>
       </header>
 
-      {loading && <div className="decision-unavailable"><strong>Loading P1-P11 evidence</strong>Waiting for the authenticated Pilot Evidence read model.</div>}
-      {!loading && error && <div className="decision-unavailable" role="status"><strong>Pilot Evidence unavailable</strong>{error}</div>}
-      {!loading && !error && !program && <div className="decision-unavailable"><strong>No scoped pilot evidence returned</strong>Missing evidence remains UNKNOWN. No pilot decision is inferred.</div>}
+      {loading && <BoundedState kind="loading" title="Loading P1-P11 evidence">Waiting for the authenticated Pilot Evidence read model.</BoundedState>}
+      {!loading && error && <BoundedState kind="error" title="Pilot Evidence unavailable">{error}</BoundedState>}
+      {!loading && !error && !program && <BoundedState kind="empty" title="No scoped pilot evidence returned">Missing evidence remains UNKNOWN. No pilot decision is inferred.</BoundedState>}
 
       {program && (
         <>

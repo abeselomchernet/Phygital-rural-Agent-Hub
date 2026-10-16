@@ -186,3 +186,10 @@ The Partner Administration portal uses the same Wishland corporate system and En
 - the official Wishland mark/wordmark must remain unchanged.
 
 Partner Admin screens are deliberately denser than Agent screens, but still use the shared spacing, card, typography, focus and evidence patterns. Configuration-style cards are visually inspection-oriented: there are no toggle switches or action verbs such as `Activate`, `Approve`, `Issue credential`, `Settle` or `Enable provider` unless a future server-side authority explicitly exists and is separately reviewed.
+
+
+## 18. Accessibility and localization readiness
+
+Brand treatment must survive keyboard, reduced-motion, high-contrast/forced-colors and narrow-screen use without losing authority/status meaning. Focus indication remains a governed interaction state; it is never approval. Semantic status components continue to pair explicit text with visual treatment, and reduced-motion preferences suppress non-essential motion.
+
+The shared language selector exposes English as the source language. Non-English presentation copy is labeled as preview content requiring local-speaker review and must not be described as production-ready localization until that review is documented.
