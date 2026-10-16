@@ -28,6 +28,7 @@ export default defineConfig({
       PORT: "3010",
       DATA_MODE: "synthetic",
       ALLOW_EXTERNAL_TELEMETRY: "false",
+      ALLOW_PRIVILEGED_SYNTHETIC_ROLES: "true",
     },
   },
 });

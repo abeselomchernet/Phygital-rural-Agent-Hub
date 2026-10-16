@@ -1,5 +1,7 @@
-import { Building2, Network, ShieldCheck, ToggleLeft, Truck } from "lucide-react";
-import { CapabilityBadge } from "../components/ProductPresentation";
+import { Building2, Network, ShieldCheck } from "lucide-react";
+
+import { useCapabilityWorkspace } from "../components/CapabilityWorkspaceShell";
+import { GovernedStatus, toneForGovernedState } from "../components/GovernedStatus";
 import {
   partnerEcosystemSummary,
   routeProvenanceLabel,
@@ -8,12 +10,12 @@ import {
   type CapabilitySwitchState,
   type PartnerClass,
 } from "../domain/partnerEcosystem";
+import "../components/partner-admin.css";
 
 const classLabel: Record<PartnerClass, string> = {
   FINANCIAL_INSTITUTION: "Financial Institution",
   PAYMENT_GATEWAY_SYSTEM_OPERATOR: "Payment Gateway / System Operator",
-  MOBILE_MONEY_PAYMENT_INSTRUMENT_ISSUER:
-    "Mobile Money / Payment Instrument Issuer",
+  MOBILE_MONEY_PAYMENT_INSTRUMENT_ISSUER: "Mobile Money / Payment Instrument Issuer",
   TELCO_COMMUNICATIONS: "Telco / Communications",
   IDENTITY_PROVIDER: "Identity Provider",
   FMCG_DISTRIBUTOR_MERCHANT: "FMCG / Distributor / Merchant",
@@ -22,198 +24,117 @@ const classLabel: Record<PartnerClass, string> = {
 
 const stateLabel: Record<CapabilitySwitchState, string> = {
   DISABLED: "Disabled",
-  FOUNDATION_ONLY: "Foundation only · route activation gated",
+  FOUNDATION_ONLY: "Foundation only / route activation gated",
   SIMULATION_ONLY: "Simulation only",
   SANDBOX_BOUNDED: "Sandbox bounded",
 };
 
 export default function PartnerEcosystem() {
-  const summary = partnerEcosystemSummary();
+  const workspace = useCapabilityWorkspace();
+
+  if (!workspace) {
+    return <section className="portal-page"><div className="portal-boundary-banner">Workspace context unavailable. No partner visibility is inferred.</div></section>;
+  }
+
+  const ecosystemRole =
+    workspace.role === "SUPERVISOR" ||
+    workspace.role === "OPERATIONS" ||
+    workspace.role === "PARTNER_ADMIN"
+      ? workspace.role
+      : null;
+
+  if (!ecosystemRole) {
+    return (
+      <section className="portal-page" data-testid="partner-ecosystem-access-denied">
+        <div className="portal-boundary-banner">
+          <ShieldCheck size={20} aria-hidden="true" />
+          <div><strong>Partner Ecosystem evidence is not available to the Agent role.</strong>Direct navigation does not expand the authenticated workspace or server-side authority.</div>
+        </div>
+      </section>
+    );
+  }
+
+  const visibleOrganizations = syntheticPartnerOrganizations.filter((partner) =>
+    partner.authorizedRoles.includes(ecosystemRole),
+  );
+  const permittedRoutes = new Set(visibleOrganizations.flatMap((partner) => partner.permittedRoutes));
+  const visibleRoutes = syntheticRouteProvenance.filter((route) => permittedRoutes.has(route.integrationRoute));
+  const summary = partnerEcosystemSummary(visibleOrganizations);
 
   return (
-    <section
-      className="max-w-6xl mx-auto space-y-6"
-      data-testid="partner-ecosystem-console"
-    >
-      <div className="rounded-2xl border border-slate-800 bg-slate-950 p-6 text-slate-100 space-y-5">
-        <div className="flex flex-wrap items-center gap-3">
-          <CapabilityBadge state="IMPLEMENTED" />
-          <CapabilityBadge state="SYNTHETIC DEMO" />
+    <section className="partner-ecosystem-page" data-testid="partner-ecosystem-console">
+      <header className="partner-ecosystem-hero">
+        <span className="wl-kicker">Role-scoped ecosystem evidence</span>
+        <h1>Partner Ecosystem</h1>
+        <p>
+          Synthetic partner classes, capability states and route provenance visible to the authenticated {workspace.role.replaceAll("_", " ")} workspace. Hidden objects remain hidden; absence is not interpreted as approval or denial.
+        </p>
+        <div className="partner-admin-card-meta">
+          <GovernedStatus label="STAGE_4" />
+          <GovernedStatus label="READ_ONLY" />
+          <GovernedStatus label="NO_ROUTE_ACTIVATION_AUTHORITY" tone="blocked" />
         </div>
-        <div className="flex items-start gap-3">
-          <Network className="h-7 w-7 text-indigo-400 mt-1" />
-          <div>
-            <h1 className="text-2xl font-black">Partner Ecosystem Console</h1>
-            <p className="mt-2 text-slate-300">
-              Stage 3 read-only partner model. Partner classes, capability states and route provenance are visible without activating production services, moving cash, posting to PartnerFI accounts or exposing production credentials. A registered sandbox/TestBed foundation is shown separately from an activated payment route.
-            </p>
-          </div>
-        </div>
+      </header>
 
-        <div
-          className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5 text-sm"
-          data-testid="partner-ecosystem-summary"
-        >
-          <div className="rounded-xl border border-slate-800 bg-slate-900 p-4">
-            <p className="text-slate-500 uppercase tracking-widest text-[10px]">
-              Partner organizations
-            </p>
-            <strong className="text-xl">{summary.partnerOrganizations}</strong>
-            <p className="text-slate-400 mt-1">Synthetic/governance fixtures only.</p>
-          </div>
-          <div className="rounded-xl border border-emerald-900/70 bg-emerald-950/20 p-4">
-            <p className="text-slate-500 uppercase tracking-widest text-[10px]">
-              Sandbox bounded
-            </p>
-            <strong className="text-xl">{summary.sandboxBounded}</strong>
-            <p className="text-slate-400 mt-1">
-              Provider evidence, not settlement authority.
-            </p>
-          </div>
-          <div className="rounded-xl border border-amber-900/70 bg-amber-950/20 p-4">
-            <p className="text-slate-500 uppercase tracking-widest text-[10px]">
-              Foundation only
-            </p>
-            <strong className="text-xl">{summary.foundationOnly}</strong>
-            <p className="text-slate-400 mt-1">
-              Environment registered; payment route activation gated.
-            </p>
-          </div>
-          <div className="rounded-xl border border-indigo-900/70 bg-indigo-950/20 p-4">
-            <p className="text-slate-500 uppercase tracking-widest text-[10px]">
-              Simulation only
-            </p>
-            <strong className="text-xl">{summary.simulationOnly}</strong>
-            <p className="text-slate-400 mt-1">
-              Planning behavior with no operational dispatch.
-            </p>
-          </div>
-          <div className="rounded-xl border border-slate-700 bg-slate-900 p-4">
-            <p className="text-slate-500 uppercase tracking-widest text-[10px]">
-              Disabled capabilities
-            </p>
-            <strong className="text-xl">{summary.disabled}</strong>
-            <p className="text-slate-400 mt-1">
-              Code presence never enables authority.
-            </p>
-          </div>
-        </div>
+      <div className="portal-summary-grid" data-testid="partner-ecosystem-summary">
+        <article className="portal-summary-card"><span>Visible partner objects</span><strong>{summary.partnerOrganizations}</strong></article>
+        <article className="portal-summary-card"><span>Sandbox bounded</span><strong>{summary.sandboxBounded}</strong></article>
+        <article className="portal-summary-card"><span>Foundation only</span><strong>{summary.foundationOnly}</strong></article>
+        <article className="portal-summary-card"><span>Disabled capabilities</span><strong>{summary.disabled}</strong></article>
       </div>
 
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 text-slate-100">
-          <Building2 className="h-5 w-5 text-indigo-400" />
-          <h2 className="font-black text-lg">
-            Partner organizations & capability states
-          </h2>
+      <section className="partner-admin-panel" aria-labelledby="partner-objects-title">
+        <div className="partner-admin-panel-heading">
+          <div className="partner-admin-icon"><Building2 size={20} aria-hidden="true" /></div>
+          <div><span className="wl-kicker">Partner objects</span><h2 id="partner-objects-title">Organizations & capability states</h2><p>Visibility follows each synthetic partner object's authorized role list.</p></div>
         </div>
-        <div className="grid gap-4 lg:grid-cols-2">
-          {syntheticPartnerOrganizations.map((partner) => (
-            <article
-              key={partner.partnerOrgId}
-              className="rounded-2xl border border-slate-800 bg-slate-900 p-5 text-slate-100 space-y-4"
-              data-testid={`partner-${partner.partnerOrgId}`}
-            >
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <h3 className="font-black">{partner.displayName}</h3>
-                  <p className="text-xs text-slate-400 mt-1">
-                    {classLabel[partner.partnerClass]}
-                  </p>
-                </div>
-                <span className="rounded-full border border-slate-700 bg-slate-950 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-slate-300">
-                  {partner.environment}
-                </span>
+        <div className="partner-ecosystem-grid">
+          {visibleOrganizations.map((partner) => (
+            <article key={partner.partnerOrgId} className="partner-ecosystem-card" data-testid={`partner-${partner.partnerOrgId}`}>
+              <div className="partner-admin-card-meta"><GovernedStatus label={partner.environment} /><GovernedStatus label={classLabel[partner.partnerClass]} /></div>
+              <h3>{partner.displayName}</h3>
+              <div className="partner-admin-mini-list">
+                <div><dt>Permitted data classes</dt><dd>{partner.permittedDataClasses.join(", ") || "None"}</dd></div>
+                <div><dt>Declared routes</dt><dd>{partner.permittedRoutes.join(", ") || "None"}</dd></div>
               </div>
-
-              <div className="space-y-2">
+              <div>
                 {partner.capabilitySwitches.map((entry) => (
-                  <div
-                    key={entry.capability}
-                    className="rounded-xl border border-slate-800 bg-slate-950/70 p-3"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <strong className="font-mono text-xs">
-                        {entry.capability}
-                      </strong>
-                      <span className="text-[10px] font-black uppercase tracking-wide text-slate-300">
-                        {stateLabel[entry.state]}
-                      </span>
-                    </div>
-                    <p className="mt-2 text-xs text-slate-400">{entry.reason}</p>
+                  <div className="partner-capability-row" key={entry.capability}>
+                    <div className="partner-admin-card-meta"><GovernedStatus label={stateLabel[entry.state]} tone={toneForGovernedState(entry.state)} /></div>
+                    <strong>{entry.capability}</strong>
+                    <p>{entry.reason}</p>
                   </div>
                 ))}
               </div>
-
-              <dl className="grid gap-2 text-xs sm:grid-cols-2">
-                <div>
-                  <dt className="text-slate-500">Permitted data</dt>
-                  <dd className="text-slate-300">
-                    {partner.permittedDataClasses.join(", ") || "None"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-slate-500">Declared route reference</dt>
-                  <dd className="text-slate-300">
-                    {partner.permittedRoutes.join(", ") || "None"}
-                  </dd>
-                </div>
-              </dl>
             </article>
           ))}
         </div>
-      </div>
+      </section>
 
-      <div
-        className="rounded-2xl border border-slate-800 bg-slate-950 p-6 text-slate-100 space-y-4"
-        data-testid="route-provenance"
-      >
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="h-5 w-5 text-indigo-400" />
-          <div>
-            <h2 className="font-black text-lg">Route provenance</h2>
-            <p className="text-sm text-slate-400 mt-1">
-              Direct provider foundations remain distinct from gateway-routed payment paths. A declared route reference does not mean the route is mounted or executable, and the UI must not imply a direct contract where the actual integration route is through a gateway/operator.
-            </p>
+      <section className="partner-admin-panel" data-testid="route-provenance" aria-labelledby="route-provenance-title">
+        <div className="partner-admin-panel-heading">
+          <div className="partner-admin-icon"><Network size={20} aria-hidden="true" /></div>
+          <div><span className="wl-kicker">Route provenance</span><h2 id="route-provenance-title">Visible route references</h2><p>A declared route reference is evidence only. It does not mean the route is mounted, executable, contractually active or authorized for settlement.</p></div>
+        </div>
+        {visibleRoutes.length === 0 ? (
+          <div className="partner-admin-empty"><strong>No route provenance visible for this role.</strong>No route state is inferred.</div>
+        ) : (
+          <div className="partner-ecosystem-grid">
+            {visibleRoutes.map((route) => (
+              <article className="partner-route-card" key={route.routeId}>
+                <div className="partner-admin-card-meta"><GovernedStatus label={stateLabel[route.state]} tone={toneForGovernedState(route.state)} /></div>
+                <h3>{route.integrationRoute}</h3>
+                <code>{routeProvenanceLabel(route)}</code>
+                <p>{route.authorityBoundary}</p>
+              </article>
+            ))}
           </div>
-        </div>
-        <div className="space-y-3">
-          {syntheticRouteProvenance.map((route) => (
-            <div
-              key={route.routeId}
-              className="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-2"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <code className="text-xs text-slate-200 break-all">
-                  {routeProvenanceLabel(route)}
-                </code>
-                <span className="text-[10px] font-black uppercase tracking-wide text-slate-300">
-                  {stateLabel[route.state]}
-                </span>
-              </div>
-              <p className="text-xs text-slate-400">{route.authorityBoundary}</p>
-            </div>
-          ))}
-        </div>
-      </div>
+        )}
+      </section>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-2xl border border-indigo-900/60 bg-indigo-950/20 p-5 text-slate-100">
-          <div className="flex items-center gap-2 font-black">
-            <ToggleLeft className="h-5 w-5" /> Capability-state rule
-          </div>
-          <p className="mt-2 text-sm text-slate-300">
-            Adapter/environment registration is not payment-route activation. A capability becomes executable only after its governed evidence, environment, adapter-runtime and authority gates pass.
-          </p>
-        </div>
-        <div className="rounded-2xl border border-amber-900/60 bg-amber-950/20 p-5 text-slate-100">
-          <div className="flex items-center gap-2 font-black">
-            <Truck className="h-5 w-5" /> Cash-fleet boundary
-          </div>
-          <p className="mt-2 text-sm text-slate-300">
-            Stage 3 permits synthetic route planning only. No real cash custody, dispatch authority, handover, insurance assertion or PartnerFI posting is enabled.
-          </p>
-        </div>
+      <div className="portal-boundary-banner">
+        <ShieldCheck size={20} aria-hidden="true" />
+        <div><strong>Provider foundation is not provider activation.</strong>No real cash custody, dispatch authority, handover authority, PartnerFI posting, settlement or production credential authority is granted here. This page exposes role-scoped synthetic governance evidence only.</div>
       </div>
     </section>
   );

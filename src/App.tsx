@@ -24,6 +24,7 @@ import SupervisorRegionalOperations from "./pages/SupervisorRegionalOperations";
 import OperationsNetworkOperations from "./pages/OperationsNetworkOperations";
 import NetworkOperationsAccess from "./pages/NetworkOperationsAccess";
 import PartnerEcosystem from "./pages/PartnerEcosystem";
+import PartnerAdministration from "./pages/PartnerAdministration";
 import NetworkLiquidity from "./pages/NetworkLiquidity";
 import CashFleetPlanning from "./pages/CashFleetPlanning";
 import FmcgCommerce from "./pages/FmcgCommerce";
@@ -59,6 +60,7 @@ export default function App() {
           <Route path="/supervisor" element={<SupervisorRegionalOperations />} />
           <Route path="/operations" element={<OperationsNetworkOperations />} />
           <Route path="/network-operations" element={<NetworkOperationsAccess />} />
+          <Route path="/partner-admin" element={<PartnerAdministration />} />
           <Route path="/partners" element={<PartnerEcosystem />} />
           <Route path="/liquidity" element={<NetworkLiquidity />} />
           <Route path="/cash-fleet" element={<CashFleetPlanning />} />

@@ -1,4 +1,11 @@
-import { test, expect } from "@playwright/test";
+﻿import { test, expect } from "@playwright/test";
+
+async function startOperations(context: any) {
+  const response = await context.request.post("/api/demo/session/start", {
+    data: { role: "OPERATIONS", workspaceKey: "ALPHA_OPERATIONS_ADAMA" },
+  });
+  expect(response.status()).toBe(200);
+}
 
 test.beforeEach(async ({ page }) => {
   await page.route("**/*", (route) =>
@@ -10,6 +17,7 @@ test.beforeEach(async ({ page }) => {
 
 test("Partner Ecosystem console separates registered provider foundations from payment-route activation", async ({
   page,
+  context,
 }) => {
   await page.goto("/");
   await expect(page.getByTestId("partner-ecosystem-home-card")).toHaveCount(0);
@@ -18,21 +26,21 @@ test("Partner Ecosystem console separates registered provider foundations from p
   ).not.toContainText("Partner Ecosystem");
 
   await page.goto("/partners");
+  await expect(page.getByTestId("partner-ecosystem-access-denied")).toBeVisible();
+
+  await startOperations(context);
+  await page.goto("/partners");
   await expect(page).toHaveURL(/\/partners$/);
   await expect(
-    page.getByRole("heading", { name: "Partner Ecosystem Console" }),
+    page.getByRole("heading", { name: "Partner Ecosystem" }),
   ).toBeVisible();
 
   const summary = page.getByTestId("partner-ecosystem-summary");
-  await expect(summary).toContainText("Partner organizations");
+  await expect(summary).toContainText("Visible partner objects");
   await expect(summary).toContainText("Sandbox bounded");
   await expect(summary).toContainText("Foundation only");
-  await expect(summary).toContainText("Simulation only");
   await expect(summary).toContainText("Disabled capabilities");
 
-  await expect(page.getByTestId("partner-synthetic-partnerfi")).toContainText(
-    "No live PartnerFI connectivity is authorized",
-  );
   await expect(
     page.getByTestId("partner-synthetic-arifpay-sandbox"),
   ).toContainText("ARIFPAY_C2B");
@@ -42,12 +50,12 @@ test("Partner Ecosystem console separates registered provider foundations from p
 
   const telebirr = page.getByTestId("partner-synthetic-telebirr-direct");
   await expect(telebirr).toContainText("TELEBIRR_DIRECT_C2B");
-  await expect(telebirr).toContainText("Foundation only · route activation gated");
+  await expect(telebirr).toContainText("Foundation only / route activation gated");
   await expect(telebirr).toContainText("TestBed adapter foundation is registered");
 
   const mpesa = page.getByTestId("partner-synthetic-mpesa-ethiopia");
   await expect(mpesa).toContainText("MPESA_ETHIOPIA_DIRECT_C2B");
-  await expect(mpesa).toContainText("Foundation only · route activation gated");
+  await expect(mpesa).toContainText("Foundation only / route activation gated");
   await expect(mpesa).toContainText("token authentication is verified");
 
   const provenance = page.getByTestId("route-provenance");

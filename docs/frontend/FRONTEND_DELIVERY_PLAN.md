@@ -13,8 +13,9 @@ This delivery plan uses frontend workstream identifiers `F1`–`F10`. They are n
 - F3 - MERGED: Hub Economics and Pilot Evidence dashboards.
 - F4 - MERGED: Corridor Planning, Operator/Device Readiness and official Wishland brand asset synchronization.
 - F5 - MERGED: Neutrality Governance and Offline/Reconciliation Evidence.
-- F6 - IMPLEMENTED ON CURRENT BRANCH: Agent phone/tablet UX, browser/offline status, bounded queue presentation and branded field interaction patterns; pending exact-head CI/merge.
-- F7-F10 - PLANNED; roadmap status creates no capability or authority.
+- F6 - MERGED: Agent phone/tablet UX, browser/offline status, bounded queue presentation and branded field interaction patterns.
+- F7 - IMPLEMENTED ON CURRENT BRANCH: Partner Administration portal refinement, role-scoped ecosystem evidence and governed test-mode role journeys; pending exact-head CI/merge.
+- F8-F10 - PLANNED; roadmap status creates no capability or authority.
 
 ## F1 — Role-aware shell, Hub context and dashboards
 
