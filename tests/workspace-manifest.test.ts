@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   buildWorkspaceProviderStates,
   generateWorkspaceManifest,
+  WorkspaceNavigationGroupSchema,
 } from "../src/domain/workspaceManifest";
 import {
   SYNTHETIC_ALPHA_SERVICE_CATALOG,
@@ -159,4 +160,44 @@ test("workspace generator rejects service manifests from another partner", () =>
       }),
     /WORKSPACE_SERVICE_PARTNER_MISMATCH/,
   );
+});
+
+
+test("navigation groups reject duplicate ids and paths and generated role navigation stays unique", () => {
+  assert.throws(
+    () => WorkspaceNavigationGroupSchema.parse({
+      id: "duplicate-test",
+      label: "Duplicate test",
+      items: [
+        { id: "same", label: "One", path: "/one" },
+        { id: "same", label: "Two", path: "/one" },
+      ],
+    }),
+    /Duplicate navigation item/,
+  );
+
+  const supervisorServiceManifest = generatePartnerServiceManifest({
+    catalog: SYNTHETIC_ALPHA_SERVICE_CATALOG,
+    contract: SYNTHETIC_PARTNERFI_ALPHA,
+    principal: SYNTHETIC_REFERENCE_PRINCIPALS.alphaSupervisor,
+    role: "SUPERVISOR",
+    regionId: SYNTHETIC_REGION_IDS.ADAMA,
+    routesById: createRuntimeAdapterRegistry({ env: {} }).resolvedRoutesById(),
+    evaluatedAt,
+  });
+  const supervisor = generateWorkspaceManifest({
+    partnerOrgId: SYNTHETIC_PARTNER_IDS.PARTNERFI_ALPHA,
+    partnerDisplayName: SYNTHETIC_PARTNERFI_ALPHA.displayName,
+    hubId: "hub_syn_adama_001",
+    role: "SUPERVISOR",
+    environment: "synthetic",
+    regionId: SYNTHETIC_REGION_IDS.ADAMA,
+    serviceManifest: supervisorServiceManifest,
+  });
+  for (const group of supervisor.navigation) {
+    const ids = group.items.map((item) => item.id);
+    const paths = group.items.map((item) => item.path);
+    assert.equal(new Set(ids).size, ids.length);
+    assert.equal(new Set(paths).size, paths.length);
+  }
 });

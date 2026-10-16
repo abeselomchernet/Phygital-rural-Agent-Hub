@@ -36,7 +36,21 @@ export const WorkspaceNavigationGroupSchema = z
     label: SafeTextSchema.max(80),
     items: z.array(WorkspaceNavigationItemSchema).max(16),
   })
-  .strict();
+  .strict()
+  .superRefine((group, ctx) => {
+    const ids = new Set<string>();
+    const paths = new Set<string>();
+    group.items.forEach((item, index) => {
+      if (ids.has(item.id)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["items", index, "id"], message: "Duplicate navigation item id" });
+      }
+      if (paths.has(item.path)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["items", index, "path"], message: "Duplicate navigation item path" });
+      }
+      ids.add(item.id);
+      paths.add(item.path);
+    });
+  });
 
 export const WorkspaceProviderStateSchema = z
   .object({
@@ -132,7 +146,6 @@ function navigationForRole(input: {
       { id: "pilot-evidence", label: "Pilot Evidence", path: "/hub/pilot-evidence" },
       { id: "corridor-planning", label: "Corridor Planning", path: "/hub/corridor-planning" },
       { id: "operator-device-readiness", label: "Operator & Device Readiness", path: "/hub/readiness" },
-      { id: "neutrality-governance", label: "Neutrality & Governance", path: "/hub/neutrality" },
       { id: "neutrality-governance", label: "Neutrality & Governance", path: "/hub/neutrality" },
       { id: "supervisor", label: "Regional overview", path: "/supervisor" },
       { id: "network-access", label: "Network access", path: "/network-operations" },
