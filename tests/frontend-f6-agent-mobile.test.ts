@@ -19,7 +19,7 @@ test("F6 mobile Agent navigation is derived from governed manifest items", () =>
   const css = read("src/components/capability-workspace.css");
   assert.match(shell, /manifest\.navigation\.flatMap/);
   assert.match(shell, /manifest\.role !== "AGENT"/);
-  assert.match(shell, /Agent primary mobile navigation/);
+  assert.match(shell, /agentPrimaryMobileNavigation/);
   assert.match(css, /data-role="AGENT"/);
   assert.match(css, /min-height:\s*48px/);
 });

@@ -15,7 +15,7 @@ test("F8 workspace and evidence interactions expose keyboard and assistive-techn
   const shell = read("src/components/CapabilityWorkspaceShell.tsx");
   const drawer = read("src/components/EvidenceDrawer.tsx");
   const css = read("src/components/resilience-accessibility.css");
-  assert.match(shell, /Skip to main content/);
+  assert.match(shell, /skipMainContent/);
   assert.match(shell, /aria-busy/);
   assert.match(drawer, /aria-modal="true"/);
   assert.match(drawer, /event\.key === "Escape"/);
@@ -26,12 +26,16 @@ test("F8 workspace and evidence interactions expose keyboard and assistive-techn
   assert.match(css, /min-height: 44px/);
 });
 
-test("F8 localization readiness labels non-English presentation as preview-only", () => {
+test("F8 localization readiness is catalog-backed without self-approving translations", () => {
   const presentation = read("src/components/ProductPresentation.tsx");
+  const catalog = read("src/localization/presentationCatalog.ts");
   const doc = read("docs/frontend/F8_ACCESSIBILITY_RESILIENCE_IMPLEMENTATION.md");
-  assert.match(presentation, /English source language/);
-  assert.match(presentation, /Preview only - local-speaker review required/);
+  assert.match(presentation, /data-local-speaker-review/);
+  assert.match(presentation, /data-regulated-wording-approved="false"/);
+  assert.match(catalog, /technicalCatalogComplete/);
+  assert.match(catalog, /localSpeakerReviewRequired/);
+  assert.match(catalog, /regulatedWordingApproved: false/);
   assert.match(doc, /not.*formal WCAG certification/i);
-  assert.match(doc, /local-speaker review/i);
+  assert.match(doc, /local-speaker[- ]review/i);
   assert.match(doc, /No UI accessibility treatment is authorization/);
 });
