@@ -70,6 +70,7 @@ import {
   type SyntheticAuditPersistence,
 } from "./audit";
 import { SyntheticSessionStartRateLimiter } from "./session-start-rate-limit";
+import type { SyntheticSessionPersistence } from "./session-persistence";
 import {
   createDefaultSyntheticFinancialInstitutionAdapter,
   createRuntimeAdapterRegistry,
@@ -100,6 +101,8 @@ export interface DemoApiOptions {
   adapterRegistry?: PartnerAdapterRegistry;
   sessionStartRateWindowMs?: number;
   sessionStartMaxRequestsPerWindow?: number;
+  sessionPersistence?: SyntheticSessionPersistence;
+  sessionCleanupIntervalMs?: number;
 }
 
 const roleSchema = z.enum([
@@ -122,7 +125,11 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
         options.partnerLedgerPersistence,
       ),
     transactions = new TransactionService(customers, partner),
-    auth = new SyntheticAuthService({}, audit),
+    auth = new SyntheticAuthService(
+      { cleanupIntervalMs: options.sessionCleanupIntervalMs },
+      audit,
+      options.sessionPersistence,
+    ),
     sessionStartLimiter = new SyntheticSessionStartRateLimiter({
       rateWindowMs: options.sessionStartRateWindowMs,
       maxRequestsPerWindow: options.sessionStartMaxRequestsPerWindow,
