@@ -173,3 +173,16 @@ The F6 Agent experience applies the corporate system to field interaction rather
 Agent surfaces prioritize large touch targets, strong contrast, low information density and visible offline context. A blue/teal `Online signal` is never evidence that a provider, PartnerFI or payment rail is online. Gold is never used to mean approved. No mobile layout may hide the `Stage 4 · Synthetic` or no-production-authority context merely to save space.
 
 New Agent controls should use the canonical `--wl-navy-*`, `--wl-teal-*`, `--wl-gold-*`, surface and semantic tokens rather than legacy hard-coded forest/leaf colors. Existing compatibility aliases may remain until safely migrated.
+
+
+## 17. Partner Administration application of the brand
+
+The Partner Administration portal uses the same Wishland corporate system and Enawuga product identity as every other role. It does not introduce a bank-specific, PartnerFI-specific or administrator-specific corporate color palette.
+
+- Wishland navy frames institutional context and high-level portal identity;
+- Wishland teal identifies navigation, information and evidence-oriented interaction;
+- Wishland gold remains a controlled accent/focus color and never means approval;
+- semantic review, blocked and unknown states remain independent from corporate brand color;
+- the official Wishland mark/wordmark must remain unchanged.
+
+Partner Admin screens are deliberately denser than Agent screens, but still use the shared spacing, card, typography, focus and evidence patterns. Configuration-style cards are visually inspection-oriented: there are no toggle switches or action verbs such as `Activate`, `Approve`, `Issue credential`, `Settle` or `Enable provider` unless a future server-side authority explicitly exists and is separately reviewed.

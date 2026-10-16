@@ -333,6 +333,15 @@ function PartnerAdminHome() {
       </div>
       <div className="portal-action-grid">
         <ActionCard
+          testId="partner-administration-home-card"
+          priority
+          title="Administration overview"
+          description="Inspect the active PartnerFI catalog, provider foundations, access scopes and governance evidence in one bounded workspace."
+          to="/partner-admin"
+          linkLabel="Open Partner Administration"
+          icon={<Building2 size={20} />}
+        />
+        <ActionCard
           testId="partner-ecosystem-home-card"
           title="Partner ecosystem"
           description="Review partner classes, capability states, environment registration and route provenance."

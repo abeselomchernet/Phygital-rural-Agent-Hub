@@ -56,7 +56,7 @@ test("operations reconciliation workspace preserves registered foundation and ac
     .getByRole("button", { name: "Start synthetic operations session" })
     .click();
   await expect(page.getByTestId("operations-message")).toContainText(
-    "ALLOW_PRIVILEGED_SYNTHETIC_ROLES=true",
+    "Synthetic OPERATIONS session active",
   );
   await expect(
     page.getByRole("button", { name: "Check provider status" }),

@@ -168,3 +168,21 @@ The field UX adds browser/device connectivity status, local synthetic outbox cou
 The connectivity indicator MUST NOT be interpreted as provider availability. `navigator.onLine` is only a browser/device network hint. A locally persisted request remains untrusted transport intent and does not prove provider receipt, authorization, posting, reconciliation or settlement.
 
 The mobile primary navigation is a presentation shortcut only. It is derived from the authenticated Agent manifest and never grants routes or capabilities absent from server policy.
+
+
+## F7 Partner Administration architecture
+
+F7 adds a dedicated `/partner-admin` frontend workspace while preserving the same application, session, workspace manifest and server-side authority model used by every other role. It is not a separate application and does not add a new administrative authority service.
+
+The Partner Administration page is derived from four bounded sources:
+
+1. the authenticated `WorkspaceManifest` for active PartnerFI, Hub, region, environment and provider-foundation state;
+2. the active synthetic PartnerFI service catalog for publication/capability inspection;
+3. `networkOperationsAccessSummary("PARTNER_ADMIN")` for read-only object-scope presentation;
+4. existing neutrality and offline/reconciliation pages for governance/evidence drill-down.
+
+Published catalog inspection is intentionally distinct from role-specific service availability. A service may appear in the published synthetic catalog without being actionable by the Partner Admin role. Catalog presence does not grant capability, route, provider, posting or settlement authority.
+
+`/partners` is now role-scoped at the presentation layer. Agent direct navigation receives a bounded access-denied view. Supervisor, Operations and Partner Admin views filter synthetic partner objects through each object's explicit `authorizedRoles`; route-provenance cards are then limited to route references declared by the visible partner objects. This client filtering improves UI truth and least-visibility presentation but is not a substitute for server authorization.
+
+Playwright may enable privileged synthetic roles only inside the controlled E2E server through `ALLOW_PRIVILEGED_SYNTHETIC_ROLES=true`. Production/default runtime behavior remains fail-closed; the flag does not create production identity or SSO semantics.
