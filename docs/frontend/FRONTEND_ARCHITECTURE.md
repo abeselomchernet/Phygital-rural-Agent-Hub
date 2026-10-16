@@ -193,3 +193,9 @@ Playwright may enable privileged synthetic roles only inside the controlled E2E 
 F8 hardens presentation behavior without altering the authenticated workspace authority model. Shared UI now provides a keyboard skip target into the governed main workspace, explicit busy/live-region semantics, a bounded loading/error/empty/denied/unavailable state component, and stronger evidence-drawer modal behavior with focus entry, focus containment, Escape close and focus restoration. Reduced-motion and forced-colors rules improve assistive-technology resilience while status meaning continues to use text/labels rather than color alone.
 
 Localization remains presentation-only. English is the source language; non-English headings are explicitly labeled as previews requiring local-speaker review. F8 does not claim formal WCAG conformance, external accessibility certification or production-quality localization.
+
+## F10 guided presentation architecture
+
+F10 adds `/guided-demo` as a read-only presentation surface inside the same governed workspace shell used by all four roles. The route reads the authenticated `WorkspaceManifest` for display context only and does not introduce an alternate authority or data path. Scene navigation is manual, and the presentation performs no provider calls, business mutations, device commands or voice automation.
+
+The obsolete unmounted voice presenter and zero-byte scene-audio placeholders are removed. Presentation claims now use the same Stage-4 synthetic/non-authority vocabulary as the operational portals, and desktop/mobile Playwright screenshots are diagnostic evidence only, not certification or production proof.

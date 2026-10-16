@@ -32,6 +32,7 @@ import DataMule from "./pages/DataMule";
 import LiveTranscription from "./pages/LiveTranscription";
 import DemoArchitecture from "./pages/SovereignNode";
 import ArdiEngine from "./pages/ArdiEngine";
+import GuidedDemo from "./pages/GuidedDemo";
 import { Toaster } from "./components/ui/sonner";
 
 // Legacy financial implementation files remain in Git/source for design history;
@@ -71,6 +72,7 @@ export default function App() {
           <Route path="/judge-ticker" element={<DemoArchitecture />} />
           <Route path="/inventory" element={<InventoryDemo />} />
           <Route path="/ardi-engine" element={<ArdiEngine />} />
+          <Route path="/guided-demo" element={<GuidedDemo />} />
           {[
             "swaps",
             "fmcg-liquidity",
