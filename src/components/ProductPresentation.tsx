@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import {
   Sprout,
@@ -15,13 +15,24 @@ import {
   Truck,
   Mic,
 } from "lucide-react";
+import {
+  PresentationLocalizationProvider,
+  parsePresentationLanguage,
+  usePresentationCopy,
+  usePresentationLocalization,
+} from "./PresentationLocalization";
+import { presentationLocaleMetadata } from "../localization/presentationCatalog";
 import "./wishland-brand.css";
 import "./product-presentation.css";
+
+export { usePresentationCopy, usePresentationLocalization };
+
 export type CapabilityState =
   | "IMPLEMENTED"
   | "SYNTHETIC DEMO"
   | "PROPOSED"
   | "DISABLED PENDING PARTNER AUTHORIZATION";
+
 export function CapabilityBadge({ state }: { state: CapabilityState }) {
   return (
     <span
@@ -31,150 +42,110 @@ export function CapabilityBadge({ state }: { state: CapabilityState }) {
     </span>
   );
 }
-const copy = {
-  en: {
-    workspace: "Rural agent workspace",
-    subtitle: "Local service. Clear responsibility.",
-    kiosk: "Agent Terminal",
-    portfolio: "Farmer 360 service portfolio",
-    inventory: "Inventory & restock",
-    liquidity: "Local liquidity scenario",
-    hardware: "Device & printer concepts",
-    training: "Agent learning",
-    onboarding: "Agent readiness",
-    queue: "Offline request outbox",
-    transport: "Data Mule transport",
-    language: "Presentation language",
-  },
-  am: {
-    workspace: "የገጠር ወኪል የሥራ ቦታ",
-    subtitle: "የአካባቢ አገልግሎት። ግልጽ ኃላፊነት።",
-    kiosk: "የወኪል ተርሚናል",
-    portfolio: "የገበሬ 360 አገልግሎቶች",
-    inventory: "ዕቃ እና ዳግም አቅርቦት",
-    liquidity: "የአካባቢ ፈሳሽነት ሁኔታ",
-    hardware: "የመሣሪያ እና አታሚ ጽንሰ ሀሳብ",
-    training: "የወኪል ትምህርት",
-    onboarding: "የወኪል ዝግጅት",
-    queue: "ከመስመር ውጭ የጥያቄ ሳጥን",
-    transport: "የዳታ ማጓጓዣ",
-    language: "የማሳያ ቋንቋ",
-  },
-  or: {
-    workspace: "Iddoo hojii bakka bu’aa baadiyyaa",
-    subtitle: "Tajaajila naannoo. Itti gaafatamummaa ifaa.",
-    kiosk: "Terminalii Bakka Bu’aa",
-    portfolio: "Tajaajiloota Qonnaan Bulaa 360",
-    inventory: "Kuusaa fi dhiyeessii",
-    liquidity: "Haala dhangala'aa naannoo",
-    hardware: "Yaada meeshaa fi maxxansaa",
-    training: "Barnoota bakka bu’aa",
-    onboarding: "Qophii bakka bu’aa",
-    queue: "Tarree gaaffii interneetii malee",
-    transport: "Geejjiba daataa",
-    language: "Afaan agarsiisaa",
-  },
-};
-type Language = keyof typeof copy;
-const LanguageContext = createContext(copy.en);
-export const usePresentationCopy = () => useContext(LanguageContext);
-export function PresentationShell({ children }: { children: ReactNode }) {
-  const [language, setLanguage] = useState<Language>("en"),
-    t = copy[language];
+
+function PresentationShellContent({ children }: { children: ReactNode }) {
+  const { language, setLanguage, copy: t, metadata } = usePresentationLocalization();
+  const reviewStatus = metadata.localSpeakerReviewRequired ? "required" : "source";
   return (
-    <LanguageContext.Provider value={t}>
-      <div className="product-shell">
-        <header className="product-header">
-          <Link to="/" className="product-brand" aria-label="Enawuga home by Wishland Networking PLC">
-            <img className="wishland-wordmark" src="/brand/wishland-wordmark.png" alt="Wishland Networking PLC" />
-            <span className="product-brand-divider" aria-hidden="true" />
-            <span className="product-brand-copy">
-              <strong>Enawuga</strong>
-              <small>Phygital Rural Agent Hub</small>
-              <em>Wishland Networking PLC · Technology provider</em>
+    <div
+      className="product-shell"
+      lang={metadata.htmlLang}
+      data-presentation-language={language}
+      data-local-speaker-review={reviewStatus}
+      data-regulated-wording-approved="false"
+    >
+      <header className="product-header">
+        <Link to="/" className="product-brand" aria-label="Enawuga home by Wishland Networking PLC">
+          <img className="wishland-wordmark" src="/brand/wishland-wordmark.png" alt="Wishland Networking PLC" />
+          <span className="product-brand-divider" aria-hidden="true" />
+          <span className="product-brand-copy">
+            <strong>Enawuga</strong>
+            <small>Phygital Rural Agent Hub</small>
+            <em>Wishland Networking PLC · Technology provider</em>
+          </span>
+        </Link>
+        <div className="product-header-tools">
+          <span className="wl-environment-chip">Stage 4 {"\u00b7"} Synthetic</span>
+          <div className="language-picker">
+            <label htmlFor="presentation-language">{t.language}</label>
+            <select
+              id="presentation-language"
+              aria-describedby="presentation-language-status"
+              value={language}
+              onChange={(event) => setLanguage(parsePresentationLanguage(event.target.value))}
+            >
+              <option value="en">{presentationLocaleMetadata.en.nativeName}</option>
+              <option value="am">{presentationLocaleMetadata.am.nativeName}</option>
+              <option value="or">{presentationLocaleMetadata.or.nativeName}</option>
+            </select>
+            <span
+              id="presentation-language-status"
+              className="language-review-note"
+              aria-live="polite"
+              aria-atomic="true"
+              data-review-status={reviewStatus}
+            >
+              {language === "en" ? t.languageSourceStatus : t.languageReviewStatus}
             </span>
-          </Link>
-          <div className="product-header-tools">
-            <span className="wl-environment-chip">Stage 4 {"\u00b7"} Synthetic</span>
-            <div className="language-picker">
-              <label htmlFor="presentation-language">{t.language}</label>
-              <select
-                id="presentation-language"
-                aria-describedby="presentation-language-status"
-                value={language}
-                onChange={(e) => setLanguage(e.target.value as Language)}
-              >
-                <option value="en">English</option>
-                <option value="am">{"\u12a0\u121b\u122d\u129b"}</option>
-                <option value="or">Afaan Oromoo</option>
-              </select>
-              <span id="presentation-language-status" className="language-review-note" aria-live="polite" aria-atomic="true">
-                {language === "en" ? "English source language" : "Preview only - local-speaker review required"}
-              </span>
-            </div>
           </div>
-        </header>
-        <div className="product-hero">
-          <p className="eyebrow">
-            Wishland technology provider · Synthetic Demo
-          </p>
-          <h1>{t.workspace}</h1>
-          <p>
-            {t.subtitle} Explore the service vision with synthetic fixtures.
-            PartnerFI remains the future regulated principal.
-          </p>
-          <div className="capability-legend">
-            {(
-              [
-                "IMPLEMENTED",
-                "SYNTHETIC DEMO",
-                "PROPOSED",
-                "DISABLED PENDING PARTNER AUTHORIZATION",
-              ] as const
-            ).map((state) => (
-              <CapabilityBadge key={state} state={state} />
-            ))}
-          </div>
-          <p className="caption">
-            Implemented means local software behavior. Presentation headings
-            support three languages; detailed domain controls remain English.
-            Translations require local-speaker review.
-          </p>
         </div>
-        <nav className="product-nav" aria-label="Prototype modules">
-          <div className="product-nav-group">
-            <span className="product-nav-label">Field workflows</span>
-            <Link to="/kiosk">{t.kiosk}</Link>
-            <Link to="/farmer-360">Farmer 360</Link>
-            <Link to="/onboard">{t.onboarding}</Link>
-            <Link to="/academy">{t.training}</Link>
-            <Link to="/queue">GhostSync</Link>
-            <Link to="/data-mule">Data Mule</Link>
-            <Link to="/transcription">Conversation</Link>
-          </div>
-          <div className="product-nav-group">
-            <span className="product-nav-label">Network operations</span>
-            <Link to="/supervisor">Supervisor</Link>
-            <Link to="/operations">Operations</Link>
-            <Link to="/network-operations">Access</Link>
-            <Link to="/partners">Partner Ecosystem</Link>
-            <Link to="/liquidity">Network Liquidity</Link>
-            <Link to="/cash-fleet">Cash Fleet</Link>
-            <Link to="/fmcg">FMCG</Link>
-          </div>
-          <div className="product-nav-group">
-            <span className="product-nav-label">Evidence & concepts</span>
-            <Link to="/node-status">Demo architecture</Link>
-            <Link to="/ardi-engine">Ardi calculator</Link>
-          </div>
-        </nav>
-        <div className="product-content">{children}</div>
-        <footer className="product-footer">
-          Synthetic fixtures only · No live institutions connected · No
-          production or pilot authorization
-        </footer>
+      </header>
+      <div className="product-hero">
+        <p className="eyebrow">{t.eyebrow}</p>
+        <h1>{t.workspace}</h1>
+        <p>{t.subtitle} {t.heroDetail}</p>
+        <div className="capability-legend">
+          {(
+            [
+              "IMPLEMENTED",
+              "SYNTHETIC DEMO",
+              "PROPOSED",
+              "DISABLED PENDING PARTNER AUTHORIZATION",
+            ] as const
+          ).map((state) => (
+            <CapabilityBadge key={state} state={state} />
+          ))}
+        </div>
+        <p className="caption">{t.caption}</p>
       </div>
-    </LanguageContext.Provider>
+      <nav className="product-nav" aria-label="Prototype modules">
+        <div className="product-nav-group">
+          <span className="product-nav-label">{t.navFieldWorkflows}</span>
+          <Link to="/kiosk">{t.kiosk}</Link>
+          <Link to="/farmer-360">{t.farmer360}</Link>
+          <Link to="/onboard">{t.onboarding}</Link>
+          <Link to="/academy">{t.training}</Link>
+          <Link to="/queue">{t.ghostSync}</Link>
+          <Link to="/data-mule">{t.dataMule}</Link>
+          <Link to="/transcription">{t.conversation}</Link>
+        </div>
+        <div className="product-nav-group">
+          <span className="product-nav-label">{t.navNetworkOperations}</span>
+          <Link to="/supervisor">{t.supervisor}</Link>
+          <Link to="/operations">{t.operations}</Link>
+          <Link to="/network-operations">{t.access}</Link>
+          <Link to="/partners">{t.partnerEcosystem}</Link>
+          <Link to="/liquidity">{t.networkLiquidity}</Link>
+          <Link to="/cash-fleet">{t.cashFleet}</Link>
+          <Link to="/fmcg">{t.fmcg}</Link>
+        </div>
+        <div className="product-nav-group">
+          <span className="product-nav-label">{t.navEvidenceConcepts}</span>
+          <Link to="/node-status">{t.demoArchitecture}</Link>
+          <Link to="/ardi-engine">{t.ardiCalculator}</Link>
+        </div>
+      </nav>
+      <div className="product-content">{children}</div>
+      <footer className="product-footer">{t.footerBoundary}</footer>
+    </div>
+  );
+}
+
+export function PresentationShell({ children }: { children: ReactNode }) {
+  return (
+    <PresentationLocalizationProvider>
+      <PresentationShellContent>{children}</PresentationShellContent>
+    </PresentationLocalizationProvider>
   );
 }
 export function ProductCard({

@@ -23,6 +23,7 @@ import {
   type SyntheticWorkspaceRole,
 } from "../lib/workspace-client";
 import { PresentationShell } from "./ProductPresentation";
+import { usePresentationLocalization } from "./PresentationLocalization";
 import "./capability-workspace.css";
 import "./resilience-accessibility.css";
 
@@ -44,25 +45,6 @@ const workspaceOptions: readonly {
   { key: "ALPHA_PARTNER_ADMIN_ADAMA", role: "PARTNER_ADMIN", label: "PartnerFI Alpha / Partner Admin" },
 ];
 
-const portalMeta = {
-  AGENT: {
-    title: "Agent Workspace",
-    description: "Field service and customer assistance",
-  },
-  SUPERVISOR: {
-    title: "Hub Operations",
-    description: "Regional planning and Hub decision support",
-  },
-  OPERATIONS: {
-    title: "Operations & Reconciliation",
-    description: "Exceptions, provider evidence and recovery",
-  },
-  PARTNER_ADMIN: {
-    title: "Partner Administration",
-    description: "Institution-scoped configuration and governance",
-  },
-} as const;
-
 function defaultKeyFor(manifest: WorkspaceManifest | null): SyntheticWorkspaceKey {
   if (!manifest) return "ALPHA_AGENT_ADAMA";
   if (manifest.role === "AGENT" && manifest.partnerDisplayName.includes("Beta")) return "BETA_AGENT_ADAMA";
@@ -82,15 +64,21 @@ function displaySyntheticId(value: string, prefix: string) {
 }
 
 function WorkspacePortalHeader({ manifest }: { manifest: WorkspaceManifest }) {
-  const meta = portalMeta[manifest.role];
+  const { copy: t } = usePresentationLocalization();
+  const meta = {
+    AGENT: { title: t.agentWorkspace, description: t.agentWorkspaceDescription },
+    SUPERVISOR: { title: t.hubOperations, description: t.hubOperationsDescription },
+    OPERATIONS: { title: t.operationsReconciliation, description: t.operationsReconciliationDescription },
+    PARTNER_ADMIN: { title: t.partnerAdministration, description: t.partnerAdministrationDescription },
+  }[manifest.role];
   return (
     <section className="workspace-portal-header" data-testid="workspace-context">
       <div className="workspace-portal-title">
-        <span className="wl-kicker">Role portal</span>
+        <span className="wl-kicker">{t.rolePortal}</span>
         <h2>{meta.title}</h2>
         <p>{meta.description}</p>
       </div>
-      <div className="workspace-context-facts" aria-label="Active governed workspace">
+      <div className="workspace-context-facts" aria-label={t.activeGovernedWorkspace}>
         <span><Building2 size={15} aria-hidden="true" />{manifest.partnerDisplayName}</span>
         <span><MapPinned size={15} aria-hidden="true" />{displaySyntheticId(manifest.hubId, "hub_syn_")} Hub</span>
         <span><UserRound size={15} aria-hidden="true" />{manifest.role.replaceAll("_", " ")}</span>
@@ -98,19 +86,26 @@ function WorkspacePortalHeader({ manifest }: { manifest: WorkspaceManifest }) {
       </div>
       <div className="workspace-authority-row">
         <span className="wl-status-chip">{manifest.environment.toUpperCase()}</span>
-        <span className="wl-status-chip">Synthetic data</span>
-        <span className="wl-status-chip" data-tone="blocked">No production authority</span>
+        <span className="wl-status-chip">{t.syntheticData}</span>
+        <span className="wl-status-chip" data-tone="blocked">{t.noProductionAuthority}</span>
       </div>
     </section>
   );
 }
 
 function AgentMobileNavigation({ manifest }: { manifest: WorkspaceManifest }) {
+  const { copy: t, workspaceItemLabel } = usePresentationLocalization();
   if (manifest.role !== "AGENT") return null;
   const primaryIds = new Set(["home", "agent-terminal", "farmer-360", "requests", "readiness"]);
   const items = manifest.navigation.flatMap((group) => group.items).filter((item) => primaryIds.has(item.id));
+  const compactLabels: Record<string, string> = {
+    "agent-terminal": t.mobileTerminal,
+    "farmer-360": t.farmer360,
+    requests: t.mobileQueue,
+    readiness: t.mobileReadiness,
+  };
   return (
-    <nav className="agent-mobile-nav" aria-label="Agent primary mobile navigation">
+    <nav className="agent-mobile-nav" aria-label={t.agentPrimaryMobileNavigation}>
       {items.map((item) => (
         <NavLink
           key={item.id}
@@ -118,7 +113,7 @@ function AgentMobileNavigation({ manifest }: { manifest: WorkspaceManifest }) {
           end={item.path === "/"}
           className={({ isActive }) => isActive ? "active" : undefined}
         >
-          {item.label.replace("Requests & offline queue", "Queue").replace("Agent Terminal", "Terminal").replace("Agent readiness", "Readiness")}
+          {compactLabels[item.id] ?? workspaceItemLabel(item.id, item.label)}
         </NavLink>
       ))}
     </nav>
@@ -126,11 +121,12 @@ function AgentMobileNavigation({ manifest }: { manifest: WorkspaceManifest }) {
 }
 
 function WorkspaceNavigation({ manifest }: { manifest: WorkspaceManifest }) {
+  const { copy: t, workspaceGroupLabel, workspaceItemLabel } = usePresentationLocalization();
   return (
-    <nav className="workspace-nav" aria-label="Role and partner workspace">
+    <nav className="workspace-nav" aria-label={t.roleAndPartnerWorkspace}>
       {manifest.navigation.map((group) => (
         <div className="workspace-nav-group" key={group.id}>
-          <span className="workspace-nav-label">{group.label}</span>
+          <span className="workspace-nav-label">{workspaceGroupLabel(group.id, group.label)}</span>
           <div className="workspace-nav-items">
             {group.items.map((item) => (
               <NavLink
@@ -139,7 +135,7 @@ function WorkspaceNavigation({ manifest }: { manifest: WorkspaceManifest }) {
                 end={item.path === "/"}
                 className={({ isActive }) => isActive ? "workspace-nav-link active" : "workspace-nav-link"}
               >
-                {item.label}
+                {workspaceItemLabel(item.id, item.label)}
               </NavLink>
             ))}
           </div>
@@ -150,11 +146,12 @@ function WorkspaceNavigation({ manifest }: { manifest: WorkspaceManifest }) {
 }
 
 function WorkspaceServices({ manifest }: { manifest: WorkspaceManifest }) {
+  const { copy: t } = usePresentationLocalization();
   if (manifest.services.length === 0) return null;
   return (
     <section className="workspace-service-panel" data-testid="workspace-services">
-      <span className="workspace-context-label">Partner-published services</span>
-      <p>Catalog + capability policy</p>
+      <span className="workspace-context-label">{t.partnerPublishedServices}</span>
+      <p>{t.catalogCapabilityPolicy}</p>
       <div className="workspace-service-list">
         {manifest.services.map((service) => (
           <span className="workspace-service" key={service.serviceId}>{service.name}</span>
@@ -165,10 +162,11 @@ function WorkspaceServices({ manifest }: { manifest: WorkspaceManifest }) {
 }
 
 function ProviderReadiness({ manifest }: { manifest: WorkspaceManifest }) {
+  const { copy: t } = usePresentationLocalization();
   if (manifest.providerStates.length === 0) return null;
   return (
     <section className="workspace-provider-grid" data-testid="workspace-provider-readiness">
-      <span className="workspace-context-label">Provider readiness</span>
+      <span className="workspace-context-label">{t.providerReadiness}</span>
       {manifest.providerStates.map((provider) => (
         <article key={provider.providerKey} className="workspace-provider-card">
           <strong>{provider.providerKey.replaceAll("_", " ")}</strong>
@@ -176,7 +174,7 @@ function ProviderReadiness({ manifest }: { manifest: WorkspaceManifest }) {
           <small>{provider.environment.toUpperCase()} / {provider.runtimeMode.replaceAll("_", " ")} / {provider.routeState.replaceAll("_", " ")}</small>
         </article>
       ))}
-      <p className="workspace-provider-boundary">Provider readiness is not PartnerFI settlement or production authorization.</p>
+      <p className="workspace-provider-boundary">{t.providerBoundary}</p>
     </section>
   );
 }
@@ -192,15 +190,16 @@ function WorkspaceSwitcher({
   switching: boolean;
   onSwitch: (key: SyntheticWorkspaceKey) => void;
 }) {
+  const { copy: t } = usePresentationLocalization();
   return (
-    <section className="workspace-switcher" aria-label="Synthetic partner workspace selector">
+    <section className="workspace-switcher" aria-label={t.syntheticWorkspaceSelector}>
       <div>
-        <span className="workspace-context-label">Synthetic reference workspace</span>
-        <p>Only contexts valid for the current role are offered.</p>
+        <span className="workspace-context-label">{t.syntheticReferenceWorkspace}</span>
+        <p>{t.onlyRoleContexts}</p>
       </div>
       <select
         id="workspace-selector"
-        aria-label="Synthetic reference workspace"
+        aria-label={t.syntheticReferenceWorkspace}
         value={selectedKey}
         disabled={switching || options.length <= 1}
         onChange={(event) => onSwitch(event.target.value as SyntheticWorkspaceKey)}
@@ -211,7 +210,8 @@ function WorkspaceSwitcher({
   );
 }
 
-export default function CapabilityWorkspaceShell({ children }: { children: ReactNode }) {
+function CapabilityWorkspaceRuntime({ children }: { children: ReactNode }) {
+  const { copy: t } = usePresentationLocalization();
   const [manifest, setManifest] = useState<WorkspaceManifest | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [switching, setSwitching] = useState(false);
@@ -229,14 +229,14 @@ export default function CapabilityWorkspaceShell({ children }: { children: React
         if (active) setManifest(current);
       } catch (cause) {
         if (!(cause instanceof Error) || cause.message !== "WORKSPACE_SESSION_REQUIRED") {
-          if (active) setError("Workspace service unavailable; no operational state is inferred from the client.");
+          if (active) setError(t.workspaceServiceUnavailable);
           return;
         }
         try {
           const agent = await startCapabilityWorkspace({ role: "AGENT", workspaceKey: "ALPHA_AGENT_ADAMA" });
           if (active) setManifest(agent);
         } catch {
-          if (active) setError("Workspace service unavailable; no operational state is inferred from the client.");
+          if (active) setError(t.workspaceServiceUnavailable);
         }
       }
     };
@@ -247,7 +247,7 @@ export default function CapabilityWorkspaceShell({ children }: { children: React
   const switchWorkspace = async (key: SyntheticWorkspaceKey) => {
     const option = visibleWorkspaceOptions.find((entry) => entry.key === key);
     if (!option) {
-      setError("Workspace switch was rejected by the client role boundary.");
+      setError(t.workspaceSwitchRejectedClient);
       return;
     }
     setSwitching(true);
@@ -259,8 +259,8 @@ export default function CapabilityWorkspaceShell({ children }: { children: React
       const code = cause instanceof Error ? cause.message : "WORKSPACE_SESSION_UNAVAILABLE";
       setError(
         code === "PRIVILEGED_SYNTHETIC_ROLE_DISABLED"
-          ? "This privileged synthetic role is locked in the current runtime. Enable it only in a controlled development/test environment."
-          : "Workspace switch was rejected by the server.",
+          ? t.privilegedRoleLocked
+          : t.workspaceSwitchRejectedServer,
       );
     } finally {
       setSwitching(false);
@@ -270,19 +270,18 @@ export default function CapabilityWorkspaceShell({ children }: { children: React
   return (
     <CapabilityWorkspaceContext.Provider value={manifest}>
       <div className="capability-workspace-runtime" data-role={manifest?.role ?? "UNRESOLVED"} aria-busy={switching || !manifest}>
-        <PresentationShell>
-          <a className="wl-skip-link" href="#main-workspace-content">Skip to main content</a>
-          <p className="wl-sr-only" aria-live="polite" aria-atomic="true">{switching ? "Switching governed workspace" : manifest ? "Governed workspace ready" : "Loading governed workspace"}</p>
+          <a className="wl-skip-link" href="#main-workspace-content">{t.skipMainContent}</a>
+          <p className="wl-sr-only" aria-live="polite" aria-atomic="true">{switching ? t.switchingWorkspace : manifest ? t.workspaceReady : t.loadingWorkspace}</p>
           {manifest ? <WorkspacePortalHeader manifest={manifest} /> : (
             <section className="workspace-portal-header workspace-portal-header-fallback">
-              <div><span className="wl-kicker">Bounded presentation</span><h2>Agent Workspace</h2><p>Waiting for authenticated synthetic workspace context.</p></div>
+              <div><span className="wl-kicker">{t.boundedPresentation}</span><h2>{t.agentWorkspace}</h2><p>{t.waitingWorkspaceContext}</p></div>
             </section>
           )}
 
           {error && <p className="workspace-error" role="status">{error}</p>}
 
           <div className="workspace-app-layout">
-            <aside className="workspace-sidebar" aria-label="Workspace navigation and context">
+            <aside className="workspace-sidebar" aria-label={t.workspaceNavigationContext}>
               <WorkspaceSwitcher
                 selectedKey={selectedKey}
                 options={visibleWorkspaceOptions}
@@ -298,15 +297,22 @@ export default function CapabilityWorkspaceShell({ children }: { children: React
               ) : (
                 <div className="workspace-sidebar-boundary">
                   <ShieldCheck size={18} aria-hidden="true" />
-                  Server workspace context is required before role-specific navigation is shown.
+                  {t.serverContextRequired}
                 </div>
               )}
             </aside>
             <main className="workspace-main" id="main-workspace-content" tabIndex={-1}>{children}</main>
           </div>
           {manifest && <AgentMobileNavigation manifest={manifest} />}
-        </PresentationShell>
       </div>
     </CapabilityWorkspaceContext.Provider>
+  );
+}
+
+export default function CapabilityWorkspaceShell({ children }: { children: ReactNode }) {
+  return (
+    <PresentationShell>
+      <CapabilityWorkspaceRuntime>{children}</CapabilityWorkspaceRuntime>
+    </PresentationShell>
   );
 }

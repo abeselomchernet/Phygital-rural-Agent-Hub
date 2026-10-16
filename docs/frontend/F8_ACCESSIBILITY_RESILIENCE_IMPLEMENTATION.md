@@ -18,7 +18,7 @@ F8 adds shared interaction and state patterns across the role-aware frontend:
 - reduced-motion support and forced-colors fallbacks;
 - non-color state communication through icons plus explicit labels/text;
 - responsive preservation of role, environment and authority context;
-- explicit language-preview status identifying English as source language and non-English presentation copy as requiring local-speaker review.
+- a catalog-backed three-language presentation/workspace chrome with explicit machine-visible local-speaker-review and regulated-wording status.
 
 ## Governed state semantics
 
@@ -40,9 +40,11 @@ The drawer also exposes a stable authority reminder: evidence visibility does no
 
 ## Localization readiness
 
-English remains the implementation/source language. Existing Amharic and Afaan Oromoo presentation headings remain preview content only. Selecting a non-English presentation language shows an explicit local-speaker-review requirement.
+English remains the implementation/source language. The later audit-closure localization gate replaces the heading-only preview with a type-checked local catalog for presentation shell and governed workspace chrome in English, Amharic and Afaan Oromoo. Amharic and Afaan Oromoo remain review-gated content: `localSpeakerReviewRequired` is true and `regulatedWordingApproved` is false.
 
-F8 does not claim that these language packs have completed linguistic, legal, financial-services or production UX review. Canonical product names, provider names, evidence references, status codes and authority vocabulary remain untranslated unless a future approved localization standard governs them.
+Technical catalog completion is not linguistic approval. The UI exposes the review state visibly and through machine-readable attributes, and unknown future workspace labels fall back to the server-provided English label rather than fabricating a translation. Canonical product/provider identifiers, evidence references, environment values, domain status codes and authority state machines remain immutable.
+
+F8 and the follow-on localization gate do not claim formal linguistic, legal, financial-services or production UX approval. See `docs/governance/AUDIT_CLOSURE_LOCALIZATION.md` for the closure scope and remaining external review requirements.
 
 ## Responsive and assistive-technology boundary
 
