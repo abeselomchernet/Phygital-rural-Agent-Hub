@@ -12,11 +12,18 @@ import {
   AtomicJsonMockIdentityPersistence,
 } from "./src/server/identity-persistence";
 import { AtomicJsonSyntheticAuditPersistence } from "./src/server/audit-persistence";
+import { createConfiguredSyntheticSessionPersistence } from "./src/server/session-persistence";
 
 validateDataConfig(process.env);
 const syntheticStateDir = process.env.SYNTHETIC_STATE_DIR;
 const allowPrivilegedSyntheticRoles =
   process.env.ALLOW_PRIVILEGED_SYNTHETIC_ROLES === "true";
+const requireDurableSessionStore =
+  process.env.REQUIRE_DURABLE_SESSION_STORE === "true";
+const sessionPersistence = createConfiguredSyntheticSessionPersistence({
+  syntheticStateDir,
+  requireDurable: requireDurableSessionStore,
+});
 const partnerLedgerPersistence = syntheticStateDir
   ? new AtomicJsonPartnerLedgerPersistence(
       path.join(syntheticStateDir, "partner-ledger.json"),
@@ -47,6 +54,7 @@ const app = createApp({
         auditPersistence: new AtomicJsonSyntheticAuditPersistence(
           path.join(syntheticStateDir, "audit.json"),
         ),
+        sessionPersistence,
       }
     : {}),
   ...(runtimeAdapters.paymentGateway
@@ -73,6 +81,6 @@ const host = process.env.HOST || "127.0.0.1";
 const port = Number(process.env.PORT || 3000);
 app.listen(port, host, () =>
   console.log(
-    `Synthetic demo listening on ${host}:${port}${syntheticStateDir ? " with local synthetic durable state" : ""}${runtimeAdapters.paymentGateway ? " with registry-routed guarded ArifPay sandbox adapter and status reconciliation" : ""}${allowPrivilegedSyntheticRoles ? " with explicitly enabled privileged synthetic roles" : ""}`,
+    `Synthetic demo listening on ${host}:${port}${syntheticStateDir ? " with local synthetic durable state and restart-durable synthetic sessions" : " with in-memory synthetic sessions"}${runtimeAdapters.paymentGateway ? " with registry-routed guarded ArifPay sandbox adapter and status reconciliation" : ""}${allowPrivilegedSyntheticRoles ? " with explicitly enabled privileged synthetic roles" : ""}`,
   ),
 );

@@ -1,8 +1,11 @@
 import { randomUUID, timingSafeEqual } from "node:crypto";
 import type { Request, Response } from "express";
+import { z } from "zod";
 import {
   SYNTHETIC_HUB_IDS,
   SYNTHETIC_HUB_TENANT_IDS,
+  HubAccessPurposeSchema,
+  HubIdSchema,
   authorizeSyntheticHubAccess,
   projectAuthorizedHub,
   type HubAccessPurpose,
@@ -23,6 +26,10 @@ import {
   type getSyntheticReferencePartner,
 } from "../domain/syntheticReferencePartners";
 import { SyntheticAuditLog, type SyntheticAuditEventInput } from "./audit";
+import {
+  InMemorySyntheticSessionPersistence,
+  type SyntheticSessionPersistence,
+} from "./session-persistence";
 
 export type SyntheticRole =
   | "AGENT"
@@ -60,7 +67,7 @@ export interface SyntheticSessionView extends SyntheticPrincipal {
   localDevelopmentAuth: true;
 }
 
-interface StoredSession extends SyntheticPrincipal {
+export interface StoredSession extends SyntheticPrincipal {
   sessionId: string;
   csrfToken: string;
   expiresAtMs: number;
@@ -70,18 +77,49 @@ export interface SyntheticAuthConfig {
   sessionTtlMs?: number;
   rateWindowMs?: number;
   maxRequestsPerWindow?: number;
+  cleanupIntervalMs?: number;
 }
 
 export class SyntheticAuthError extends Error {
   constructor(
     readonly code: string,
-    readonly status: 401 | 403 | 429,
+    readonly status: 401 | 403 | 429 | 503,
   ) {
     super(code);
   }
 }
 
 const COOKIE_NAME = "enawuga_demo_session";
+
+const StoredSessionSchema = z
+  .object({
+    sessionId: z.string().uuid(),
+    csrfToken: z.string().uuid(),
+    userId: z.enum([
+      "synthetic-agent-01",
+      "synthetic-supervisor-01",
+      "synthetic-operations-01",
+      "synthetic-partner-admin-01",
+    ]),
+    role: z.enum(["AGENT", "SUPERVISOR", "OPERATIONS", "PARTNER_ADMIN"]),
+    allowedCustomerIds: z.array(z.string().min(1).max(120)).max(64),
+    allowedNetworkObjectIds: z.array(NetworkOperationsObjectIdSchema).max(64),
+    workspaceContext: z
+      .object({
+        tenantId: z.string().min(1).max(120),
+        activePartnerOrgId: z.string().min(1).max(120),
+        partnerOrgMemberships: z.array(z.string().min(1).max(120)).max(32),
+        regionId: z.string().min(1).max(120),
+        agentGroupIds: z.array(z.string().min(1).max(120)).max(64),
+        serviceScopes: z.array(z.string().min(1).max(120)).max(128),
+        objectScopes: z.array(z.string().min(1).max(120)).max(128),
+        hubAssignments: z.array(HubIdSchema).max(32),
+        hubPurposeScopes: z.array(HubAccessPurposeSchema).max(8),
+      })
+      .strict(),
+    expiresAtMs: z.number().int().safe().positive(),
+  })
+  .strict();
 
 function safeEqual(left: string, right: string) {
   const a = Buffer.from(left),
@@ -188,19 +226,34 @@ export function syntheticWorkspaceContextForReference(
 }
 
 export class SyntheticAuthService {
-  private sessions = new Map<string, StoredSession>();
   private counters = new Map<string, { startedAt: number; count: number }>();
   private sessionTtlMs: number;
   private rateWindowMs: number;
   private maxRequestsPerWindow: number;
+  private cleanupTimer?: ReturnType<typeof setInterval>;
 
   constructor(
     config: SyntheticAuthConfig = {},
     private audit = new SyntheticAuditLog(),
+    private sessionPersistence: SyntheticSessionPersistence = new InMemorySyntheticSessionPersistence(),
   ) {
     this.sessionTtlMs = config.sessionTtlMs ?? 30 * 60_000;
     this.rateWindowMs = config.rateWindowMs ?? 60_000;
     this.maxRequestsPerWindow = config.maxRequestsPerWindow ?? 60;
+    const cleanupIntervalMs = config.cleanupIntervalMs ?? 60_000;
+    if (!Number.isSafeInteger(cleanupIntervalMs) || cleanupIntervalMs < 0)
+      throw new Error("SESSION_CLEANUP_INTERVAL_INVALID");
+    if (cleanupIntervalMs > 0) {
+      this.cleanupTimer = setInterval(() => {
+        try {
+          this.sessionPersistence.sweepExpired(Date.now());
+        } catch {
+          // Retaining an expired/corrupt record is safe: authenticate still parses
+          // and checks expiry before granting a session. Cleanup never grants access.
+        }
+      }, cleanupIntervalMs);
+      this.cleanupTimer.unref?.();
+    }
   }
 
   createSession(
@@ -239,9 +292,10 @@ export class SyntheticAuthService {
       },
       expiresAtMs: Date.now() + this.sessionTtlMs,
     };
-    this.sessions.set(session.sessionId, session);
-    this.record("SESSION_CREATED", "ALLOW", session);
-    return session;
+    const parsedSession = StoredSessionSchema.parse(session);
+    this.saveSession(parsedSession);
+    this.record("SESSION_CREATED", "ALLOW", parsedSession);
+    return parsedSession;
   }
 
   setSessionCookie(req: Request, res: Response, session: StoredSession) {
@@ -265,13 +319,13 @@ export class SyntheticAuthService {
 
   authenticate(req: Request) {
     const sessionId = cookieValue(req, COOKIE_NAME);
-    const session = sessionId ? this.sessions.get(sessionId) : undefined;
+    const session = sessionId ? this.loadSession(sessionId) : undefined;
     if (!session) {
       this.record("AUTHENTICATION_DENIED", "DENY");
       throw new SyntheticAuthError("AUTHENTICATION_REQUIRED", 401);
     }
     if (session.expiresAtMs <= Date.now()) {
-      this.sessions.delete(session.sessionId);
+      this.removeSession(session.sessionId);
       this.counters.delete(session.sessionId);
       this.record("SESSION_EXPIRED", "DENY", session);
       throw new SyntheticAuthError("SESSION_EXPIRED", 401);
@@ -349,7 +403,7 @@ export class SyntheticAuthService {
   }
 
   revoke(session: StoredSession) {
-    this.sessions.delete(session.sessionId);
+    this.removeSession(session.sessionId);
     this.counters.delete(session.sessionId);
     this.record("SESSION_REVOKED", "ALLOW", session);
   }
@@ -375,6 +429,42 @@ export class SyntheticAuthService {
       expiresAt: new Date(session.expiresAtMs).toISOString(),
       localDevelopmentAuth: true,
     };
+  }
+
+  persistenceMode() {
+    return { mode: this.sessionPersistence.mode, durable: this.sessionPersistence.durable } as const;
+  }
+
+  dispose() {
+    if (this.cleanupTimer) clearInterval(this.cleanupTimer);
+    this.cleanupTimer = undefined;
+  }
+
+  private saveSession(session: StoredSession) {
+    try {
+      this.sessionPersistence.save(session.sessionId, session.expiresAtMs, session);
+    } catch {
+      this.record("AUTHENTICATION_DENIED", "DENY", session);
+      throw new SyntheticAuthError("SESSION_STORE_UNAVAILABLE", 503);
+    }
+  }
+
+  private loadSession(sessionId: string): StoredSession | undefined {
+    try {
+      const raw = this.sessionPersistence.load(sessionId);
+      return raw === undefined ? undefined : StoredSessionSchema.parse(raw);
+    } catch {
+      this.record("AUTHENTICATION_DENIED", "DENY");
+      throw new SyntheticAuthError("SESSION_STORE_UNAVAILABLE", 503);
+    }
+  }
+
+  private removeSession(sessionId: string) {
+    try {
+      this.sessionPersistence.remove(sessionId);
+    } catch {
+      throw new SyntheticAuthError("SESSION_STORE_UNAVAILABLE", 503);
+    }
   }
 
   getAuditEntries() {
