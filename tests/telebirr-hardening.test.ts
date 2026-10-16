@@ -367,7 +367,7 @@ test("two preloaded local stores cannot overwrite one another", () => {
   }
 });
 
-test("stale local persistence lock fails closed", () => {
+test("fresh or unproven local persistence lock fails closed", () => {
   const directory = mkdtempSync(join(tmpdir(), "telebirr-intent-lock-"));
   const path = join(directory, "intents.json");
   try {
