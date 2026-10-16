@@ -2,6 +2,7 @@
 import { MapPinned, ShieldCheck } from "lucide-react";
 
 import { useCapabilityWorkspace } from "../components/CapabilityWorkspaceShell";
+import BoundedState from "../components/BoundedState";
 import EvidenceDrawer, { type EvidenceDrawerModel } from "../components/EvidenceDrawer";
 import { GovernedStatus, toneForGovernedState } from "../components/GovernedStatus";
 import type { CorridorPlanningReadModel } from "../domain/corridorPlanning";
@@ -36,7 +37,7 @@ export default function CorridorPlanning() {
   }, [workspace]);
 
   const plan = plans[0] ?? null;
-  if (!workspace) return <section className="decision-page"><div className="decision-unavailable"><strong>Workspace unavailable</strong>No corridor recommendation is inferred.</div></section>;
+  if (!workspace) return <section className="decision-page"><BoundedState kind="unavailable" title="Workspace unavailable">No corridor recommendation is inferred.</BoundedState></section>;
 
   return (
     <section className="decision-page" data-testid="corridor-planning-page">
@@ -47,9 +48,9 @@ export default function CorridorPlanning() {
         <div className="decision-hero-actions"><GovernedStatus label="SYNTHETIC_MODEL_ASSUMPTION" /><GovernedStatus label="RECOMMENDATION_ONLY" /><GovernedStatus label="GEOGRAPHIC_AUTHORIZATION_NOT_GRANTED" tone="blocked" /></div>
       </header>
 
-      {loading && <div className="decision-unavailable"><strong>Loading corridor model</strong>Waiting for the authenticated Stage-4 corridor read model.</div>}
-      {!loading && error && <div className="decision-unavailable" role="status"><strong>Corridor Planning unavailable</strong>{error}</div>}
-      {!loading && !error && !plan && <div className="decision-unavailable"><strong>No corridor model returned</strong>No candidate, score or expansion recommendation is fabricated.</div>}
+      {loading && <BoundedState kind="loading" title="Loading corridor model">Waiting for the authenticated Stage-4 corridor read model.</BoundedState>}
+      {!loading && error && <BoundedState kind="error" title="Corridor Planning unavailable">{error}</BoundedState>}
+      {!loading && !error && !plan && <BoundedState kind="empty" title="No corridor model returned">No candidate, score or expansion recommendation is fabricated.</BoundedState>}
 
       {plan && (<>
         <div className="decision-metrics" aria-label="Corridor planning summary">

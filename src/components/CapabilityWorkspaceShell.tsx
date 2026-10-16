@@ -24,6 +24,7 @@ import {
 } from "../lib/workspace-client";
 import { PresentationShell } from "./ProductPresentation";
 import "./capability-workspace.css";
+import "./resilience-accessibility.css";
 
 const CapabilityWorkspaceContext = createContext<WorkspaceManifest | null>(null);
 
@@ -268,8 +269,10 @@ export default function CapabilityWorkspaceShell({ children }: { children: React
 
   return (
     <CapabilityWorkspaceContext.Provider value={manifest}>
-      <div className="capability-workspace-runtime" data-role={manifest?.role ?? "UNRESOLVED"}>
+      <div className="capability-workspace-runtime" data-role={manifest?.role ?? "UNRESOLVED"} aria-busy={switching || !manifest}>
         <PresentationShell>
+          <a className="wl-skip-link" href="#main-workspace-content">Skip to main content</a>
+          <p className="wl-sr-only" aria-live="polite" aria-atomic="true">{switching ? "Switching governed workspace" : manifest ? "Governed workspace ready" : "Loading governed workspace"}</p>
           {manifest ? <WorkspacePortalHeader manifest={manifest} /> : (
             <section className="workspace-portal-header workspace-portal-header-fallback">
               <div><span className="wl-kicker">Bounded presentation</span><h2>Agent Workspace</h2><p>Waiting for authenticated synthetic workspace context.</p></div>
@@ -299,7 +302,7 @@ export default function CapabilityWorkspaceShell({ children }: { children: React
                 </div>
               )}
             </aside>
-            <main className="workspace-main" id="main-workspace-content">{children}</main>
+            <main className="workspace-main" id="main-workspace-content" tabIndex={-1}>{children}</main>
           </div>
           {manifest && <AgentMobileNavigation manifest={manifest} />}
         </PresentationShell>

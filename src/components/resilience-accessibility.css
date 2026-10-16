@@ -1,0 +1,150 @@
+.wl-skip-link {
+  position: fixed;
+  z-index: 200;
+  top: 0.75rem;
+  left: 0.75rem;
+  transform: translateY(-180%);
+  padding: 0.65rem 0.85rem;
+  border: 2px solid var(--wl-teal-600);
+  border-radius: 0.65rem;
+  background: var(--wl-surface-0);
+  color: var(--wl-navy-900);
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: var(--wl-shadow-soft);
+}
+
+.wl-skip-link:focus {
+  transform: translateY(0);
+}
+
+.wl-sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.bounded-state {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.95rem 1rem;
+  border: 1px solid var(--wl-border-300);
+  border-left: 4px solid var(--wl-review-500);
+  border-radius: var(--wl-radius-md);
+  background: var(--wl-review-100);
+  color: var(--wl-navy-deep);
+}
+
+.bounded-state[data-kind="error"],
+.bounded-state[data-kind="denied"] {
+  border-color: #e6b8b3;
+  border-left-color: var(--wl-danger-600);
+  background: var(--wl-danger-100);
+}
+
+.bounded-state[data-kind="empty"],
+.bounded-state[data-kind="unavailable"] {
+  border-left-color: var(--wl-teal-600);
+  background: var(--wl-surface-25);
+}
+
+.bounded-state > svg {
+  flex: 0 0 auto;
+  margin-top: 0.05rem;
+}
+
+.bounded-state-copy {
+  min-width: 0;
+}
+
+.bounded-state-copy strong {
+  display: block;
+  margin-bottom: 0.15rem;
+}
+
+.bounded-state-copy > div {
+  overflow-wrap: anywhere;
+  color: var(--wl-muted-600);
+  line-height: 1.5;
+}
+
+.bounded-state-retry {
+  min-height: 44px;
+  margin-top: 0.65rem;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid var(--wl-border-300);
+  border-radius: 0.65rem;
+  background: var(--wl-surface-0);
+  color: var(--wl-navy-900);
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.bounded-state-spinner {
+  animation: wl-spin 0.9s linear infinite;
+}
+
+@keyframes wl-spin {
+  to { transform: rotate(360deg); }
+}
+
+.workspace-main:focus {
+  outline: none;
+}
+
+.product-shell button,
+.product-shell select,
+.product-shell input,
+.product-shell textarea {
+  min-height: 44px;
+}
+
+.product-shell a {
+  text-underline-offset: 0.18em;
+}
+
+@media (max-width: 640px) {
+  .bounded-state {
+    padding: 0.85rem;
+  }
+
+  .workspace-nav-link {
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .bounded-state-spinner {
+    animation: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .bounded-state,
+  .wl-status-chip,
+  .governed-status,
+  .workspace-nav-link,
+  .portal-boundary-banner {
+    border: 1px solid CanvasText;
+  }
+
+  .workspace-nav-link.active {
+    outline: 2px solid Highlight;
+  }
+}

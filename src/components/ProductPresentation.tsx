@@ -100,6 +100,7 @@ export function PresentationShell({ children }: { children: ReactNode }) {
               <label htmlFor="presentation-language">{t.language}</label>
               <select
                 id="presentation-language"
+                aria-describedby="presentation-language-status"
                 value={language}
                 onChange={(e) => setLanguage(e.target.value as Language)}
               >
@@ -107,6 +108,9 @@ export function PresentationShell({ children }: { children: ReactNode }) {
                 <option value="am">{"\u12a0\u121b\u122d\u129b"}</option>
                 <option value="or">Afaan Oromoo</option>
               </select>
+              <span id="presentation-language-status" className="language-review-note" aria-live="polite" aria-atomic="true">
+                {language === "en" ? "English source language" : "Preview only - local-speaker review required"}
+              </span>
             </div>
           </div>
         </header>

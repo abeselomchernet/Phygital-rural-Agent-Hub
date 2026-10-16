@@ -3,6 +3,7 @@ import { Building2, FileCheck2, Layers3, Network, ShieldCheck, Waypoints } from 
 import { Link } from "react-router-dom";
 
 import { useCapabilityWorkspace } from "../components/CapabilityWorkspaceShell";
+import BoundedState from "../components/BoundedState";
 import EvidenceDrawer, { type EvidenceDrawerModel } from "../components/EvidenceDrawer";
 import { GovernedStatus, toneForGovernedState } from "../components/GovernedStatus";
 import { networkOperationsAccessSummary } from "../domain/networkOperationsAuthorization";
@@ -36,7 +37,7 @@ export default function PartnerAdministration() {
   if (!workspace) {
     return (
       <section className="portal-page">
-        <div className="portal-boundary-banner">Workspace context is unavailable. No Partner Admin state is inferred from client-side defaults.</div>
+        <BoundedState kind="unavailable" title="Workspace context unavailable">No Partner Admin state is inferred from client-side defaults.</BoundedState>
       </section>
     );
   }
@@ -44,13 +45,7 @@ export default function PartnerAdministration() {
   if (workspace.role !== "PARTNER_ADMIN") {
     return (
       <section className="portal-page" data-testid="partner-admin-access-denied">
-        <div className="portal-boundary-banner">
-          <ShieldCheck size={20} aria-hidden="true" />
-          <div>
-            <strong>Partner Administration is not available to this role.</strong>
-            The client does not elevate the authenticated workspace. Server-side role, object and capability policy remain authoritative.
-          </div>
-        </div>
+        <BoundedState kind="denied" title="Partner Administration is not available to this role">The client does not elevate the authenticated workspace. Server-side role, object and capability policy remain authoritative.</BoundedState>
       </section>
     );
   }

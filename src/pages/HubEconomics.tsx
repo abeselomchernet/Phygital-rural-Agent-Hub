@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Calculator, ShieldCheck } from "lucide-react";
 
 import { useCapabilityWorkspace } from "../components/CapabilityWorkspaceShell";
+import BoundedState from "../components/BoundedState";
 import EvidenceDrawer, { type EvidenceDrawerModel } from "../components/EvidenceDrawer";
 import { GovernedStatus } from "../components/GovernedStatus";
 import type { HubEconomicsReadModel } from "../domain/hubEconomics";
@@ -32,7 +33,7 @@ export default function HubEconomics() {
   }, [workspace]);
 
   const model = models[0] ?? null;
-  if (!workspace) return <section className="decision-page"><div className="decision-unavailable"><strong>Workspace unavailable</strong>No Hub Economics state is inferred.</div></section>;
+  if (!workspace) return <section className="decision-page"><BoundedState kind="unavailable" title="Workspace unavailable">No Hub Economics state is inferred.</BoundedState></section>;
 
   return (
     <section className="decision-page" data-testid="hub-economics-page">
@@ -43,9 +44,9 @@ export default function HubEconomics() {
         <div className="decision-hero-actions"><GovernedStatus label="MODEL_ASSUMPTION" /><GovernedStatus label="MODEL_OUTPUT" /><GovernedStatus label="SYNTHETIC_MODEL_ONLY" /></div>
       </header>
 
-      {loading && <div className="decision-unavailable"><strong>Loading modeled economics</strong>Waiting for the authenticated Hub Economics read model.</div>}
-      {!loading && error && <div className="decision-unavailable" role="status"><strong>Economics unavailable</strong>{error}</div>}
-      {!loading && !error && !model && <div className="decision-unavailable"><strong>No economics model returned</strong>The server returned no scoped economics model. This is not converted into zero revenue, zero cost or zero margin.</div>}
+      {loading && <BoundedState kind="loading" title="Loading modeled economics">Waiting for the authenticated Hub Economics read model.</BoundedState>}
+      {!loading && error && <BoundedState kind="error" title="Economics unavailable">{error}</BoundedState>}
+      {!loading && !error && !model && <BoundedState kind="empty" title="No economics model returned">The server returned no scoped economics model. This is not converted into zero revenue, zero cost or zero margin.</BoundedState>}
 
       {model && (
         <>

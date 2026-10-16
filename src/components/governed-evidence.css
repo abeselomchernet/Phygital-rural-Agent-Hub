@@ -45,3 +45,18 @@
 .hub-loading-block { min-height: 9rem; border-radius: var(--wl-radius-md); background: linear-gradient(90deg,#eaf2f8,#f8fbfd,#eaf2f8); background-size: 200% 100%; animation: hub-shimmer 1.4s infinite; }
 @keyframes hub-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
 @media (max-width: 720px) { .service-composition-grid,.hub-loading-grid { grid-template-columns: 1fr; } }
+
+.evidence-drawer-boundary {
+  margin: 0.6rem 0 0;
+  padding: 0.65rem 0.75rem;
+  border-left: 3px solid var(--wl-review-500);
+  background: var(--wl-review-100);
+  color: var(--wl-muted-600);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.evidence-drawer-close {
+  min-width: 44px;
+  min-height: 44px;
+}

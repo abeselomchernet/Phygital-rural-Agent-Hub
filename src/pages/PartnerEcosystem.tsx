@@ -1,6 +1,7 @@
 import { Building2, Network, ShieldCheck } from "lucide-react";
 
 import { useCapabilityWorkspace } from "../components/CapabilityWorkspaceShell";
+import BoundedState from "../components/BoundedState";
 import { GovernedStatus, toneForGovernedState } from "../components/GovernedStatus";
 import {
   partnerEcosystemSummary,
@@ -33,7 +34,7 @@ export default function PartnerEcosystem() {
   const workspace = useCapabilityWorkspace();
 
   if (!workspace) {
-    return <section className="portal-page"><div className="portal-boundary-banner">Workspace context unavailable. No partner visibility is inferred.</div></section>;
+    return <section className="portal-page"><BoundedState kind="unavailable" title="Workspace context unavailable">No partner visibility is inferred.</BoundedState></section>;
   }
 
   const ecosystemRole =
@@ -46,10 +47,7 @@ export default function PartnerEcosystem() {
   if (!ecosystemRole) {
     return (
       <section className="portal-page" data-testid="partner-ecosystem-access-denied">
-        <div className="portal-boundary-banner">
-          <ShieldCheck size={20} aria-hidden="true" />
-          <div><strong>Partner Ecosystem evidence is not available to the Agent role.</strong>Direct navigation does not expand the authenticated workspace or server-side authority.</div>
-        </div>
+        <BoundedState kind="denied" title="Partner Ecosystem evidence is not available to the Agent role">Direct navigation does not expand the authenticated workspace or server-side authority.</BoundedState>
       </section>
     );
   }

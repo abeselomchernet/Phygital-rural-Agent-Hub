@@ -2,6 +2,7 @@
 import { Laptop, ShieldCheck, UserRoundCheck } from "lucide-react";
 
 import { useCapabilityWorkspace } from "../components/CapabilityWorkspaceShell";
+import BoundedState from "../components/BoundedState";
 import EvidenceDrawer, { type EvidenceDrawerModel } from "../components/EvidenceDrawer";
 import { GovernedStatus, toneForGovernedState } from "../components/GovernedStatus";
 import type { HubOperatorDeviceReadinessReadModel } from "../domain/hubOperatorDeviceReadiness";
@@ -34,7 +35,7 @@ export default function OperatorDeviceReadiness() {
   }, [workspace]);
 
   const model = models[0] ?? null;
-  if (!workspace) return <section className="decision-page"><div className="decision-unavailable"><strong>Workspace unavailable</strong>No readiness state is inferred.</div></section>;
+  if (!workspace) return <section className="decision-page"><BoundedState kind="unavailable" title="Workspace unavailable">No readiness state is inferred.</BoundedState></section>;
 
   return (
     <section className="decision-page" data-testid="operator-device-readiness-page">
@@ -45,9 +46,9 @@ export default function OperatorDeviceReadiness() {
         <div className="decision-hero-actions"><GovernedStatus label="SYNTHETIC_ONLY" /><GovernedStatus label="READ_ONLY" /><GovernedStatus label="NO_DEVICE_CONTROL_AUTHORITY" tone="blocked" /></div>
       </header>
 
-      {loading && <div className="decision-unavailable"><strong>Loading readiness evidence</strong>Waiting for the authenticated readiness read model.</div>}
-      {!loading && error && <div className="decision-unavailable" role="status"><strong>Readiness unavailable</strong>{error}</div>}
-      {!loading && !error && !model && <div className="decision-unavailable"><strong>No readiness model returned</strong>No operator/device state is fabricated.</div>}
+      {loading && <BoundedState kind="loading" title="Loading readiness evidence">Waiting for the authenticated readiness read model.</BoundedState>}
+      {!loading && error && <BoundedState kind="error" title="Readiness unavailable">{error}</BoundedState>}
+      {!loading && !error && !model && <BoundedState kind="empty" title="No readiness model returned">No operator/device state is fabricated.</BoundedState>}
 
       {model && (<>
         <div className="decision-metrics" aria-label="Readiness summary">
