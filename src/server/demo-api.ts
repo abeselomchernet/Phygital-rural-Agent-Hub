@@ -5,6 +5,12 @@ import {
   SYNTHETIC_EVIDENCE_EXPLORER_RECORDS,
   searchEvidenceExplorer,
 } from "../domain/evidenceExplorer";
+import {
+  SYNTHETIC_EVIDENCE_CORRECTIONS,
+  SYNTHETIC_EVIDENCE_DEPENDENCIES,
+  SYNTHETIC_EVIDENCE_LINEAGE_RECORDS,
+  buildEvidenceLineage,
+} from "../domain/evidenceCorrection";
 import { HubAccessPurposeSchema } from "../domain/hub";
 import {
   SYNTHETIC_E5_HUB_ECONOMICS_READ_MODELS,
@@ -498,6 +504,36 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
       };
     }),
   );
+  app.get("/api/demo/evidence-explorer/lineage", (req, res) =>
+    respond(res, () => {
+      const session = res.locals.syntheticSession;
+      auth.requireRole(session, ["SUPERVISOR", "OPERATIONS", "PARTNER_ADMIN"]);
+      const { hubId, evidenceId } = z
+        .object({
+          hubId: z.string().min(1).max(120),
+          evidenceId: z.string().regex(/^evidence_syn_[a-z0-9_]+$/),
+        })
+        .strict()
+        .parse(req.query);
+      const purpose =
+        session.role === "SUPERVISOR" ? "HUB_SUPERVISE" : "HUB_PARTNER_REVIEW";
+      const hub = auth.requireHubAccess(session, hubId, purpose);
+      return {
+        readOnly: true as const,
+        lineage: buildEvidenceLineage({
+          records: SYNTHETIC_EVIDENCE_LINEAGE_RECORDS,
+          corrections: SYNTHETIC_EVIDENCE_CORRECTIONS,
+          dependencies: SYNTHETIC_EVIDENCE_DEPENDENCIES,
+          role: session.role,
+          tenantId: hub.tenantId,
+          hubId: hub.hubId,
+          partnerOrgId: hub.partnerMembership.partnerOrgId,
+          evidenceId,
+        }),
+      };
+    }),
+  );
+
   app.get("/api/demo/evidence-explorer", (req, res) =>
     respond(res, () => {
       const session = res.locals.syntheticSession;
