@@ -264,7 +264,8 @@ PR #99 completed the F11A/B runtime-truth, context-safety and role-navigation fo
 | D4 seven-role target | `TARGET_STAGE4_INTERNAL` | PartnerFI Reviewer, Auditor and Pilot Reviewer remain architecture targets, not functional portals. |
 | D5 Evidence Explorer | `IMPLEMENTED_BOUNDED` | Shared evidence read foundation and role-safe bounded projections implemented. |
 | D5 correction/lineage | `IMPLEMENTED_BOUNDED` | Append-only correction/supersession lineage foundation implemented. |
-| D5 Human Review read model/policy | `IMPLEMENTED_BOUNDED` | Read model, case types, visibility and non-authority policy implemented; mutation lifecycle remains open. |
+| D5 Human Review read model/policy | `IMPLEMENTED_BOUNDED` | Read model, case types, visibility and non-authority policy implemented. |
+| Phase 4E Human Review lifecycle | `IMPLEMENTED_BOUNDED` | Append-only claim/unclaim/escalate/return/external-authority/resolve/close lifecycle, reviewer assignment, bounded rationale codes, CAS/idempotency, restart-durable synthetic persistence and audit implemented without external/financial authority. |
 | D5.9 Evidence UX semantics | `IMPLEMENTED_BOUNDED` | Digest integrity, external confirmation, synthetic state, uncertainty, reconciliation, offline, expiry and correction semantics separated. |
 | F1–F10 frontend productization | `IMPLEMENTED_BOUNDED` | Four current role surfaces, guided demo, accessibility/localization/mobile foundations and role journeys implemented. |
 | F11A/B runtime truth/navigation | `IMPLEMENTED_BOUNDED` | Explicit runtime states, static showcase, manifest-authoritative functional navigation, cross-role fail-closed behavior and customer-context safety merged in PR #99. |
@@ -396,7 +397,7 @@ Rules:
 
 ## 11. Gate A — Master plan acceptance
 
-**Status at creation:** `IN_PROGRESS`
+**Status:** `IMPLEMENTED` — merged to `main` as PR #100 with CI green.
 
 Definition of Done:
 - this document is reviewed against Wave D v1.1.1;
@@ -413,7 +414,7 @@ Gate A changes sequencing/governance only. It grants no product or external auth
 
 **Architecture source:** D5.5 Human Review Architecture
 **Implementation label:** Phase 4E (implementation sequencing label only; not a new Wave-D architecture phase)
-**Target status after completion:** `IMPLEMENTED_BOUNDED`
+**Status after this slice merges:** `IMPLEMENTED_BOUNDED`
 
 Required lifecycle:
 
@@ -998,7 +999,7 @@ A change to this plan cannot by itself authorize live data, live funds, external
 
 Default execution order after this plan is accepted:
 
-1. **Phase 4E — D5 Human Review lifecycle closure.**
+1. **Phase 4E — D5 Human Review lifecycle closure — COMPLETE with this slice.**
 2. **F11C — server-governed synthetic persona control.**
 3. **F11D — current four-portal UX convergence, including safe recovery of valuable F6 task-first intent.**
 4. **F11E — responsive/accessibility/localization/demo verification.**
@@ -1013,13 +1014,11 @@ The D1 real canary/storage-cutover program continues in parallel and may gate pe
 
 ## 29. Immediate next implementation slice
 
-After this Master Plan is reviewed/merged, the next code slice is:
+After Phase 4E is merged and exact-head CI is green, the next code slice is:
 
-**Phase 4E — Human Review lifecycle closure**
+**F11C — server-governed synthetic persona control**
 
-It should not include F11C persona switching, reviewer-role activation, D6 packages, live providers, real-person data, external webhooks or regulated authority.
-
-The expected deliverable is a bounded, append-only, idempotent, CAS-safe Human Review mutation lifecycle with explicit authority ownership, audit evidence and fail-closed external-authority handling.
+It must remain Node functional synthetic runtime only, server-advertised and fail-closed by default. A client selector must never grant authority. It must not activate the three target reviewer roles, add external identity federation, change PartnerFI authority, mount D6 sharing, enable live providers, use real-person data or weaken current WorkspaceManifest authorization.
 
 ---
 

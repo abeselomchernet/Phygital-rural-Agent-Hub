@@ -100,6 +100,16 @@ export const HumanReviewCaseSchema = z
     }
     if (
       !value.externalAuthorityRequired &&
+      value.authorityOwner === "PARTNERFI_OR_EXTERNAL_AUTHORITY"
+    ) {
+      context.addIssue({
+        code: "custom",
+        message: "EXTERNAL_AUTHORITY_FLAG_REQUIRED_FOR_EXTERNAL_OWNER",
+        path: ["externalAuthorityRequired"],
+      });
+    }
+    if (
+      !value.externalAuthorityRequired &&
       value.status === "EXTERNAL_AUTHORITY_REQUIRED"
     ) {
       context.addIssue({
@@ -147,7 +157,7 @@ const CommonCaseProjectionSchema = z
     updatedAt: z.string().datetime(),
     synthetic: z.literal(true),
     piiIncluded: z.literal(false),
-    mutationMounted: z.literal(false),
+    mutationMounted: z.boolean(),
     automaticResolutionAllowed: z.literal(false),
     financialAuthorityGranted: z.literal(false),
     creditApprovalAuthorityGranted: z.literal(false),
@@ -210,7 +220,7 @@ const LIFECYCLE_TRANSITIONS: Record<
     "EXTERNAL_AUTHORITY_REQUIRED",
     "RESOLVED",
   ],
-  ESCALATED: ["IN_REVIEW", "EXTERNAL_AUTHORITY_REQUIRED"],
+  ESCALATED: ["IN_REVIEW"],
   EXTERNAL_AUTHORITY_REQUIRED: ["IN_REVIEW"],
   RESOLVED: ["CLOSED"],
   CLOSED: [],
@@ -222,7 +232,11 @@ export function isHumanReviewTransitionAllowed(fromInput: unknown, toInput: unkn
   return LIFECYCLE_TRANSITIONS[from].includes(to);
 }
 
-export function projectHumanReviewCase(caseInput: unknown, roleInput: unknown) {
+export function projectHumanReviewCase(
+  caseInput: unknown,
+  roleInput: unknown,
+  mutationMounted = false,
+) {
   const reviewCase = HumanReviewCaseSchema.parse(caseInput);
   const role = HumanReviewViewerRoleSchema.parse(roleInput);
   if (!reviewCase.reviewRoles.includes(role)) return null;
@@ -241,7 +255,7 @@ export function projectHumanReviewCase(caseInput: unknown, roleInput: unknown) {
     updatedAt: reviewCase.updatedAt,
     synthetic: true as const,
     piiIncluded: false as const,
-    mutationMounted: false as const,
+    mutationMounted,
     automaticResolutionAllowed: false as const,
     financialAuthorityGranted: false as const,
     creditApprovalAuthorityGranted: false as const,
@@ -273,6 +287,7 @@ export function searchHumanReviewCases(input: {
   hubId: string;
   partnerOrgId: string;
   query?: unknown;
+  mutationMounted?: boolean;
 }) {
   const role = HumanReviewViewerRoleSchema.parse(input.role);
   const query = HumanReviewQuerySchema.parse(input.query ?? {});
@@ -302,7 +317,7 @@ export function searchHumanReviewCases(input: {
         ? left.caseId.localeCompare(right.caseId)
         : left.createdAt.localeCompare(right.createdAt),
     )
-    .map((entry) => projectHumanReviewCase(entry, role))
+    .map((entry) => projectHumanReviewCase(entry, role, input.mutationMounted ?? false))
     .filter((entry) => entry !== null);
 }
 

@@ -13,6 +13,7 @@ import {
 } from "./src/server/identity-persistence";
 import { AtomicJsonSyntheticAuditPersistence } from "./src/server/audit-persistence";
 import { createConfiguredSyntheticSessionPersistence } from "./src/server/session-persistence";
+import { createConfiguredHumanReviewPersistence } from "./src/server/human-review-persistence";
 import {
   createD1SessionRuntimeReadCutover,
   loadD1SessionRuntimeReadConfig,
@@ -24,9 +25,15 @@ const allowPrivilegedSyntheticRoles =
   process.env.ALLOW_PRIVILEGED_SYNTHETIC_ROLES === "true";
 const requireDurableSessionStore =
   process.env.REQUIRE_DURABLE_SESSION_STORE === "true";
+const requireDurableHumanReviewStore =
+  process.env.REQUIRE_DURABLE_HUMAN_REVIEW_STORE === "true";
 const sessionPersistence = createConfiguredSyntheticSessionPersistence({
   syntheticStateDir,
   requireDurable: requireDurableSessionStore,
+});
+const humanReviewPersistence = createConfiguredHumanReviewPersistence({
+  syntheticStateDir,
+  requireDurable: requireDurableHumanReviewStore,
 });
 const sessionRuntimeReadConfig = loadD1SessionRuntimeReadConfig(process.env);
 const sessionRuntimeReadCutover = sessionRuntimeReadConfig.enabled
@@ -50,6 +57,7 @@ const app = createApp({
   allowPrivilegedSyntheticRoles,
   adapterRegistry: runtimeAdapters.registry,
   financialInstitutionAdapter: runtimeAdapters.financialInstitutionAdapter,
+  ...(humanReviewPersistence ? { humanReviewPersistence } : {}),
   ...(syntheticStateDir
     ? {
         customerPersistence: new AtomicJsonCustomerPersistence(

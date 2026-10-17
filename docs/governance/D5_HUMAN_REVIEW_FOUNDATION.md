@@ -2,6 +2,8 @@
 
 Status: bounded Stage-4 synthetic implementation foundation.
 
+> **Current-status note (2026-10-17):** this document preserves the Phase-4C read-model/policy-only baseline. Phase 4E subsequently mounts the bounded Human Review lifecycle described in `D5_HUMAN_REVIEW_LIFECYCLE_CLOSURE.md`. The historical non-implementation statements below remain accurate for the Phase-4C slice and must not be read as the current post-Phase-4E runtime state.
+
 This slice implements the D5.5 Human Review architecture as a scoped read model and action-policy evaluator only. It does not mount review mutations, create external authority, or convert internal review into PartnerFI/legal/regulatory approval.
 
 ## Implemented
