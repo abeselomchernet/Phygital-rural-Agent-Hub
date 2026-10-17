@@ -194,7 +194,7 @@ test("D5 Human Review API requires an authenticated governed review role", async
   });
 });
 
-test("D5 Human Review API returns role-safe PartnerFI-isolated cases and no mounted action authority", async () => {
+test("D5 Human Review API returns role-safe PartnerFI-isolated cases with bounded lifecycle mutation availability", async () => {
   await withServer(async (base) => {
     const operations = await startSession(
       base,
@@ -206,14 +206,16 @@ test("D5 Human Review API returns role-safe PartnerFI-isolated cases and no moun
     });
     assert.equal(response.status, 200);
     const body = await response.json();
-    assert.equal(body.readOnly, true);
-    assert.equal(body.actionsMounted, false);
+    assert.equal(body.readOnly, false);
+    assert.equal(body.actionsMounted, true);
     assert.equal(body.cases.length, 2);
     assert.equal(
       body.cases.every(
         (entry: any) =>
           entry.projection === "OPERATIONS_REVIEW_CASE" &&
-          entry.mutationMounted === false &&
+          entry.mutationMounted === true &&
+          entry.revision === 1 &&
+          entry.eventCount === 0 &&
           entry.financialAuthorityGranted === false,
       ),
       true,
@@ -248,7 +250,7 @@ test("D5 Human Review API preserves Supervisor responsibility and exact scoped s
   });
 });
 
-test("D5 Human Review API rejects fuzzy identifiers and mounts no mutation endpoint", async () => {
+test("D5 Human Review API rejects fuzzy identifiers and leaves collection-level POST unmounted", async () => {
   await withServer(async (base) => {
     const operations = await startSession(
       base,
@@ -272,5 +274,165 @@ test("D5 Human Review API rejects fuzzy identifiers and mounts no mutation endpo
     });
     assert.equal(post.status, 404);
     assert.deepEqual(await post.json(), { error: "API_NOT_FOUND" });
+  });
+});
+
+test("Phase 4E API mounts scoped lifecycle transitions with CSRF, idempotent replay and append-only event history", async () => {
+  await withServer(async (base) => {
+    const operations = await startSession(
+      base,
+      "OPERATIONS",
+      "ALPHA_OPERATIONS_ADAMA",
+    );
+    const caseId = "case_syn_alpha_identity_conflict_001";
+    const payload = {
+      hubId: HUB_ID,
+      transition: {
+        schemaVersion: 1,
+        action: "CLAIM",
+        expectedRevision: 1,
+        idempotencyKey: "hridem_syn_api_claim_ops_001",
+        rationale: "CASE_REVIEW_STARTED",
+      },
+    };
+    const request = () =>
+      fetch(`${base}/api/demo/human-review/cases/${caseId}/transitions`, {
+        method: "POST",
+        headers: {
+          Cookie: operations.cookie,
+          "Content-Type": "application/json",
+          "x-csrf-token": operations.csrfToken,
+        },
+        body: JSON.stringify(payload),
+      });
+
+    const first = await request();
+    assert.equal(first.status, 200);
+    const firstBody = await first.json();
+    assert.equal(firstBody.currentCase.status, "IN_REVIEW");
+    assert.equal(firstBody.currentCase.revision, 2);
+    assert.equal(firstBody.currentCase.assignedReviewerUserId, "synthetic-operations-01");
+    assert.equal(firstBody.currentCase.mutationMounted, true);
+    assert.equal(firstBody.mutationResult.idempotentReplay, false);
+    assert.equal(firstBody.mutationResult.event.action, "CLAIM");
+    assert.equal(firstBody.mutationResult.resultRevision, 2);
+    assert.equal(firstBody.currentCase.revision, 2);
+    assert.equal("case" in firstBody, false);
+    assert.equal("event" in firstBody, false);
+    assert.equal(firstBody.externalFactVerified, false);
+    assert.equal(firstBody.financialAuthorityGranted, false);
+    assert.equal(firstBody.settlementAuthorityGranted, false);
+
+    const replay = await request();
+    assert.equal(replay.status, 200);
+    const replayBody = await replay.json();
+    assert.equal(replayBody.mutationResult.idempotentReplay, true);
+    assert.equal(
+      replayBody.mutationResult.event.eventId,
+      firstBody.mutationResult.event.eventId,
+    );
+    assert.equal(replayBody.mutationResult.resultRevision, 2);
+    assert.equal(replayBody.currentCase.revision, 2);
+    assert.equal(replayBody.currentCase.eventCount, 1);
+
+    const events = await fetch(
+      `${base}/api/demo/human-review/cases/${caseId}/events?hubId=${encodeURIComponent(HUB_ID)}`,
+      { headers: { Cookie: operations.cookie } },
+    );
+    assert.equal(events.status, 200);
+    const eventsBody = await events.json();
+    assert.equal(eventsBody.appendOnly, true);
+    assert.equal(eventsBody.revision, 2);
+    assert.equal(eventsBody.events.length, 1);
+    assert.equal(eventsBody.events[0].action, "CLAIM");
+    assert.equal(eventsBody.financialAuthorityGranted, false);
+  });
+});
+
+test("Phase 4E Partner Admin remains read-only and cannot call lifecycle mutations", async () => {
+  await withServer(async (base) => {
+    const admin = await startSession(
+      base,
+      "PARTNER_ADMIN",
+      "ALPHA_PARTNER_ADMIN_ADAMA",
+    );
+    const queue = await fetch(reviewUrl(base), {
+      headers: { Cookie: admin.cookie },
+    });
+    assert.equal(queue.status, 200);
+    const queueBody = await queue.json();
+    assert.equal(queueBody.readOnly, true);
+    assert.equal(queueBody.actionsMounted, false);
+    assert.equal(
+      queueBody.cases.every((entry: any) => entry.mutationMounted === false),
+      true,
+    );
+
+    const denied = await fetch(
+      `${base}/api/demo/human-review/cases/case_syn_alpha_identity_conflict_001/transitions`,
+      {
+        method: "POST",
+        headers: {
+          Cookie: admin.cookie,
+          "Content-Type": "application/json",
+          "x-csrf-token": admin.csrfToken,
+        },
+        body: JSON.stringify({
+          hubId: HUB_ID,
+          transition: {
+            schemaVersion: 1,
+            action: "CLAIM",
+            expectedRevision: 1,
+            idempotencyKey: "hridem_syn_admin_denied_001",
+            rationale: "CASE_REVIEW_STARTED",
+          },
+        }),
+      },
+    );
+    assert.equal(denied.status, 403);
+    assert.deepEqual(await denied.json(), { error: "ROLE_ACCESS_DENIED" });
+  });
+});
+
+test("Phase 4E lifecycle mutation requires CSRF before reaching Human Review state", async () => {
+  await withServer(async (base) => {
+    const operations = await startSession(
+      base,
+      "OPERATIONS",
+      "ALPHA_OPERATIONS_ADAMA",
+    );
+    const denied = await fetch(
+      `${base}/api/demo/human-review/cases/case_syn_alpha_identity_conflict_001/transitions`,
+      {
+        method: "POST",
+        headers: {
+          Cookie: operations.cookie,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          hubId: HUB_ID,
+          transition: {
+            schemaVersion: 1,
+            action: "CLAIM",
+            expectedRevision: 1,
+            idempotencyKey: "hridem_syn_csrf_denied_001",
+            rationale: "CASE_REVIEW_STARTED",
+          },
+        }),
+      },
+    );
+    assert.equal(denied.status, 403);
+    assert.deepEqual(await denied.json(), { error: "CSRF_VALIDATION_FAILED" });
+
+    const queue = await fetch(reviewUrl(base), {
+      headers: { Cookie: operations.cookie },
+    });
+    const body = await queue.json();
+    const reviewCase = body.cases.find(
+      (entry: any) => entry.caseId === "case_syn_alpha_identity_conflict_001",
+    );
+    assert.equal(reviewCase.status, "PENDING");
+    assert.equal(reviewCase.revision, 1);
+    assert.equal(reviewCase.eventCount, 0);
   });
 });

@@ -16,8 +16,13 @@ import {
   HumanReviewCaseStatusSchema,
   HumanReviewCaseTypeSchema,
   SYNTHETIC_HUMAN_REVIEW_CASES,
+  projectHumanReviewCase,
   searchHumanReviewCases,
 } from "../domain/humanReview";
+import {
+  HumanReviewTransitionRequestSchema,
+  type HumanReviewPersistence,
+} from "../domain/humanReviewLifecycle";
 import { HubAccessPurposeSchema } from "../domain/hub";
 import {
   SYNTHETIC_E5_HUB_ECONOMICS_READ_MODELS,
@@ -100,6 +105,10 @@ import { SyntheticSessionStartRateLimiter } from "./session-start-rate-limit";
 import type { SyntheticSessionPersistence } from "./session-persistence";
 import type { D1SessionRuntimeReadCutover } from "./postgres/d1-session-read-cutover";
 import {
+  HumanReviewLifecycleService,
+  HumanReviewMutationError,
+} from "./human-review-service";
+import {
   createDefaultSyntheticFinancialInstitutionAdapter,
   createRuntimeAdapterRegistry,
 } from "./adapter-bootstrap";
@@ -124,6 +133,7 @@ export interface DemoApiOptions {
   identityProviderPersistence?: MockIdentityProviderPersistence;
   kycPendingPersistence?: KycPendingPersistence;
   auditPersistence?: SyntheticAuditPersistence;
+  humanReviewPersistence?: HumanReviewPersistence;
   paymentGateway?: PaymentGatewayAdapter;
   paymentGatewayReconciliation?: PaymentGatewayReconciliationService;
   adapterRegistry?: PartnerAdapterRegistry;
@@ -145,6 +155,10 @@ const demoPhoneSet = new Set<string>(demoPhones);
 
 export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
   const audit = new SyntheticAuditLog(options.auditPersistence),
+    humanReview = new HumanReviewLifecycleService(
+      options.humanReviewPersistence,
+      audit,
+    ),
     customers = new CustomerStore(options.customerPersistence, audit),
     provider = new MockFaydaAdapter(options.identityProviderPersistence),
     identity = new KycService(customers, provider, options.kycPendingPersistence),
@@ -602,20 +616,141 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
         session.role === "SUPERVISOR" ? "HUB_SUPERVISE" : "HUB_PARTNER_REVIEW";
       const hub = auth.requireHubAccess(session, parsed.hubId, purpose);
       const { hubId: _hubId, ...query } = parsed;
+      const records = humanReview.listRecords();
+      const byCaseId = new Map(
+        records.map((record) => [record.reviewCase.caseId, record] as const),
+      );
+      const mutationsMounted = session.role !== "PARTNER_ADMIN";
+      const cases = searchHumanReviewCases({
+        cases: records.map((record) => record.reviewCase),
+        role: session.role,
+        tenantId: hub.tenantId,
+        hubId: hub.hubId,
+        partnerOrgId: hub.partnerMembership.partnerOrgId,
+        query,
+        mutationMounted: mutationsMounted,
+      }).map((projection) => {
+        const record = byCaseId.get(projection.caseId)!;
+        return {
+          ...projection,
+          revision: record.revision,
+          assignedReviewerUserId: record.assignedReviewerUserId,
+          eventCount: record.events.length,
+        };
+      });
       return {
-        readOnly: true as const,
-        actionsMounted: false as const,
-        cases: searchHumanReviewCases({
-          cases: SYNTHETIC_HUMAN_REVIEW_CASES,
+        readOnly: session.role === "PARTNER_ADMIN",
+        actionsMounted: mutationsMounted,
+        cases,
+      };
+    }),
+  );
+
+  app.get("/api/demo/human-review/cases/:caseId/events", (req, res) =>
+    respond(res, () => {
+      const session = res.locals.syntheticSession;
+      auth.requireRole(session, ["SUPERVISOR", "OPERATIONS", "PARTNER_ADMIN"]);
+      const caseId = z
+        .string()
+        .regex(/^case_syn_[a-z0-9_]+$/)
+        .parse(req.params.caseId);
+      const { hubId } = z
+        .object({ hubId: z.string().min(1).max(120) })
+        .strict()
+        .parse(req.query);
+      const purpose =
+        session.role === "SUPERVISOR" ? "HUB_SUPERVISE" : "HUB_PARTNER_REVIEW";
+      const hub = auth.requireHubAccess(session, hubId, purpose);
+      const record = humanReview.persistence.load(caseId);
+      if (
+        !record ||
+        record.reviewCase.tenantId !== hub.tenantId ||
+        record.reviewCase.hubId !== hub.hubId ||
+        record.reviewCase.partnerOrgId !== hub.partnerMembership.partnerOrgId ||
+        !record.reviewCase.reviewRoles.includes(session.role)
+      )
+        throw new SyntheticAuthError("OBJECT_ACCESS_DENIED", 403);
+      return {
+        caseId,
+        revision: record.revision,
+        assignedReviewerUserId: record.assignedReviewerUserId,
+        events: record.events,
+        appendOnly: true as const,
+        financialAuthorityGranted: false as const,
+        settlementAuthorityGranted: false as const,
+      };
+    }),
+  );
+
+  app.post("/api/demo/human-review/cases/:caseId/transitions", (req, res) => {
+    try {
+      const session = res.locals.syntheticSession;
+      auth.requireRole(session, ["SUPERVISOR", "OPERATIONS"]);
+      const caseId = z
+        .string()
+        .regex(/^case_syn_[a-z0-9_]+$/)
+        .parse(req.params.caseId);
+      const body = z
+        .object({
+          hubId: z.string().min(1).max(120),
+          transition: HumanReviewTransitionRequestSchema,
+        })
+        .strict()
+        .parse(req.body);
+      const purpose =
+        session.role === "SUPERVISOR" ? "HUB_SUPERVISE" : "HUB_PARTNER_REVIEW";
+      const hub = auth.requireHubAccess(session, body.hubId, purpose);
+      const result = humanReview.transition({
+        caseId,
+        actor: {
+          userId: session.userId,
           role: session.role,
           tenantId: hub.tenantId,
           hubId: hub.hubId,
           partnerOrgId: hub.partnerMembership.partnerOrgId,
-          query,
-        }),
-      };
-    }),
-  );
+        },
+        request: body.transition,
+      });
+      const projection = projectHumanReviewCase(
+        result.record.reviewCase,
+        session.role,
+        true,
+      );
+      if (!projection)
+        throw new SyntheticAuthError("OBJECT_ACCESS_DENIED", 403);
+      return res.json({
+        currentCase: {
+          ...projection,
+          revision: result.currentRevision,
+          assignedReviewerUserId: result.record.assignedReviewerUserId,
+          eventCount: result.record.events.length,
+        },
+        mutationResult: {
+          event: result.event,
+          resultRevision: result.resultRevision,
+          idempotentReplay: result.idempotentReplay,
+        },
+        appendOnly: true,
+        externalFactVerified: false,
+        financialAuthorityGranted: false,
+        creditApprovalAuthorityGranted: false,
+        settlementAuthorityGranted: false,
+        insuranceAdjudicationAuthorityGranted: false,
+        deviceControlAuthorityGranted: false,
+        ...syntheticMetadata,
+      });
+    } catch (error) {
+      if (error instanceof SyntheticAuthError)
+        return res.status(error.status).json({ error: error.code });
+      if (error instanceof HumanReviewMutationError)
+        return res
+          .status(error.status)
+          .json({ error: error.code, ...syntheticMetadata });
+      return res
+        .status(400)
+        .json({ error: "DEMO_REQUEST_REJECTED", ...syntheticMetadata });
+    }
+  });
 
   app.get("/api/demo/hub-operations/offline-evidence", (req, res) =>
     respond(res, () => {

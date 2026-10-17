@@ -41,11 +41,24 @@ test("D5 evidence search scopes before exact filters and cannot leak the other P
     role: "OPERATIONS",
     ...scope,
   });
-  assert.equal(allAlpha.length, 3);
+  assert.equal(allAlpha.length, 4);
   assert.equal(
     JSON.stringify(allAlpha).includes(SYNTHETIC_PARTNER_IDS.PARTNERFI_BETA),
     false,
   );
+
+  const externalResponse = allAlpha.find(
+    (entry) => entry.evidenceId === "evidence_syn_alpha_external_response_001",
+  );
+  assert.ok(externalResponse);
+  assert.equal(externalResponse.evidenceClass, "REPORTED");
+  assert.equal(externalResponse.semanticConfirmationState, "SEMANTICALLY_UNCONFIRMED");
+  assert.equal(externalResponse.externalAuthorityState, "EXTERNAL_AUTHORITY_UNKNOWN");
+  assert.equal(
+    externalResponse.limitationCodes.includes("external_response_not_external_fact"),
+    true,
+  );
+  assert.equal(externalResponse.mutationAuthorityGranted, false);
 
   const betaCorrelation = searchEvidenceExplorer({
     records: SYNTHETIC_EVIDENCE_EXPLORER_RECORDS,
