@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit",
-    "test": "tsx --test tests/*.test.ts",
+    "test": "tsx --test --test-concurrency=1 tests/*.test.ts",
     "test:e2e": "playwright test --config=app/applet/playwright.config.ts",
     "d1:db:migrate": "tsx scripts/d1-postgres-migrate.ts",
     "d1:db:shadow": "tsx scripts/d1-postgres-shadow-migrate.ts",
