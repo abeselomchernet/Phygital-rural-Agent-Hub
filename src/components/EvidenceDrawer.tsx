@@ -1,5 +1,7 @@
 import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
+import EvidenceSemanticStates from "./EvidenceSemanticStates";
+import type { EvidenceUxState } from "../domain/evidenceUxSemantics";
 import "./governed-evidence.css";
 
 export type EvidenceDrawerModel = {
@@ -9,6 +11,7 @@ export type EvidenceDrawerModel = {
   schemaVersion?: string | number;
   evaluatedAt?: string;
   integrityRef?: string;
+  semanticStates?: readonly EvidenceUxState[];
   limitation: string;
   authorityImplication: string;
 };
@@ -63,6 +66,7 @@ export default function EvidenceDrawer({ model, onClose }: { model: EvidenceDraw
           <button ref={closeRef} type="button" className="evidence-drawer-close" aria-label="Close evidence details" onClick={onClose}><X size={18} aria-hidden="true" /></button>
         </div>
         <p id="evidence-drawer-boundary" className="evidence-drawer-boundary">Evidence visibility does not grant approval, execution, settlement or production authority.</p>
+        {model.semanticStates && <EvidenceSemanticStates states={model.semanticStates} />}
         <div className="evidence-detail-list">
           <div className="evidence-detail"><span>Classification</span><strong>{model.classification}</strong></div>
           {model.schemaVersion !== undefined && <div className="evidence-detail"><span>Schema version</span><strong>{model.schemaVersion}</strong></div>}
