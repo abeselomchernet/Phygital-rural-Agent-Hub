@@ -960,6 +960,95 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
     }
   });
 
+  app.post("/api/demo/v2/payments/arifpay/c2b/reconcile", async (req, res) => {
+    const session = res.locals.syntheticSession;
+    let transactionId: string;
+    let customerId: string;
+    try {
+      auth.requireRole(session, ["SUPERVISOR", "OPERATIONS", "PARTNER_ADMIN"]);
+      ({ transactionId } = z
+        .object({ transactionId: z.string().uuid() })
+        .strict()
+        .parse(req.body));
+      if (!options.paymentGatewayReconciliation)
+        return res.status(503).json({
+          error: "PAYMENT_GATEWAY_RECONCILIATION_UNAVAILABLE",
+          ...syntheticMetadata,
+        });
+      const resolvedCustomerId =
+        options.paymentGatewayReconciliation.resolveRecordedCustomerId(transactionId);
+      if (!resolvedCustomerId)
+        return res.status(404).json({
+          error: "PAYMENT_GATEWAY_RECONCILIATION_UNAVAILABLE",
+          ...syntheticMetadata,
+        });
+      customerId = resolvedCustomerId;
+      auth.requireCustomer(session, customerId);
+      if (customerId !== fixtureId)
+        throw new SyntheticAuthError("OBJECT_ACCESS_DENIED", 403);
+    } catch (error) {
+      if (error instanceof SyntheticAuthError)
+        return res.status(error.status).json({ error: error.code });
+      return res.status(400).json({ error: "DEMO_REQUEST_REJECTED" });
+    }
+
+    audit.record({
+      category: "RECONCILIATION",
+      action: "PAYMENT_GATEWAY_RECONCILIATION_QUERIED",
+      outcome: "PENDING",
+      actor: { userId: session.userId, role: session.role },
+      customerId,
+      transactionId,
+    });
+
+    try {
+      const result = await options.paymentGatewayReconciliation.reconcile({
+        transactionId,
+        customerId,
+      });
+      audit.record({
+        category: "RECONCILIATION",
+        action: "PAYMENT_GATEWAY_RECONCILIATION_RESULT",
+        outcome:
+          result.state === "GATEWAY_CONFIRMED"
+            ? "SUCCESS"
+            : result.state === "GATEWAY_FAILED" ||
+                result.state === "GATEWAY_CANCELED" ||
+                result.state === "GATEWAY_EXPIRED"
+              ? "FAIL"
+              : "PENDING",
+        actor: { userId: session.userId, role: session.role },
+        customerId,
+        transactionId,
+        stateTo: result.state,
+        code: result.code,
+      });
+      return res.json({
+        transactionId: result.transactionId,
+        state: result.state,
+        code: result.code,
+        provider: result.provider,
+        environment: result.environment,
+        checkedAt: result.checkedAt,
+        ...syntheticMetadata,
+      });
+    } catch {
+      audit.record({
+        category: "RECONCILIATION",
+        action: "PAYMENT_GATEWAY_RECONCILIATION_REJECTED",
+        outcome: "FAIL",
+        actor: { userId: session.userId, role: session.role },
+        customerId,
+        transactionId,
+        code: "REQUEST_REJECTED",
+      });
+      return res.status(400).json({
+        error: "PAYMENT_GATEWAY_RECONCILIATION_REJECTED",
+        ...syntheticMetadata,
+      });
+    }
+  });
+
   app.post("/api/demo/payments/arifpay/c2b/reconcile", async (req, res) => {
     const session = res.locals.syntheticSession;
     let request;
