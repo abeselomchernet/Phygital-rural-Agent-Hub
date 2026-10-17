@@ -41,6 +41,13 @@ import {
   CustomerStore,
   type CustomerStorePersistence,
 } from "../domain/customer";
+import { projectCustomerForRole } from "../domain/customerProjection";
+import {
+  SyntheticCustomerReferenceSchema,
+  assignmentReferenceForCustomerReference,
+  deriveSyntheticCustomerReference,
+  resolveSyntheticCustomerReference,
+} from "../domain/customerReference";
 import {
   KycService,
   MockFaydaAdapter,
@@ -48,6 +55,7 @@ import {
   type MockIdentityProviderPersistence,
 } from "../domain/identity";
 import {
+  TransactionSchema,
   TransactionService,
   type FinancialInstitutionAdapter,
   type PartnerLedgerPersistence,
@@ -162,6 +170,43 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
       partner.lookupPartnerCustomer(customer.customerId),
     );
   const fixtureId = customer.customerId;
+
+  const customerReferenceScope = (session: any) => ({
+    sessionId: session.sessionId,
+    tenantId: session.workspaceContext.tenantId,
+    partnerOrgId: session.workspaceContext.activePartnerOrgId,
+    allowedCustomerIds: session.allowedCustomerIds,
+  });
+  const customerRefFor = (session: any, customerId: string) =>
+    deriveSyntheticCustomerReference(customerReferenceScope(session), customerId);
+  const customerIdForRef = (session: any, customerRef: string) => {
+    try {
+      const customerId = resolveSyntheticCustomerReference(
+        customerReferenceScope(session),
+        customerRef,
+      );
+      auth.requireCustomer(session, customerId);
+      return customerId;
+    } catch {
+      throw new SyntheticAuthError("OBJECT_ACCESS_DENIED", 403);
+    }
+  };
+  const projectedCustomer = (session: any, customerId: string) => {
+    if (session.role !== "AGENT" && session.role !== "SUPERVISOR")
+      throw new SyntheticAuthError("ROLE_ACCESS_DENIED", 403);
+    const customerRef = customerRefFor(session, customerId);
+    return {
+      customerRef,
+      customer: projectCustomerForRole(customers.get(customerId), {
+        role: session.role,
+        assignmentRef: assignmentReferenceForCustomerReference(customerRef),
+      }),
+      referenceBoundary: "SESSION_SCOPED_SYNTHETIC" as const,
+    };
+  };
+  const V2TransactionRequestSchema = TransactionSchema.omit({ customerId: true })
+    .extend({ customerRef: SyntheticCustomerReferenceSchema })
+    .strict();
 
   app.use("/api/demo", (req, res, next) => {
     if (mutationMethods.has(req.method) && !req.is("application/json"))
@@ -527,6 +572,143 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
     respond(res, () => {
       auth.requireRole(res.locals.syntheticSession, ["PARTNER_ADMIN"]);
       return { events: auth.getAuditEntries() };
+    }),
+  );
+
+  // Phase 3C target boundary. These versioned routes use session-scoped opaque
+  // customer references. The v1 routes below remain temporarily for legacy UI
+  // compatibility and must not be described as the target projection boundary.
+  app.get("/api/demo/v2/customer", (_req, res) =>
+    respond(res, () => {
+      const session = res.locals.syntheticSession;
+      auth.requireRole(session, ["AGENT", "SUPERVISOR"]);
+      auth.requireCustomer(session, fixtureId);
+      return projectedCustomer(session, fixtureId);
+    }),
+  );
+  app.get("/api/demo/v2/lookup", (req, res) => {
+    const session = res.locals.syntheticSession;
+    try {
+      auth.requireRole(session, ["AGENT", "SUPERVISOR"]);
+    } catch (error) {
+      if (error instanceof SyntheticAuthError)
+        return res.status(error.status).json({ error: error.code });
+      throw error;
+    }
+    const parsed = z.object({ phone: z.enum(demoPhones) }).strict().safeParse(req.query);
+    if (!parsed.success)
+      return res.status(404).json({ error: "CUSTOMER_LOOKUP_UNAVAILABLE", ...syntheticMetadata });
+    try {
+      const resolved = customers.resolve(parsed.data.phone);
+      auth.requireCustomer(session, resolved.customerId);
+      return res.json({ ...projectedCustomer(session, resolved.customerId), ...syntheticMetadata });
+    } catch {
+      return res.status(404).json({ error: "CUSTOMER_LOOKUP_UNAVAILABLE", ...syntheticMetadata });
+    }
+  });
+  app.get("/api/demo/v2/account", (req, res) =>
+    respond(res, () => {
+      const session = res.locals.syntheticSession;
+      auth.requireRole(session, ["AGENT", "SUPERVISOR"]);
+      const { customerRef } = z.object({ customerRef: SyntheticCustomerReferenceSchema }).strict().parse(req.query);
+      const customerId = customerIdForRef(session, customerRef);
+      return partner.getAccountSummary(customerId);
+    }),
+  );
+  app.post("/api/demo/v2/phone", (req, res) =>
+    respond(res, () => {
+      const session = res.locals.syntheticSession;
+      auth.requireRole(session, ["AGENT"]);
+      const { customerRef, phone } = z
+        .object({ customerRef: SyntheticCustomerReferenceSchema, phone: z.enum(demoPhones) })
+        .strict()
+        .parse(req.body);
+      const customerId = customerIdForRef(session, customerRef);
+      const changed = customers.changePhone(customerId, phone);
+      audit.record({
+        category: "CUSTOMER", action: "PHONE_ALIAS_CHANGED", outcome: "SUCCESS",
+        actor: { userId: session.userId, role: session.role },
+        customerId, stateTo: changed.phoneStatus,
+      });
+      return projectedCustomer(session, customerId);
+    }),
+  );
+  app.post("/api/demo/v2/reverify/start", (req, res) =>
+    respond(res, () => {
+      const session = res.locals.syntheticSession;
+      auth.requireRole(session, ["AGENT"]);
+      const { customerRef } = z.object({ customerRef: SyntheticCustomerReferenceSchema }).strict().parse(req.body);
+      const customerId = customerIdForRef(session, customerRef);
+      const before = customers.get(customerId).kycStatus;
+      identity.requestReverification(customerId, "PHONE_CHANGE");
+      const after = customers.get(customerId);
+      audit.record({
+        category: "KYC", action: "KYC_REVERIFICATION_REQUESTED", outcome: "PENDING",
+        actor: { userId: session.userId, role: session.role },
+        customerId, stateFrom: before, stateTo: after.kycStatus, code: "PHONE_CHANGE",
+      });
+      return projectedCustomer(session, customerId);
+    }),
+  );
+  app.post("/api/demo/v2/reverify/confirm", (req, res) =>
+    respond(res, () => {
+      const session = res.locals.syntheticSession;
+      auth.requireRole(session, ["AGENT"]);
+      const { customerRef } = z.object({ customerRef: SyntheticCustomerReferenceSchema }).strict().parse(req.body);
+      const customerId = customerIdForRef(session, customerRef);
+      const before = customers.get(customerId).kycStatus;
+      identity.confirm(customerId);
+      const confirmed = customers.recordMockPhoneVerification(customerId);
+      audit.record({
+        category: "KYC", action: "KYC_REVERIFICATION_CONFIRMED", outcome: "SUCCESS",
+        actor: { userId: session.userId, role: session.role },
+        customerId, stateFrom: before, stateTo: confirmed.kycStatus,
+      });
+      return projectedCustomer(session, customerId);
+    }),
+  );
+  app.post("/api/demo/v2/transactions", (req, res) =>
+    respond(res, () => {
+      const session = res.locals.syntheticSession;
+      auth.requireRole(session, ["AGENT"]);
+      const external = V2TransactionRequestSchema.parse(req.body);
+      const customerId = customerIdForRef(session, external.customerRef);
+      const internal = TransactionSchema.parse({
+        transactionId: external.transactionId,
+        customerId,
+        idempotencyKey: external.idempotencyKey,
+        amountMinor: external.amountMinor,
+        direction: external.direction,
+        currency: external.currency,
+      });
+      audit.record({
+        category: "FINANCIAL", action: "PARTNER_TRANSACTION_SUBMITTED", outcome: "PENDING",
+        actor: { userId: session.userId, role: session.role }, customerId,
+      });
+      let result;
+      try {
+        result = transactions.submit(internal);
+      } catch (error) {
+        audit.record({
+          category: "FINANCIAL", action: "PARTNER_TRANSACTION_REJECTED", outcome: "FAIL",
+          actor: { userId: session.userId, role: session.role }, customerId, code: "REQUEST_REJECTED",
+        });
+        throw error;
+      }
+      audit.record({
+        category: "FINANCIAL", action: "PARTNER_TRANSACTION_RESULT",
+        outcome: result.state === "PARTNER_REJECTED" ? "FAIL" :
+          result.state === "PARTNER_AUTH_PENDING" || result.state === "RECONCILIATION_REQUIRED" ? "PENDING" : "SUCCESS",
+        actor: { userId: session.userId, role: session.role }, customerId,
+        transactionId: result.transactionId, stateTo: result.state,
+      });
+      return {
+        transactionId: result.transactionId,
+        customerRef: external.customerRef,
+        state: result.state,
+        accountOwner: result.accountOwner,
+        simulated: result.simulated,
+      };
     }),
   );
 
