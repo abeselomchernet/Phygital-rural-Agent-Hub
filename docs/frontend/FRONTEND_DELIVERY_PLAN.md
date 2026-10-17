@@ -4,7 +4,7 @@
 
 Turn the governed Stage-4 backend into one coherent role-based Enawuga product without widening authority.
 
-This delivery plan uses frontend workstream identifiers `F1`–`F10`. They are not backend epic identifiers. In particular, frontend `F10` does not unlock backend Epic E10 Inclusion Analytics.
+This delivery plan uses frontend workstream identifiers `F1`–`F11`. They are not backend epic identifiers. In particular, frontend `F10` does not unlock backend Epic E10 Inclusion Analytics.
 
 ## Implementation status
 
@@ -16,8 +16,9 @@ This delivery plan uses frontend workstream identifiers `F1`–`F10`. They are n
 - F6 - MERGED: Agent phone/tablet UX, browser/offline status, bounded queue presentation and branded field interaction patterns.
 - F7 - MERGED: Partner Administration portal refinement, role-scoped ecosystem evidence and governed test-mode role journeys.
 - F8 - MERGED: accessibility, responsive resilience and localization-readiness hardening.
-- F9 - IMPLEMENTED ON CURRENT BRANCH: end-to-end role journeys and visible claim audit; pending exact-head CI/merge.
-- F10 - PLANNED; roadmap status creates no capability or authority.
+- F9 - MERGED: end-to-end role journeys and visible claim audit.
+- F10 - MERGED: guided demo and presentation polish.
+- F11 - ACTIVE BOUNDED WORKSTREAM: runtime truth, context safety, authoritative navigation and role-portal convergence; status does not grant new authority.
 
 ## F1 — Role-aware shell, Hub context and dashboards
 
@@ -125,6 +126,17 @@ Deliver:
 - removal of obsolete presentation fragments where safely superseded;
 - final frontend implementation documentation.
 
+## F11 — Role portal visibility and product experience convergence
+
+F11 converges the current frontend without treating the four implemented functional roles as the complete long-term architecture.
+
+Current functional runtime roles remain `AGENT`, `SUPERVISOR`, `OPERATIONS`, and `PARTNER_ADMIN`. Wave D v1.1.1 also defines `PARTNERFI_REVIEWER`, `AUDITOR`, and `PILOT_REVIEWER` as TARGET_STAGE4_INTERNAL roles. Those target reviewer roles are not activated by F11A/B, are not added to the current functional workspace switcher, and do not imply external authentication, partner access or institutional acceptance.
+
+F11A/B establishes explicit runtime states, truthful static-showcase presentation, fail-closed cross-role navigation, customer-context consistency and manifest-authoritative functional navigation. Static showcase descriptors are presentation metadata only and cannot become authenticated `WorkspaceManifest` objects.
+
+The product taxonomy remains: role/workspace = who is acting; service = service domain; capability = what can be performed or inspected; projection = what data the role may see; route = governed resolution; adapter = provider-specific integration. `SERVICE != CAPABILITY != ROUTE != ADAPTER` remains invariant.
+
+Wave A/B/C/D capability families may be discoverable in a static architecture showcase only with truthful status labels such as CURRENT_IMPLEMENTED, TARGET_STAGE4_INTERNAL, FUTURE_EXTERNAL_DEPENDENT or RESEARCH/EXTERNAL_REVIEW_REQUIRED. Discoverability creates no authority and does not implement PAYG, climate/insurance, eKUB, external reviewer access or D6 sharing.
 ## Backend E10 remains gated
 
 Backend Epic E10 Inclusion Analytics is not unlocked by frontend work. It remains subject to approved purpose, approved data fields, privacy/legal review and partner policy. No frontend dashboard may self-authorize collection of sensitive data.

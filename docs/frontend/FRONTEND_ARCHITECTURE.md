@@ -18,6 +18,17 @@ One React application exposes four role-specific product surfaces from the authe
 | Partner Admin | Partner Administration | What partner services, scopes, provider states and governance evidence are visible? |
 
 The role is session-derived. The client may switch only among server-permitted workspaces for the current role. Role switching is a controlled synthetic-development concern, not an end-user authorization mechanism.
+### Current roles vs. Wave-D target roles
+
+The four roles above are the CURRENT IMPLEMENTED functional frontend roles. They are not the complete long-term role architecture. Wave D v1.1.1 defines three additional `TARGET_STAGE4_INTERNAL` reviewer roles: `PARTNERFI_REVIEWER`, `AUDITOR`, and `PILOT_REVIEWER`.
+
+F11A/B does not activate those reviewer roles, does not add them to `WorkspaceManifest` switching, and does not imply external OIDC, PartnerFI reviewer access, auditor access, pilot-review authentication or institutional acceptance. Static architecture presentation may describe them only as inactive target roles.
+
+The product taxonomy remains explicit: role/workspace = who is acting; service = service domain; capability = what may be performed or inspected; projection = what data the role may see; route = governed service resolution; adapter = provider-specific integration. `SERVICE != CAPABILITY != ROUTE != ADAPTER` remains invariant. PAYG, commerce, climate/insurance and eKUB are service/capability seams rather than automatic top-level portals. eKUB evidence is prohibited from ARDI and PartnerFI credit decision-support.
+
+### Runtime truth model
+
+F11A/B distinguishes `LOADING`, `FUNCTIONAL_WORKSPACE`, `SESSION_REQUIRED`, `ACCESS_DENIED`, `BACKEND_UNAVAILABLE`, and explicitly configured `STATIC_SHOWCASE` states. An API failure never silently becomes static showcase. Functional mode uses the authenticated server-derived `WorkspaceManifest` as primary navigation. Static showcase uses non-authoritative presentation descriptors only; it creates no session, scopes, service counts, routes, provider state or operational authority.
 
 ## 3. Application shell
 

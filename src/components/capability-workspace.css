@@ -1,4 +1,3 @@
-.capability-workspace-runtime .product-nav,
 .capability-workspace-runtime .product-hero {
   display: none;
 }
@@ -377,5 +376,67 @@
   .agent-mobile-nav a:focus-visible {
     outline: 3px solid var(--wl-gold-300);
     outline-offset: 1px;
+  }
+}
+.capability-workspace-runtime:not([data-runtime-state="FUNCTIONAL_WORKSPACE"]) .workspace-app-layout {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.product-exploration { margin-block: 1rem; }
+.product-exploration summary { cursor: pointer; min-height: 44px; padding: 0.75rem; }
+
+
+
+.static-showcase {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.static-showcase-header,
+.static-showcase > section {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.static-showcase h1,
+.static-showcase h2,
+.static-showcase h3,
+.static-showcase p {
+  margin-top: 0;
+}
+
+.static-target-card {
+  border-style: dashed;
+}
+
+.static-capability-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.static-capability-card {
+  padding: 1rem;
+  border: 1px solid var(--wl-border-200);
+  border-radius: var(--wl-radius-md);
+  background: var(--wl-surface-0);
+}
+
+.static-capability-card h3 {
+  margin: 0.65rem 0 0.45rem;
+}
+
+.static-capability-card ul {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.static-capability-card li + li {
+  margin-top: 0.3rem;
+}
+
+@media (max-width: 760px) {
+  .static-capability-grid {
+    grid-template-columns: 1fr;
   }
 }

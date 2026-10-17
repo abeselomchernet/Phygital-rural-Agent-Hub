@@ -19,6 +19,7 @@ import {
 
 import { CapabilityBadge } from "../components/ProductPresentation";
 import AgentFieldStatus from "../components/AgentFieldStatus";
+import BoundedState from "../components/BoundedState";
 import { useCapabilityWorkspace } from "../components/CapabilityWorkspaceShell";
 import "../components/portal-dashboard.css";
 
@@ -253,7 +254,7 @@ function SupervisorHome() {
       </div>
       <BoundaryBanner>
         <strong>The Supervisor portal recommends and surfaces evidence; it does not authorize.</strong>
-        Economics, Pilot Evidence, Corridor Planning, Readiness and Neutrality will join this Hub workspace from the existing governed APIs in the next frontend increments.
+        Economics, Pilot Evidence, Corridor Planning, Readiness and Neutrality are available through the governed Hub navigation and scoped APIs.
       </BoundaryBanner>
     </section>
   );
@@ -382,7 +383,8 @@ function PartnerAdminHome() {
 
 export default function CapabilityHome() {
   const workspace = useCapabilityWorkspace();
-  if (!workspace || workspace.role === "AGENT") return <AgentHome />;
+  if (!workspace) return <BoundedState kind="unavailable" title="Workspace unavailable">No active role or published-service count is inferred.</BoundedState>;
+  if (workspace.role === "AGENT") return <AgentHome />;
   if (workspace.role === "SUPERVISOR") return <SupervisorHome />;
   if (workspace.role === "OPERATIONS") return <OperationsHome />;
   return <PartnerAdminHome />;

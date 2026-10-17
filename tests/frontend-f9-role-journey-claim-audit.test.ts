@@ -46,9 +46,11 @@ test("F9 runtime claim audit persists Stage-4 boundaries into captured screensho
   assert.match(implementation, /not.*certification/i);
 });
 
-test("F9 documentation keeps frontend completion separate from backend E10 authority", () => {
-  assert.match(plan, /F9 - IMPLEMENTED ON CURRENT BRANCH/);
-  assert.match(plan, /F10 - PLANNED/);
+test("F9/F10 completion remains separate from backend E10 and F11 authority", () => {
+  assert.match(plan, /F9 - MERGED: end-to-end role journeys and visible claim audit/);
+  assert.match(plan, /F10 - MERGED: guided demo and presentation polish/);
+  assert.match(plan, /F11 - ACTIVE BOUNDED WORKSTREAM/);
   assert.match(plan, /Backend Epic E10 Inclusion Analytics is not unlocked by frontend work/);
+  assert.match(plan, /status does not grant new authority/i);
   assert.match(implementation, /does not unlock backend Epic E10/i);
 });
