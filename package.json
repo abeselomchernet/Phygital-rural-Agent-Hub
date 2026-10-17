@@ -15,7 +15,8 @@
     "d1:db:migrate": "tsx scripts/d1-postgres-migrate.ts",
     "d1:db:shadow": "tsx scripts/d1-postgres-shadow-migrate.ts",
     "d1:db:shadow-sync": "tsx scripts/d1-postgres-shadow-sync.ts",
-    "d1:db:session-idempotency-shadow": "tsx scripts/d1-postgres-session-idempotency-shadow.ts"
+    "d1:db:session-idempotency-shadow": "tsx scripts/d1-postgres-session-idempotency-shadow.ts",
+    "d1:db:session-canary-observe": "tsx scripts/d1-session-canary-observe.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.0",
