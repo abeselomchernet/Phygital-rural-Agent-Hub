@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   getPendingEvents,
+  queueSubjectLabel,
   retryEvent,
   syncEvents,
   type QueuedEvent,
@@ -63,7 +64,7 @@ export default function GhostSyncQueue() {
             <thead>
               <tr>
                 <th>Event</th>
-                <th>Customer ID</th>
+                <th>Customer reference</th>
                 <th>Transport</th>
                 <th>Financial state</th>
                 <th>Retry</th>
@@ -73,7 +74,7 @@ export default function GhostSyncQueue() {
               {events.map((e) => (
                 <tr key={e.row_key}>
                   <td>{e.row_key}</td>
-                  <td>{e.payload.payload.customerId}</td>
+                  <td>{queueSubjectLabel(e)}</td>
                   <td>{e.transportState}</td>
                   <td>{e.financialState}</td>
                   <td>

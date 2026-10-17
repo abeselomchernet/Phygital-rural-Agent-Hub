@@ -213,7 +213,7 @@ test("legacy browser records remain quarantined even when a receiver appears rea
 });
 
 test("unavailable partner account is not displayed as a fabricated zero balance", async ({ page }) => {
-  await page.route("**/api/demo/account", route => route.fulfill({ status: 503, json: { error: "SYNTHETIC_ACCOUNT_UNAVAILABLE" } }));
+  await page.route("**/api/demo/v2/account*", route => route.fulfill({ status: 503, json: { error: "SYNTHETIC_ACCOUNT_UNAVAILABLE" } }));
   await page.goto("/kiosk");
   await expect(page.getByTestId("customer-id")).toBeVisible();
   await expect(page.getByTestId("partner-balance")).toHaveText("Unavailable");
