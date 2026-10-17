@@ -16,6 +16,9 @@ import {
 } from "lucide-react";
 
 import type { WorkspaceManifest } from "../domain/workspaceManifest";
+import { initialWorkspaceRuntime, workspaceFailure, type WorkspaceRuntimeState } from "../domain/workspaceRuntime";
+import BoundedState from "./BoundedState";
+import StaticShowcase from "./StaticShowcase";
 import {
   loadCapabilityWorkspace,
   startCapabilityWorkspace,
@@ -212,31 +215,35 @@ function WorkspaceSwitcher({
 
 function CapabilityWorkspaceRuntime({ children }: { children: ReactNode }) {
   const { copy: t } = usePresentationLocalization();
-  const [manifest, setManifest] = useState<WorkspaceManifest | null>(null);
+  const [runtime, setRuntime] = useState<WorkspaceRuntimeState>(() => initialWorkspaceRuntime(import.meta.env.VITE_RUNTIME_MODE));
+  const manifest = runtime.status === "FUNCTIONAL_WORKSPACE" ? runtime.manifest : null;
   const [error, setError] = useState<string | null>(null);
   const [switching, setSwitching] = useState(false);
   const selectedKey = useMemo(() => defaultKeyFor(manifest), [manifest]);
   const visibleWorkspaceOptions = useMemo(
-    () => workspaceOptions.filter((option) => option.role === (manifest?.role ?? "AGENT")),
+    () => workspaceOptions.filter((option) => option.role === manifest?.role),
     [manifest?.role],
   );
 
   useEffect(() => {
+    if (initialWorkspaceRuntime(import.meta.env.VITE_RUNTIME_MODE).status === "STATIC_SHOWCASE") return;
     let active = true;
     const boot = async () => {
       try {
         const current = await loadCapabilityWorkspace();
-        if (active) setManifest(current);
+        if (active) setRuntime({ status: "FUNCTIONAL_WORKSPACE", manifest: current });
       } catch (cause) {
         if (!(cause instanceof Error) || cause.message !== "WORKSPACE_SESSION_REQUIRED") {
-          if (active) setError(t.workspaceServiceUnavailable);
+          if (active) setRuntime(workspaceFailure(cause));
           return;
         }
         try {
+          if (!active) return;
+          setRuntime({ status: "SESSION_REQUIRED" });
           const agent = await startCapabilityWorkspace({ role: "AGENT", workspaceKey: "ALPHA_AGENT_ADAMA" });
-          if (active) setManifest(agent);
-        } catch {
-          if (active) setError(t.workspaceServiceUnavailable);
+          if (active) setRuntime({ status: "FUNCTIONAL_WORKSPACE", manifest: agent });
+        } catch (failure) {
+          if (active) setRuntime(workspaceFailure(failure));
         }
       }
     };
@@ -251,11 +258,13 @@ function CapabilityWorkspaceRuntime({ children }: { children: ReactNode }) {
       return;
     }
     setSwitching(true);
+    setRuntime({ status: "LOADING" });
     setError(null);
     try {
       const next = await startCapabilityWorkspace({ role: option.role, workspaceKey: option.key });
-      setManifest(next);
+      setRuntime({ status: "FUNCTIONAL_WORKSPACE", manifest: next });
     } catch (cause) {
+      setRuntime(workspaceFailure(cause));
       const code = cause instanceof Error ? cause.message : "WORKSPACE_SESSION_UNAVAILABLE";
       setError(
         code === "PRIVILEGED_SYNTHETIC_ROLE_DISABLED"
@@ -269,19 +278,15 @@ function CapabilityWorkspaceRuntime({ children }: { children: ReactNode }) {
 
   return (
     <CapabilityWorkspaceContext.Provider value={manifest}>
-      <div className="capability-workspace-runtime" data-role={manifest?.role ?? "UNRESOLVED"} aria-busy={switching || !manifest}>
+      <div className="capability-workspace-runtime" data-role={manifest?.role ?? "UNRESOLVED"} data-runtime-state={runtime.status} aria-busy={switching || runtime.status === "LOADING"}>
           <a className="wl-skip-link" href="#main-workspace-content">{t.skipMainContent}</a>
-          <p className="wl-sr-only" aria-live="polite" aria-atomic="true">{switching ? t.switchingWorkspace : manifest ? t.workspaceReady : t.loadingWorkspace}</p>
-          {manifest ? <WorkspacePortalHeader manifest={manifest} /> : (
-            <section className="workspace-portal-header workspace-portal-header-fallback">
-              <div><span className="wl-kicker">{t.boundedPresentation}</span><h2>{t.agentWorkspace}</h2><p>{t.waitingWorkspaceContext}</p></div>
-            </section>
-          )}
+          <p className="wl-sr-only" aria-live="polite" aria-atomic="true">{switching ? t.switchingWorkspace : manifest ? t.workspaceReady : runtime.status === "LOADING" ? t.loadingWorkspace : t.serverContextRequired}</p>
+          {manifest && <WorkspacePortalHeader manifest={manifest} />}
 
           {error && <p className="workspace-error" role="status">{error}</p>}
 
           <div className="workspace-app-layout">
-            <aside className="workspace-sidebar" aria-label={t.workspaceNavigationContext}>
+            {manifest && <aside className="workspace-sidebar" aria-label={t.workspaceNavigationContext}>
               <WorkspaceSwitcher
                 selectedKey={selectedKey}
                 options={visibleWorkspaceOptions}
@@ -300,8 +305,17 @@ function CapabilityWorkspaceRuntime({ children }: { children: ReactNode }) {
                   {t.serverContextRequired}
                 </div>
               )}
-            </aside>
-            <main className="workspace-main" id="main-workspace-content" tabIndex={-1}>{children}</main>
+            </aside>}
+            <main className="workspace-main" id="main-workspace-content" tabIndex={-1}>
+              {manifest ? <div key={`${manifest.partnerOrgId}:${manifest.role}:${manifest.hubId}`}>{children}</div> : runtime.status === "STATIC_SHOWCASE" ? <StaticShowcase /> : (
+                <BoundedState
+                  kind={runtime.status === "LOADING" ? "loading" : runtime.status === "ACCESS_DENIED" ? "denied" : "unavailable"}
+                  title={runtime.status === "LOADING" ? t.loadingWorkspace : t.workspaceServiceUnavailable}
+                >
+                  <span lang="en">{runtime.status === "SESSION_REQUIRED" ? "Synthetic session required." : runtime.status === "ACCESS_DENIED" ? "Workspace access denied." : runtime.status === "LOADING" ? "Waiting for server workspace context." : "Backend unavailable. This is not static showcase mode."} No active server workspace is inferred.</span>
+                </BoundedState>
+              )}
+            </main>
           </div>
           {manifest && <AgentMobileNavigation manifest={manifest} />}
       </div>

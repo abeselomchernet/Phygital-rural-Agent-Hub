@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useCapabilityWorkspace } from "./CapabilityWorkspaceShell";
 import { CapabilityBadge } from "./ProductPresentation";
 import {
   addEventToQueue,
@@ -32,6 +33,8 @@ function transactionEligible(customer: AgentCustomerProjection) {
 }
 
 export function CustomerWorkbench({ title = "Customer" }: { title?: string }) {
+  const workspace = useCapabilityWorkspace();
+  const offers = (direction: "CASH_IN" | "CASH_OUT") => workspace?.services.some((service) => service.serviceType === `FINANCIAL_${direction}`) === true;
   const [target, setTarget] = useState<AgentCustomerTarget | null>(null),
     [phone, setPhone] = useState("+251900000001");
   const [amount, setAmount] = useState("10"),
@@ -40,23 +43,32 @@ export function CustomerWorkbench({ title = "Customer" }: { title?: string }) {
   const [account, setAccount] = useState<{ balanceMinor: number } | null>(null),
     [verificationStarted, setVerificationStarted] = useState(false);
   const [pending, setPending] = useState<OpaqueEnvelope | null>(null);
+  const contextVersion = useRef(0);
 
-  const refresh = async () => {
-    const current = (await demoApi("v2/customer")) as AgentCustomerTarget;
+  const loadCustomer = async (path: string) => {
+    const version = ++contextVersion.current;
+    setTarget(null);
+    setAccount(null);
+    setVerificationStarted(false);
+    setPending(null);
+    setMessage("");
+    const current = (await demoApi(path)) as AgentCustomerTarget;
+    if (version !== contextVersion.current) return;
     setTarget(current);
-    setAccount(
-      await demoApi(
-        `v2/account?customerRef=${encodeURIComponent(current.customerRef)}`,
-      ),
-    );
+    // A later lookup or workspace unmount invalidates this response.
+    void demoApi(`v2/account?customerRef=${encodeURIComponent(current.customerRef)}`)
+      .then((next) => { if (version === contextVersion.current) setAccount(next); })
+      .catch(() => { if (version === contextVersion.current) setAccount(null); });
   };
 
   useEffect(() => {
-    refresh().catch(() =>
-      setMessage(
-        "Synthetic authenticated demo API unavailable. Existing outbox records are retained.",
-      ),
-    );
+    if (workspace?.role !== "AGENT") return;
+    const initial = loadCustomer("v2/customer");
+    const version = contextVersion.current;
+    initial.catch(() => {
+      if (version === contextVersion.current) setMessage("Synthetic authenticated demo API unavailable. Existing outbox records are retained.");
+    });
+    return () => { contextVersion.current += 1; };
   }, []);
 
   const act = async (fn: () => Promise<void>) => {
@@ -72,6 +84,7 @@ export function CustomerWorkbench({ title = "Customer" }: { title?: string }) {
 
   const queue = async (direction: "CASH_IN" | "CASH_OUT") => {
     if (!target) return;
+    if (!offers(direction)) throw new Error("SERVICE_UNAVAILABLE_IN_WORKSPACE");
     if (!transactionEligible(target.customer)) throw new Error("KYC_OR_RISK_BLOCKED");
     if (!/^\d+(\.\d{1,2})?$/.test(amount))
       throw new Error("Enter an amount with at most two decimal places.");
@@ -145,11 +158,7 @@ export function CustomerWorkbench({ title = "Customer" }: { title?: string }) {
         disabled={busy}
         onClick={() =>
           act(async () => {
-            setTarget(
-              (await demoApi(
-                `v2/lookup?phone=${encodeURIComponent(phone)}`,
-              )) as AgentCustomerTarget,
-            );
+            await loadCustomer(`v2/lookup?phone=${encodeURIComponent(phone)}`);
             setMessage("Alias resolved to an authorized opaque customer reference.");
           })
         }
@@ -248,26 +257,30 @@ export function CustomerWorkbench({ title = "Customer" }: { title?: string }) {
             />
           </label>
           <button
-            disabled={busy || !transactionEligible(customer)}
+            disabled={busy || !offers("CASH_IN") || !transactionEligible(customer)}
             onClick={() => act(() => queue("CASH_IN"))}
           >
             Cash In — Transaction Request
           </button>
           <button
             className="ml-4"
-            disabled={busy || !transactionEligible(customer)}
+            disabled={busy || !offers("CASH_OUT") || !transactionEligible(customer)}
             onClick={() => act(() => queue("CASH_OUT"))}
           >
             Cash Out — Transaction Request
           </button>
-          {pending && (
+          <p>Request controls require a service in the active workspace. Visibility and local eligibility do not grant PartnerFI authority.</p>
+          {pending && pending.payload.customerRef === target.customerRef && (
             <button
               className="block"
               disabled={busy}
               onClick={() =>
                 act(async () => {
                   const result = await demoApi("v2/transactions", pending.payload);
-                  await refresh();
+                  const version = contextVersion.current;
+                  const nextAccount = await demoApi(`v2/account?customerRef=${encodeURIComponent(target.customerRef)}`);
+                  if (version !== contextVersion.current) return;
+                  setAccount(nextAccount);
                   setMessage(
                     `${result.state} (mock only). Outbox transport remains pending; no settlement asserted.`,
                   );

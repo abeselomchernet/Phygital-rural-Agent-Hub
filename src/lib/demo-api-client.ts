@@ -38,6 +38,7 @@ function remember(session: SessionView) {
 async function currentSession() {
   const response = await fetch("/api/demo/session", {
     credentials: "same-origin",
+    signal: AbortSignal.timeout(10000),
   });
   if (response.status === 401) return undefined;
   if (!response.ok) throw new Error("DEMO_SESSION_UNAVAILABLE");
@@ -47,6 +48,7 @@ async function currentSession() {
 async function getOrStartAgentSession() {
   const existing = await currentSession();
   if (existing?.role === "AGENT") return existing;
+  if (existing) throw new Error("DEMO_ROLE_SESSION_REQUIRED");
   return startDemoSession("AGENT", "ALPHA_AGENT_ADAMA");
 }
 
@@ -70,6 +72,7 @@ export async function startDemoSession(
   const promise = (async () => {
     const started = await fetch("/api/demo/session/start", {
       method: "POST",
+      signal: AbortSignal.timeout(10000),
       credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

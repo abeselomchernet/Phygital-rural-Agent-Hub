@@ -108,34 +108,17 @@ function PresentationShellContent({ children }: { children: ReactNode }) {
         </div>
         <p className="caption">{t.caption}</p>
       </div>
-      <nav className="product-nav" aria-label="Prototype modules">
-        <div className="product-nav-group">
-          <span className="product-nav-label">{t.navFieldWorkflows}</span>
-          <Link to="/kiosk">{t.kiosk}</Link>
-          <Link to="/farmer-360">{t.farmer360}</Link>
-          <Link to="/onboard">{t.onboarding}</Link>
-          <Link to="/academy">{t.training}</Link>
-          <Link to="/queue">{t.ghostSync}</Link>
-          <Link to="/data-mule">{t.dataMule}</Link>
-          <Link to="/transcription">{t.conversation}</Link>
-        </div>
-        <div className="product-nav-group">
-          <span className="product-nav-label">{t.navNetworkOperations}</span>
-          <Link to="/supervisor">{t.supervisor}</Link>
-          <Link to="/operations">{t.operations}</Link>
-          <Link to="/network-operations">{t.access}</Link>
-          <Link to="/partners">{t.partnerEcosystem}</Link>
-          <Link to="/liquidity">{t.networkLiquidity}</Link>
-          <Link to="/cash-fleet">{t.cashFleet}</Link>
-          <Link to="/fmcg">{t.fmcg}</Link>
-        </div>
-        <div className="product-nav-group">
-          <span className="product-nav-label">{t.navEvidenceConcepts}</span>
+
+      <div className="product-content">{children}</div>
+      <details className="product-exploration" lang="en">
+        <summary>Architecture &amp; demo exploration — secondary navigation</summary>
+        <nav className="product-nav" aria-label="Architecture and demo exploration">
           <Link to="/node-status">{t.demoArchitecture}</Link>
           <Link to="/ardi-engine">{t.ardiCalculator}</Link>
-        </div>
-      </nav>
-      <div className="product-content">{children}</div>
+          <Link to="/guided-demo">Guided Demo</Link>
+        </nav>
+        <p>Exploration grants no workspace access or operational authority.</p>
+      </details>
       <footer className="product-footer">{t.footerBoundary}</footer>
     </div>
   );

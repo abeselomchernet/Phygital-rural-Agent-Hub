@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowRight, CircleCheck, Presentation, ShieldCheck } from "l
 import { Link } from "react-router-dom";
 
 import { useCapabilityWorkspace } from "../components/CapabilityWorkspaceShell";
+import BoundedState from "../components/BoundedState";
 import "../components/guided-demo.css";
 
 type DemoScene = {
@@ -96,6 +97,7 @@ export default function GuidedDemo() {
   const [sceneIndex, setSceneIndex] = useState(0);
   const scene = scenes[sceneIndex];
   const progress = useMemo(() => Math.round(((sceneIndex + 1) / scenes.length) * 100), [sceneIndex]);
+  if (!workspace) return <BoundedState kind="unavailable" title="Guided Demo context unavailable">No active PartnerFI, role or Hub is inferred.</BoundedState>;
 
   return (
     <section className="guided-demo" data-testid="guided-demo-page">
