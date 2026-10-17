@@ -227,6 +227,37 @@ function discoveryFingerprint(input: {
   });
 }
 
+export function loadD1SessionFilesystemSource(
+  stateDir: string,
+  sessionIdInput: string,
+  observedAtMs = Date.now(),
+): D1SessionShadowSource | undefined {
+  if (!Number.isSafeInteger(observedAtMs) || observedAtMs <= 0)
+    throw new Error("D1_SESSION_IDEMPOTENCY_OBSERVATION_TIME_INVALID");
+  const sessionId = z.string().uuid().parse(sessionIdInput);
+  const root = ensureDirectory(stateDir, "D1_SESSION_IDEMPOTENCY_STATE_DIR");
+  if (!root) throw new Error("D1_SESSION_IDEMPOTENCY_STATE_DIR_NOT_FOUND");
+  const sessionsDirectory = ensureDirectory(
+    path.join(root, "sessions"),
+    "D1_SESSION_SOURCE_DIR",
+  );
+  if (!sessionsDirectory) return undefined;
+  const filePath = path.join(sessionsDirectory, `${sessionId}.json`);
+  if (!existsSync(filePath)) return undefined;
+  if (lstatSync(filePath).isSymbolicLink())
+    throw new Error("D1_SESSION_SOURCE_SYMLINK_FORBIDDEN");
+  const envelope = SessionFileEnvelopeSchema.parse(parseJson(filePath));
+  if (envelope.sessionId !== sessionId)
+    throw new Error("D1_SESSION_SOURCE_FILENAME_MISMATCH");
+  return {
+    sessionId: envelope.sessionId,
+    expiresAtMs: envelope.expiresAtMs,
+    value: envelope.value,
+    sourcePayloadSha256: d1CanonicalPayloadSha256(envelope),
+    sourceStatus: envelope.expiresAtMs <= observedAtMs ? "EXPIRED" : "ACTIVE",
+  };
+}
+
 export function discoverD1SessionIdempotencyFilesystemState(
   stateDir: string,
   observedAtMs = Date.now(),
