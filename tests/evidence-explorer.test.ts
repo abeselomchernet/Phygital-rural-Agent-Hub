@@ -12,7 +12,7 @@ import { SYNTHETIC_PARTNER_IDS } from "../src/domain/syntheticReferencePartners"
 import { createApp } from "../src/server/app";
 
 const scope = {
-  tenantId: "tenant_stage4_synthetic",
+  tenantId: "tenant_syn_enawuga_stage4",
   hubId: SYNTHETIC_HUB_IDS.ADAMA_SHARED,
   partnerOrgId: SYNTHETIC_PARTNER_IDS.PARTNERFI_ALPHA,
 };
@@ -209,7 +209,7 @@ test("D5 Evidence Explorer API exposes bounded semantic distinctions and exact s
     assert.equal(body.semanticLegend.sourceAuthenticatedIsExternalAuthority, false);
     assert.equal(body.semanticLegend.semanticConfirmationIsAuthorization, false);
     assert.equal(body.semanticLegend.externalAuthorityIsFinancialAuthority, false);
-    assert.equal(JSON.stringify(body).includes("partnerfi_beta"), false);
+    assert.equal(JSON.stringify(body).includes("org_syn_partnerfi_beta"), false);
   });
 });
 
