@@ -1,6 +1,5 @@
 import { openDB } from "idb";
 import { z } from "zod";
-import { SyntheticCustomerReferenceSchema } from "../domain/customerReference";
 import {
   EnvelopeSchema,
   type Envelope,
@@ -9,11 +8,17 @@ import {
 
 export const remoteSyncEnabled = false;
 
+// Browser-safe mirror of the server-owned opaque reference syntax. The server
+// remains authoritative for derivation and resolution.
+export const BrowserSyntheticCustomerReferenceSchema = z
+  .string()
+  .regex(/^custref_v1_[A-Za-z0-9_-]{43}$/);
+
 export const OpaqueTransactionIntentSchema = z
   .object({
     transactionId: z.string().uuid(),
     idempotencyKey: z.string().uuid(),
-    customerRef: SyntheticCustomerReferenceSchema,
+    customerRef: BrowserSyntheticCustomerReferenceSchema,
     amountMinor: z.number().int().positive().max(100_000_000),
     direction: z.enum(["CASH_IN", "CASH_OUT"]),
     currency: z.literal("ETB"),
