@@ -1,4 +1,10 @@
 import { syntheticMetadata } from "../demo/fixtures";
+import {
+  EvidenceClassSchema,
+  EvidenceReviewStateSchema,
+  SYNTHETIC_EVIDENCE_EXPLORER_RECORDS,
+  searchEvidenceExplorer,
+} from "../domain/evidenceExplorer";
 import { HubAccessPurposeSchema } from "../domain/hub";
 import {
   SYNTHETIC_E5_HUB_ECONOMICS_READ_MODELS,
@@ -492,6 +498,48 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
       };
     }),
   );
+  app.get("/api/demo/evidence-explorer", (req, res) =>
+    respond(res, () => {
+      const session = res.locals.syntheticSession;
+      auth.requireRole(session, ["SUPERVISOR", "OPERATIONS", "PARTNER_ADMIN"]);
+      const parsed = z
+        .object({
+          hubId: z.string().min(1).max(120),
+          evidenceId: z.string().regex(/^evidence_syn_[a-z0-9_]+$/).optional(),
+          correlationId: z.string().regex(/^corr_syn_[a-z0-9_]+$/).optional(),
+          serviceId: z.string().regex(/^[a-z][a-z0-9_-]{2,119}$/).optional(),
+          capabilityId: z.string().regex(/^[a-z][a-z0-9_-]{2,119}$/).optional(),
+          evidenceClass: EvidenceClassSchema.optional(),
+          reviewState: EvidenceReviewStateSchema.optional(),
+          occurredFrom: z.string().datetime().optional(),
+          occurredTo: z.string().datetime().optional(),
+        })
+        .strict()
+        .parse(req.query);
+      const purpose =
+        session.role === "SUPERVISOR" ? "HUB_SUPERVISE" : "HUB_PARTNER_REVIEW";
+      const hub = auth.requireHubAccess(session, parsed.hubId, purpose);
+      const { hubId: _hubId, ...query } = parsed;
+      return {
+        readOnly: true as const,
+        semanticLegend: {
+          integrityVerifiedIsSemanticTruth: false,
+          sourceAuthenticatedIsExternalAuthority: false,
+          semanticConfirmationIsAuthorization: false,
+          externalAuthorityIsFinancialAuthority: false,
+        },
+        evidence: searchEvidenceExplorer({
+          records: SYNTHETIC_EVIDENCE_EXPLORER_RECORDS,
+          role: session.role,
+          tenantId: hub.tenantId,
+          hubId: hub.hubId,
+          partnerOrgId: hub.partnerMembership.partnerOrgId,
+          query,
+        }),
+      };
+    }),
+  );
+
   app.get("/api/demo/hub-operations/offline-evidence", (req, res) =>
     respond(res, () => {
       const session = res.locals.syntheticSession;
