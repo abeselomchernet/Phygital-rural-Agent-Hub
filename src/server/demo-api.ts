@@ -11,6 +11,13 @@ import {
   SYNTHETIC_EVIDENCE_LINEAGE_RECORDS,
   buildEvidenceLineage,
 } from "../domain/evidenceCorrection";
+import {
+  HumanReviewAuthorityOwnerSchema,
+  HumanReviewCaseStatusSchema,
+  HumanReviewCaseTypeSchema,
+  SYNTHETIC_HUMAN_REVIEW_CASES,
+  searchHumanReviewCases,
+} from "../domain/humanReview";
 import { HubAccessPurposeSchema } from "../domain/hub";
 import {
   SYNTHETIC_E5_HUB_ECONOMICS_READ_MODELS,
@@ -566,6 +573,40 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
         },
         evidence: searchEvidenceExplorer({
           records: SYNTHETIC_EVIDENCE_EXPLORER_RECORDS,
+          role: session.role,
+          tenantId: hub.tenantId,
+          hubId: hub.hubId,
+          partnerOrgId: hub.partnerMembership.partnerOrgId,
+          query,
+        }),
+      };
+    }),
+  );
+
+  app.get("/api/demo/human-review/cases", (req, res) =>
+    respond(res, () => {
+      const session = res.locals.syntheticSession;
+      auth.requireRole(session, ["SUPERVISOR", "OPERATIONS", "PARTNER_ADMIN"]);
+      const parsed = z
+        .object({
+          hubId: z.string().min(1).max(120),
+          caseId: z.string().regex(/^case_syn_[a-z0-9_]+$/).optional(),
+          caseType: HumanReviewCaseTypeSchema.optional(),
+          status: HumanReviewCaseStatusSchema.optional(),
+          correlationId: z.string().regex(/^corr_syn_[a-z0-9_]+$/).optional(),
+          authorityOwner: HumanReviewAuthorityOwnerSchema.optional(),
+        })
+        .strict()
+        .parse(req.query);
+      const purpose =
+        session.role === "SUPERVISOR" ? "HUB_SUPERVISE" : "HUB_PARTNER_REVIEW";
+      const hub = auth.requireHubAccess(session, parsed.hubId, purpose);
+      const { hubId: _hubId, ...query } = parsed;
+      return {
+        readOnly: true as const,
+        actionsMounted: false as const,
+        cases: searchHumanReviewCases({
+          cases: SYNTHETIC_HUMAN_REVIEW_CASES,
           role: session.role,
           tenantId: hub.tenantId,
           hubId: hub.hubId,
