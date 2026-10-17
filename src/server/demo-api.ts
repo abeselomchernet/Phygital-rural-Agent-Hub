@@ -71,6 +71,7 @@ import {
 } from "./audit";
 import { SyntheticSessionStartRateLimiter } from "./session-start-rate-limit";
 import type { SyntheticSessionPersistence } from "./session-persistence";
+import type { D1SessionRuntimeReadCutover } from "./postgres/d1-session-read-cutover";
 import {
   createDefaultSyntheticFinancialInstitutionAdapter,
   createRuntimeAdapterRegistry,
@@ -103,6 +104,7 @@ export interface DemoApiOptions {
   sessionStartMaxRequestsPerWindow?: number;
   sessionPersistence?: SyntheticSessionPersistence;
   sessionCleanupIntervalMs?: number;
+  sessionRuntimeReadCutover?: D1SessionRuntimeReadCutover;
 }
 
 const roleSchema = z.enum([
@@ -187,8 +189,18 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
     }
   };
 
-  app.post("/api/demo/session/start", (req, res) =>
-    respond(res, () => {
+  const respondAsync = async (res: any, fn: () => Promise<unknown>) => {
+    try {
+      res.json({ ...((await fn()) as object), ...syntheticMetadata });
+    } catch (error) {
+      if (error instanceof SyntheticAuthError)
+        return res.status(error.status).json({ error: error.code });
+      res.status(400).json({ error: "DEMO_REQUEST_REJECTED" });
+    }
+  };
+
+  app.post("/api/demo/session/start", async (req, res) =>
+    respondAsync(res, async () => {
       try {
         sessionStartLimiter.consume(req.ip ?? req.socket.remoteAddress ?? "unknown");
       } catch (error) {
@@ -227,14 +239,36 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
         undefined,
         workspaceContext,
       );
+      if (options.sessionRuntimeReadCutover) {
+        try {
+          await options.sessionRuntimeReadCutover.publishCreatedSession(session);
+        } catch {
+          try {
+            auth.revoke(session);
+          } catch {
+            throw new SyntheticAuthError("SESSION_STORE_UNAVAILABLE", 503);
+          }
+          throw new SyntheticAuthError("SESSION_RUNTIME_READ_CUTOVER_UNAVAILABLE", 503);
+        }
+      }
       auth.setSessionCookie(req, res, session);
       return auth.view(session);
     }),
   );
 
-  app.use("/api/demo", (req, res, next) => {
+  app.use("/api/demo", async (req, res, next) => {
     try {
-      const session = auth.authenticate(req);
+      const filesystemSession = auth.authenticate(req);
+      let session = filesystemSession;
+      if (options.sessionRuntimeReadCutover) {
+        try {
+          session = await options.sessionRuntimeReadCutover.readVerifiedSession(
+            filesystemSession.sessionId,
+          );
+        } catch {
+          throw new SyntheticAuthError("SESSION_RUNTIME_READ_CUTOVER_UNAVAILABLE", 503);
+        }
+      }
       if (mutationMethods.has(req.method)) auth.requireCsrf(req, session);
       res.locals.syntheticSession = session;
       next();
@@ -467,10 +501,27 @@ export function registerDemoApi(app: Express, options: DemoApiOptions = {}) {
       };
     }),
   );
-  app.post("/api/demo/session/logout", (req, res) => {
-    auth.revoke(res.locals.syntheticSession);
+  app.post("/api/demo/session/logout", async (req, res) => {
+    const session = res.locals.syntheticSession;
+    auth.revoke(session);
     auth.clearSessionCookie(req, res);
-    res.json({ loggedOut: true, ...syntheticMetadata });
+    let sessionShadowCleanup = "NOT_ENABLED" as
+      | "NOT_ENABLED"
+      | "REMOVED"
+      | "REVIEW_REQUIRED";
+    if (options.sessionRuntimeReadCutover) {
+      try {
+        await options.sessionRuntimeReadCutover.removeRevokedSessionShadow(
+          session.sessionId,
+        );
+        sessionShadowCleanup = "REMOVED";
+      } catch {
+        // Filesystem revocation already denies authentication. A stale PostgreSQL
+        // shadow is review-required and cannot revive the missing filesystem source.
+        sessionShadowCleanup = "REVIEW_REQUIRED";
+      }
+    }
+    res.json({ loggedOut: true, sessionShadowCleanup, ...syntheticMetadata });
   });
   app.get("/api/demo/security/audit", (_req, res) =>
     respond(res, () => {

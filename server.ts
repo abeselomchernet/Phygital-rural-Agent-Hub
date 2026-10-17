@@ -13,6 +13,10 @@ import {
 } from "./src/server/identity-persistence";
 import { AtomicJsonSyntheticAuditPersistence } from "./src/server/audit-persistence";
 import { createConfiguredSyntheticSessionPersistence } from "./src/server/session-persistence";
+import {
+  createD1SessionRuntimeReadCutover,
+  loadD1SessionRuntimeReadConfig,
+} from "./src/server/postgres/d1-session-read-cutover";
 
 validateDataConfig(process.env);
 const syntheticStateDir = process.env.SYNTHETIC_STATE_DIR;
@@ -24,6 +28,13 @@ const sessionPersistence = createConfiguredSyntheticSessionPersistence({
   syntheticStateDir,
   requireDurable: requireDurableSessionStore,
 });
+const sessionRuntimeReadConfig = loadD1SessionRuntimeReadConfig(process.env);
+const sessionRuntimeReadCutover = sessionRuntimeReadConfig.enabled
+  ? await createD1SessionRuntimeReadCutover({
+      config: sessionRuntimeReadConfig,
+      stateDir: syntheticStateDir!,
+    })
+  : undefined;
 const partnerLedgerPersistence = syntheticStateDir
   ? new AtomicJsonPartnerLedgerPersistence(
       path.join(syntheticStateDir, "partner-ledger.json"),
@@ -55,6 +66,7 @@ const app = createApp({
           path.join(syntheticStateDir, "audit.json"),
         ),
         sessionPersistence,
+        ...(sessionRuntimeReadCutover ? { sessionRuntimeReadCutover } : {}),
       }
     : {}),
   ...(runtimeAdapters.paymentGateway
@@ -81,6 +93,6 @@ const host = process.env.HOST || "127.0.0.1";
 const port = Number(process.env.PORT || 3000);
 app.listen(port, host, () =>
   console.log(
-    `Synthetic demo listening on ${host}:${port}${syntheticStateDir ? " with local synthetic durable state and restart-durable synthetic sessions" : " with in-memory synthetic sessions"}${runtimeAdapters.paymentGateway ? " with registry-routed guarded ArifPay sandbox adapter and status reconciliation" : ""}${allowPrivilegedSyntheticRoles ? " with explicitly enabled privileged synthetic roles" : ""}`,
+    `Synthetic demo listening on ${host}:${port}${syntheticStateDir ? " with local synthetic durable state and restart-durable synthetic sessions" : " with in-memory synthetic sessions"}${sessionRuntimeReadCutover ? " with PostgreSQL session shadow read canary" : ""}${runtimeAdapters.paymentGateway ? " with registry-routed guarded ArifPay sandbox adapter and status reconciliation" : ""}${allowPrivilegedSyntheticRoles ? " with explicitly enabled privileged synthetic roles" : ""}`,
   ),
 );
