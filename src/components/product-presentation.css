@@ -109,15 +109,12 @@
 .product-hero {
   max-width: 1200px;
   margin: 0 auto;
-  background: linear-gradient(112deg, var(--wl-navy-deep) 0%, var(--wl-navy-900) 52%, #0a4167 100%);
+  background:
+    radial-gradient(ellipse at top right, rgba(0, 164, 214, 0.24), transparent 65%),
+    linear-gradient(112deg, var(--wl-navy-deep) 0%, var(--wl-navy-900) 52%, #0a4167 100%);
   color: #ffffff;
   border-radius: 24px;
   padding: 36px 42px;
-  background-image: radial-gradient(
-    ellipse at top right,
-    rgba(0, 164, 214, 0.24),
-    transparent 65%
-  );
 }
 .eyebrow {
   color: var(--wl-gold-300);
