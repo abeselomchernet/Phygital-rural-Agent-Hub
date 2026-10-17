@@ -3,8 +3,7 @@ import {
   createPublicKey,
   sign as cryptoSign,
   verify as cryptoVerify,
-  type KeyLike,
-  type KeyObject,
+  KeyObject,
 } from "node:crypto";
 import { z } from "zod";
 
@@ -57,21 +56,23 @@ export type EvidenceSignatureVerification = z.infer<
   typeof EvidenceSignatureVerificationSchema
 >;
 
-type SigningKeyInput = KeyObject | KeyLike;
+type SigningKeyInput = KeyObject | string | Buffer;
 
 function asPrivateKey(input: SigningKeyInput) {
-  return input instanceof Object && "type" in input && input.type === "private"
-    ? (input as KeyObject)
-    : createPrivateKey(input as KeyLike);
+  if (input instanceof KeyObject) {
+    if (input.type === "private") return input;
+    throw new Error("EVIDENCE_SIGNATURE_KEY_TYPE_INVALID");
+  }
+  return createPrivateKey(input);
 }
 
 function asPublicKey(input: SigningKeyInput) {
-  if (input instanceof Object && "type" in input) {
-    const key = input as KeyObject;
-    if (key.type === "public") return key;
-    if (key.type === "private") return createPublicKey(key);
+  if (input instanceof KeyObject) {
+    if (input.type === "public") return input;
+    if (input.type === "private") return createPublicKey(input);
+    throw new Error("EVIDENCE_SIGNATURE_KEY_TYPE_INVALID");
   }
-  return createPublicKey(input as KeyLike);
+  return createPublicKey(input);
 }
 
 function assertKeyProfile(
