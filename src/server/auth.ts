@@ -91,7 +91,7 @@ export class SyntheticAuthError extends Error {
 
 const COOKIE_NAME = "enawuga_demo_session";
 
-const StoredSessionSchema = z
+export const StoredSessionSchema = z
   .object({
     sessionId: z.string().uuid(),
     csrfToken: z.string().uuid(),
