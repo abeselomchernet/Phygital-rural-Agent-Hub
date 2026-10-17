@@ -90,7 +90,8 @@ export async function addEventToQueue(type: string, input: unknown) {
 }
 
 export async function getPendingEvents(): Promise<QueuedEvent[]> {
-  const raw = (await database()).getAll("outbox") as QueuedEvent[];
+  const db = await database();
+  const raw = (await db.getAll("outbox")) as QueuedEvent[];
   return raw.filter((item) => LocalQueueEnvelopeSchema.safeParse(item.payload).success);
 }
 
