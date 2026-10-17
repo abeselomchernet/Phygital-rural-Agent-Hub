@@ -105,7 +105,7 @@ export default function OperationsReconciliation() {
       await startDemoSession("OPERATIONS");
       setAuthorized(true);
       setMessage(
-        `Synthetic ${session.role} session active. Enter an Enawuga transaction ID created by the guarded ArifPay checkout flow.`,
+        "Synthetic OPERATIONS session active. Enter an Enawuga transaction ID created by the guarded ArifPay checkout flow.",
       );
     } catch (error) {
       setAuthorized(false);
