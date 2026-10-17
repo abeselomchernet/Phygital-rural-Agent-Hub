@@ -1,24 +1,56 @@
 import { useEffect, useState } from "react";
 import { CapabilityBadge } from "./ProductPresentation";
-import type { Customer } from "../domain/customer";
-import { assertTransactionEligible } from "../domain/customer";
-import { addEventToQueue, getPendingEvents } from "../lib/ghostsync";
+import {
+  addEventToQueue,
+  getPendingEvents,
+  type OpaqueEnvelope,
+} from "../lib/ghostsync";
 import { demoApi } from "../lib/demo-api-client";
-import type { Envelope } from "../domain/transport";
+
+type AgentCustomerProjection = {
+  projection: "AGENT_CUSTOMER";
+  assignmentRef: string;
+  maskedPhone?: string;
+  phoneStatus: "UNVERIFIED" | "VERIFIED" | "REVERIFICATION_REQUIRED" | "BLOCKED";
+  kycStatus: "UNVERIFIED" | "PENDING" | "VERIFIED" | "REVERIFICATION_REQUIRED" | "SUSPENDED";
+  riskState: "NORMAL" | "REVIEW" | "HIGH_RISK" | "BLOCKED";
+};
+
+type AgentCustomerTarget = {
+  customerRef: string;
+  customer: AgentCustomerProjection;
+  referenceBoundary: "SESSION_SCOPED_SYNTHETIC";
+};
+
+function transactionEligible(customer: AgentCustomerProjection) {
+  return (
+    customer.kycStatus === "VERIFIED" &&
+    customer.riskState === "NORMAL" &&
+    customer.phoneStatus !== "BLOCKED" &&
+    customer.phoneStatus !== "REVERIFICATION_REQUIRED"
+  );
+}
 
 export function CustomerWorkbench({ title = "Customer" }: { title?: string }) {
-  const [customer, setCustomer] = useState<Customer | null>(null),
+  const [target, setTarget] = useState<AgentCustomerTarget | null>(null),
     [phone, setPhone] = useState("+251900000001");
   const [amount, setAmount] = useState("10"),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false);
   const [account, setAccount] = useState<{ balanceMinor: number } | null>(null),
     [verificationStarted, setVerificationStarted] = useState(false);
-  const [pending, setPending] = useState<Envelope | null>(null);
+  const [pending, setPending] = useState<OpaqueEnvelope | null>(null);
+
   const refresh = async () => {
-    setCustomer(await demoApi("customer"));
-    setAccount(await demoApi("account"));
+    const current = (await demoApi("v2/customer")) as AgentCustomerTarget;
+    setTarget(current);
+    setAccount(
+      await demoApi(
+        `v2/account?customerRef=${encodeURIComponent(current.customerRef)}`,
+      ),
+    );
   };
+
   useEffect(() => {
     refresh().catch(() =>
       setMessage(
@@ -26,6 +58,7 @@ export function CustomerWorkbench({ title = "Customer" }: { title?: string }) {
       ),
     );
   }, []);
+
   const act = async (fn: () => Promise<void>) => {
     setBusy(true);
     try {
@@ -36,32 +69,36 @@ export function CustomerWorkbench({ title = "Customer" }: { title?: string }) {
       setBusy(false);
     }
   };
+
   const queue = async (direction: "CASH_IN" | "CASH_OUT") => {
-    if (!customer) return;
-    assertTransactionEligible(customer);
+    if (!target) return;
+    if (!transactionEligible(target.customer)) throw new Error("KYC_OR_RISK_BLOCKED");
     if (!/^\d+(\.\d{1,2})?$/.test(amount))
       throw new Error("Enter an amount with at most two decimal places.");
     const amountMinor = Math.round(Number(amount) * 100);
     if (!Number.isSafeInteger(amountMinor) || amountMinor <= 0)
-      throw new Error(
-        "Enter a positive amount with at most two decimal places.",
-      );
+      throw new Error("Enter a positive amount with at most two decimal places.");
+
     const events = await getPendingEvents();
-    const envelope: Envelope = {
+    const envelope: OpaqueEnvelope = {
       eventId: crypto.randomUUID(),
-      schemaVersion: 1,
+      schemaVersion: 2,
       createdAt: new Date().toISOString(),
       sequence:
         Math.max(
           0,
           ...events
-            .filter((e) => e.payload.payload.customerId === customer.customerId)
-            .map((e) => e.payload.sequence),
+            .filter(
+              (event) =>
+                event.payload.schemaVersion === 2 &&
+                event.payload.payload.customerRef === target.customerRef,
+            )
+            .map((event) => event.payload.sequence),
         ) + 1,
       payload: {
         transactionId: crypto.randomUUID(),
         idempotencyKey: crypto.randomUUID(),
-        customerId: customer.customerId,
+        customerRef: target.customerRef,
         amountMinor,
         direction,
         currency: "ETB",
@@ -69,10 +106,11 @@ export function CustomerWorkbench({ title = "Customer" }: { title?: string }) {
     };
     await addEventToQueue("transaction", envelope);
     setPending(envelope);
-    setMessage(
-      "Queued for sync — Pending Partner Authorization. No funds moved.",
-    );
+    setMessage("Queued for sync — Pending Partner Authorization. No funds moved.");
   };
+
+  const customer = target?.customer;
+
   return (
     <section className="workbench agent-workbench">
       <CapabilityBadge state="IMPLEMENTED" />
@@ -107,10 +145,12 @@ export function CustomerWorkbench({ title = "Customer" }: { title?: string }) {
         disabled={busy}
         onClick={() =>
           act(async () => {
-            setCustomer(
-              await demoApi(`lookup?phone=${encodeURIComponent(phone)}`),
+            setTarget(
+              (await demoApi(
+                `v2/lookup?phone=${encodeURIComponent(phone)}`,
+              )) as AgentCustomerTarget,
             );
-            setMessage("Alias resolved to existing customer ID.");
+            setMessage("Alias resolved to an authorized opaque customer reference.");
           })
         }
       >
@@ -118,24 +158,30 @@ export function CustomerWorkbench({ title = "Customer" }: { title?: string }) {
       </button>
       <button
         className="ml-4"
-        disabled={busy}
+        disabled={busy || !target}
         onClick={() =>
           act(async () => {
-            setCustomer(await demoApi("phone", { phone }));
+            if (!target) return;
+            setTarget(
+              (await demoApi("v2/phone", {
+                customerRef: target.customerRef,
+                phone,
+              })) as AgentCustomerTarget,
+            );
             setVerificationStarted(false);
             setMessage(
-              "Phone changed; customer ID retained. Re-verification required.",
+              "Phone changed; opaque customer reference retained. Re-verification required.",
             );
           })
         }
       >
         Change phone alias
       </button>
-      {customer && (
+      {target && customer && (
         <div className="space-y-2">
           <p>
-            Customer ID:{" "}
-            <code data-testid="customer-id">{customer.customerId}</code>
+            Customer reference:{" "}
+            <code data-testid="customer-id">{target.customerRef}</code>
           </p>
           <p>Mock phone-channel status: {customer.phoneStatus}</p>
           <p>
@@ -143,21 +189,20 @@ export function CustomerWorkbench({ title = "Customer" }: { title?: string }) {
             <strong data-testid="kyc-status">{customer.kycStatus}</strong>
           </p>
           <p>
-            Identity reference:{" "}
-            {customer.identityReference
-              ? "mock-identity:••••" + customer.identityReference.slice(-4)
-              : "Not verified"}{" "}
-            (simulation)
+            Identity detail is not exposed to this Agent projection. Mock
+            verification state only.
           </p>
           <button
             disabled={busy || verificationStarted}
             onClick={() =>
               act(async () => {
-                setCustomer(await demoApi("reverify/start", {}));
-                setVerificationStarted(true);
-                setMessage(
-                  "Mock identity re-verification pending; no Fayda call.",
+                setTarget(
+                  (await demoApi("v2/reverify/start", {
+                    customerRef: target.customerRef,
+                  })) as AgentCustomerTarget,
                 );
+                setVerificationStarted(true);
+                setMessage("Mock identity re-verification pending; no Fayda call.");
               })
             }
           >
@@ -168,7 +213,11 @@ export function CustomerWorkbench({ title = "Customer" }: { title?: string }) {
             disabled={busy || !verificationStarted}
             onClick={() =>
               act(async () => {
-                setCustomer(await demoApi("reverify/confirm", {}));
+                setTarget(
+                  (await demoApi("v2/reverify/confirm", {
+                    customerRef: target.customerRef,
+                  })) as AgentCustomerTarget,
+                );
                 setVerificationStarted(false);
                 setMessage(
                   "Mock KYC verified. No real identity verification performed.",
@@ -199,14 +248,14 @@ export function CustomerWorkbench({ title = "Customer" }: { title?: string }) {
             />
           </label>
           <button
-            disabled={busy || customer.kycStatus !== "VERIFIED"}
+            disabled={busy || !transactionEligible(customer)}
             onClick={() => act(() => queue("CASH_IN"))}
           >
             Cash In — Transaction Request
           </button>
           <button
             className="ml-4"
-            disabled={busy || customer.kycStatus !== "VERIFIED"}
+            disabled={busy || !transactionEligible(customer)}
             onClick={() => act(() => queue("CASH_OUT"))}
           >
             Cash Out — Transaction Request
@@ -217,7 +266,7 @@ export function CustomerWorkbench({ title = "Customer" }: { title?: string }) {
               disabled={busy}
               onClick={() =>
                 act(async () => {
-                  const result = await demoApi("transactions", pending.payload);
+                  const result = await demoApi("v2/transactions", pending.payload);
                   await refresh();
                   setMessage(
                     `${result.state} (mock only). Outbox transport remains pending; no settlement asserted.`,
