@@ -305,6 +305,13 @@ export class PaymentGatewayReconciliationService {
     return record ? structuredClone(record) : undefined;
   }
 
+  /** Server-internal scope resolution for the bounded v2 Operations API. */
+  resolveRecordedCustomerId(transactionId: string) {
+    const id = z.string().uuid().parse(transactionId);
+    const checkout = this.lookup.getRecordedResultByTransactionId(id);
+    return checkout?.customerId;
+  }
+
   async reconcile(
     input: PaymentGatewayReconciliationRequest,
   ): Promise<PaymentGatewayStatusResult> {

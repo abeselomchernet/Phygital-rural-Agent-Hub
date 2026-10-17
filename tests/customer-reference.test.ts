@@ -69,8 +69,14 @@ async function startSession(base: string, workspaceKey = "ALPHA_AGENT_ADAMA"): P
   const body = await response.json();
   const cookie = response.headers.get("set-cookie")?.split(";")[0];
   assert.ok(cookie);
-  assert.ok(body.allowedCustomerIds?.[0]);
-  return { cookie, csrf: body.csrfToken, internalCustomerId: body.allowedCustomerIds[0] };
+  assert.equal("allowedCustomerIds" in body, false);
+  const legacyCustomer = await fetch(`${base}/api/demo/customer`, {
+    headers: { Cookie: cookie },
+  });
+  assert.equal(legacyCustomer.status, 200);
+  const internalCustomerId = (await legacyCustomer.json()).customerId;
+  assert.ok(internalCustomerId);
+  return { cookie, csrf: body.csrfToken, internalCustomerId };
 }
 
 function get(base: string, session: Session, path: string) {

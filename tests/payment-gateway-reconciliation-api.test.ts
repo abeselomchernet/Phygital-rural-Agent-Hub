@@ -210,6 +210,28 @@ test("gateway reconciliation is supervisor/admin controlled and never reports se
       { ...reconcileBody, customerId: crypto.randomUUID() },
     );
     assert.equal(wrongCustomer.status, 403);
+
+    const v2 = await postJson(
+      base,
+      supervisor,
+      "/api/demo/v2/payments/arifpay/c2b/reconcile",
+      { transactionId },
+    );
+    assert.equal(v2.status, 200);
+    const v2Body = await v2.json();
+    assert.equal(v2Body.state, "GATEWAY_CONFIRMED");
+    assert.equal(v2Body.provider, "ARIFPAY");
+    assert.equal("customerId" in v2Body, false);
+    assert.equal(JSON.stringify(v2Body).includes(fixture.customerId), false);
+    assert.equal(reader.calls, 1);
+
+    const injected = await postJson(
+      base,
+      supervisor,
+      "/api/demo/v2/payments/arifpay/c2b/reconcile",
+      { transactionId, customerId: fixture.customerId },
+    );
+    assert.equal(injected.status, 400);
   } finally {
     server.close();
   }
@@ -234,6 +256,17 @@ test("gateway reconciliation is unavailable by default", async () => {
     assert.equal(response.status, 503);
     assert.equal(
       (await response.json()).error,
+      "PAYMENT_GATEWAY_RECONCILIATION_UNAVAILABLE",
+    );
+    const v2 = await postJson(
+      base,
+      supervisor,
+      "/api/demo/v2/payments/arifpay/c2b/reconcile",
+      { transactionId: crypto.randomUUID() },
+    );
+    assert.equal(v2.status, 503);
+    assert.equal(
+      (await v2.json()).error,
       "PAYMENT_GATEWAY_RECONCILIATION_UNAVAILABLE",
     );
   } finally {

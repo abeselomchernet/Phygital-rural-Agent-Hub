@@ -61,7 +61,11 @@ export interface SyntheticPrincipal {
   workspaceContext: SyntheticWorkspaceContext;
 }
 
-export interface SyntheticSessionView extends SyntheticPrincipal {
+export interface SyntheticSessionView {
+  userId: SyntheticPrincipal["userId"];
+  role: SyntheticRole;
+  allowedNetworkObjectIds: readonly NetworkOperationsObjectId[];
+  workspaceContext: SyntheticWorkspaceContext;
   csrfToken: string;
   expiresAt: string;
   localDevelopmentAuth: true;
@@ -412,7 +416,6 @@ export class SyntheticAuthService {
     return {
       userId: session.userId,
       role: session.role,
-      allowedCustomerIds: [...session.allowedCustomerIds],
       allowedNetworkObjectIds: [...session.allowedNetworkObjectIds],
       workspaceContext: {
         tenantId: session.workspaceContext.tenantId,

@@ -20,7 +20,6 @@ type ReconciliationState =
 
 type ReconciliationResult = {
   transactionId: string;
-  customerId: string;
   state: ReconciliationState;
   code: string;
   provider: "ARIFPAY";
@@ -82,7 +81,6 @@ const lifecycle = [
 
 export default function OperationsReconciliation() {
   const [authorized, setAuthorized] = useState(false),
-    [customerId, setCustomerId] = useState(""),
     [transactionId, setTransactionId] = useState(""),
     [result, setResult] = useState<ReconciliationResult | null>(null),
     [message, setMessage] = useState(
@@ -104,10 +102,7 @@ export default function OperationsReconciliation() {
     setBusy(true);
     setResult(null);
     try {
-      const session = await startDemoSession("OPERATIONS");
-      const scopedCustomerId = session.allowedCustomerIds[0];
-      if (!scopedCustomerId) throw new Error("OPERATIONS_CUSTOMER_SCOPE_UNAVAILABLE");
-      setCustomerId(scopedCustomerId);
+      await startDemoSession("OPERATIONS");
       setAuthorized(true);
       setMessage(
         `Synthetic ${session.role} session active. Enter an Enawuga transaction ID created by the guarded ArifPay checkout flow.`,
@@ -125,7 +120,7 @@ export default function OperationsReconciliation() {
   };
 
   const reconcile = async () => {
-    if (!authorized || !customerId) return;
+    if (!authorized) return;
     if (
       !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
         transactionId,
@@ -138,8 +133,8 @@ export default function OperationsReconciliation() {
     try {
       const next = (await demoApiAs(
         "OPERATIONS",
-        "payments/arifpay/c2b/reconcile",
-        { customerId, transactionId },
+        "v2/payments/arifpay/c2b/reconcile",
+        { transactionId },
       )) as ReconciliationResult;
       setResult(next);
       setMessage(

@@ -14,7 +14,6 @@ export type SyntheticWorkspaceKey =
 type SessionView = {
   csrfToken: string;
   role: SyntheticRole;
-  allowedCustomerIds: readonly string[];
   localDevelopmentAuth: true;
 };
 
